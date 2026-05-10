@@ -1,0 +1,43 @@
+# Root-level ignores
+node_modules/
+package-lock.json
+.DS_Store
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+coverage/
+.vscode/
+
+# Frontend ignores
+app/frontend/node_modules/
+app/frontend/.next/
+app/frontend/.env
+app/frontend/.env.local
+app/frontend/*.local
+app/frontend/package-lock.json
+app/frontend/.turbo/
+app/frontend/dist/
+app/frontend/out/
+app/frontend/next-env.d.ts
+app/frontend/.vercel/
+app/frontend/coverage/
+
+# Backend ignores
+app/backend/node_modules/
+app/backend/dist/
+app/backend/.env
+app/backend/.env.local
+app/backend/package-lock.json
+app/backend/*.local
+app/backend/prisma/migrations/
+app/backend/generated/prisma/
+app/backend/.prisma/
+app/backend/src/generated/prisma/
+
+# Ignore local git metadata if it accidentally appears in nested folders
+**/.git/
