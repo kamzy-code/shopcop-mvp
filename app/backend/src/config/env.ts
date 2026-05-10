@@ -1,9 +1,14 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from "url";
 
-// Load .env file
-dotenv.config({ path: path.join(__dirname, '../../.env') });
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.join(__dirname, "../../.env"),
+});
 interface EnvConfig {
   NODE_ENV: string;
   PORT: number;
@@ -53,7 +58,7 @@ export const env: EnvConfig = {
   DB_NAME: getEnv('DB_NAME'),
   DB_USER: getEnv('DB_USER'),
   DB_PASSWORD: getEnv('DB_PASSWORD'),
-  DATABASE_URL: getEnv('DB_URL'),
+  DATABASE_URL: getEnv('DATABASE_URL'),
   REDIS_HOST: getEnv('REDIS_HOST', 'localhost'),
   REDIS_PORT: parseInt(getEnv('REDIS_PORT', '6379')),
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
