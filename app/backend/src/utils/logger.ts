@@ -1,8 +1,10 @@
-import winston, { createLogger, transports, format } from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
+// import winston, { createLogger, transports, format } from "winston";
+// import DailyRotateFile from "winston-daily-rotate-file";
+
+import { createLogger, transports, format } from "winston";
 import { env } from "@config/env.js";
 
-const { combine, printf, json, timestamp, prettyPrint, splat, errors } = format;
+const { combine, json, timestamp, prettyPrint, splat, errors } = format;
 
 
 
