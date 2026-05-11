@@ -14,11 +14,6 @@ interface EnvConfig {
   PORT: number;
   
   // Database
-  DB_HOST: string;
-  DB_PORT: number;
-  DB_NAME: string;
-  DB_USER: string;
-  DB_PASSWORD: string;
   DATABASE_URL: string;
   
   // Redis
@@ -53,11 +48,6 @@ export const env: EnvConfig = {
   NODE_ENV: getEnv('NODE_ENV', 'development'),
   PORT: parseInt(getEnv('PORT', '5001')),
   
-  DB_HOST: getEnv('DB_HOST', 'localhost'),
-  DB_PORT: parseInt(getEnv('DB_PORT', '5432')),
-  DB_NAME: getEnv('DB_NAME'),
-  DB_USER: getEnv('DB_USER'),
-  DB_PASSWORD: getEnv('DB_PASSWORD'),
   DATABASE_URL: getEnv('DATABASE_URL'),
   REDIS_HOST: getEnv('REDIS_HOST', 'localhost'),
   REDIS_PORT: parseInt(getEnv('REDIS_PORT', '6379')),

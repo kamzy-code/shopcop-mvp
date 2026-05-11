@@ -21,7 +21,7 @@
       "@middleware/*": ["middleware/*"],
       "@controllers/*": ["controllers/*"],
       "@services/*": ["services/*"],
-      "@mrepositories/*": ["repositories/*"],
+      "@repositories/*": ["repositories/*"],
       "@routes/*": ["routes/*"],
       "@utils/*": ["utils/*"],
       "@types/*": ["types/*"]

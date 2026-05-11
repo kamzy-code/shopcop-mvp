@@ -5,24 +5,404 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model User { 
-  id    Int     @id @default(autoincrement()) 
-  email String  @unique
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  ADMIN
+  VENDOR
+  BUYER
+}
+
+enum VendorType {
+  DIRECT_DEALER
+  BROKER_AGENT
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  SENT_OUT
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationTier {
+  TIER_0
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password_hash String
+  role          UserRole @default(VENDOR)
+
+  // OTP fields
+  otp_code       String?
+  otp_expires_at DateTime?
+  otp_attempts   Int       @default(0)
+
+  // Session management
+  last_login_at DateTime?
+  is_active     Boolean   @default(true)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  vendor_profile VendorProfile?
+  buyer_profile  BuyerProfile?
+  admin_actions  AdminActivityLog[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================
+// VENDOR PROFILE
+// ============================================
+
+model VendorProfile {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  business_name        String
+  slug                 String  @unique
+  business_description String? @db.Text
+  profile_photo_url    String?
+
+  // Location
+  address   String
+  city      String
+  state     String
+  latitude  Float?
+  longitude Float?
+
+  // Verification
+  nin              String?
+  nin_verified     VerificationStatus @default(PENDING)
+  verified_name    String?
+  govt_id_url      String?
+  rejection_reason String?
+
+  // Business Verification
+  cac_number        String?
+  cac_verified      Boolean          @default(false)
+  smedan_verified   Boolean          @default(false)
+  business_doc_url  String?
+  verification_tier VerificationTier @default(TIER_0)
+  // Categorization
+  vendor_type       VendorType?
+  categories        String[] // Array of category slugs
+
+  // Operations
+  delivery_areas  String[] // Array of locations they deliver to
+  payment_methods String[] // Array of payment method codes
+  refund_policy   String?  @db.Text
+
+  // Social Media
+  instagram_handle String?
+  tiktok_handle    String?
+  facebook_url     String?
+
+  // Metrics (calculated fields)
+  total_transactions Int   @default(0)
+  fulfillment_rate   Float @default(0)
+  average_rating     Float @default(0)
+
+  // Status
+  profile_status       String @default("active") // active, inactive, suspended
+  profile_completeness Int    @default(0) // 0-100 percentage
+
+  // Timestamps
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  last_transaction_at DateTime?
+
+  // Relations
+  products     Product[]
+  transactions Transaction[]
+  reviews      Review[]
+
+  @@index([slug])
+  @@index([city, state])
+  @@index([nin_verified])
+  @@index([total_transactions])
+  @@index([fulfillment_rate])
+  @@index([created_at])
+  //@@fulltext([business_name, business_description])
+  @@map("vendor_profiles")
+}
+
+// ============================================
+// BUYER PROFILE (Optional for MVP)
+// ============================================
+
+model BuyerProfile {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   name  String?
-  posts Post[]
-} 
-model Post { 
-  id        Int     @id @default(autoincrement()) 
-  title     String
-  content   String?
-  published Boolean @default(false) 
-  author    User    @relation(fields: [authorId], references: [id]) 
-  authorId  Int
-} 
+  email String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  transactions Transaction[]
+  reviews      Review[]
+
+  @@map("buyer_profiles")
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+
+model Product {
+  id        String        @id @default(cuid())
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?     @db.Text
+  price        Float
+  category     String // Product category slug
+  stock_status StockStatus @default(IN_STOCK)
+
+  // Images
+  images ProductImage[]
+
+  // Timestamps
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime? // Soft delete
+
+  // Relations
+  transactions Transaction[]
+
+  @@index([vendor_id])
+  @@index([category])
+  @@index([created_at])
+  //@@fulltext([name, description])
+  @@map("products")
+}
+
+model ProductImage {
+  id         String  @id @default(cuid())
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  image_url  String
+  is_primary Boolean @default(false)
+  position   Int     @default(0)
+
+  created_at DateTime @default(now())
+
+  @@index([product_id])
+  @@map("product_images")
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+
+model Transaction {
+  id String @id @default(cuid())
+
+  // Vendor
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id])
+
+  // Buyer (optional - can be null for MVP)
+  buyer_id    String?
+  buyer       BuyerProfile? @relation(fields: [buyer_id], references: [id])
+  buyer_phone String? // Store phone even if no buyer account
+
+  // Product
+  product_id   String?
+  product      Product? @relation(fields: [product_id], references: [id])
+  product_name String // Store name in case product is deleted
+
+  // Transaction Details
+  amount Float
+  status TransactionStatus @default(PENDING)
+
+  // Verification (for manual transactions)
+  payment_proof_url   String?
+  verification_status VerificationStatus @default(PENDING)
+  verified_by         String?
+  verified_at         DateTime?
+  rejection_reason    String?
+
+  // Tracking
+  tracking_slug      String    @unique
+  estimated_delivery DateTime?
+
+  // Timestamps
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  delivered_at DateTime?
+
+  // Relations
+  status_history TransactionStatusHistory[]
+  review         Review?
+
+  @@index([vendor_id])
+  @@index([buyer_id])
+  @@index([status])
+  @@index([verification_status])
+  @@index([tracking_slug])
+  @@index([created_at])
+  @@map("transactions")
+}
+
+model TransactionStatusHistory {
+  id             String      @id @default(cuid())
+  transaction_id String
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+
+  status TransactionStatus
+  notes  String?
+
+  created_at DateTime @default(now())
+
+  @@index([transaction_id])
+  @@map("transaction_status_history")
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id String @id @default(cuid())
+
+  // Transaction (ensures buyer completed purchase)
+  transaction_id String      @unique
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+
+  // Vendor
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  // Buyer
+  buyer_id   String?
+  buyer      BuyerProfile? @relation(fields: [buyer_id], references: [id])
+  buyer_name String // Anonymized (e.g., "Blessing O.")
+
+  // Review Content
+  rating            Int // 1-5 stars
+  review_text       String?  @db.Text
+  review_categories String[] // ["product_quality", "delivery_speed", etc.]
+
+  // Categorization
+  review_type String // "positive" (4-5 stars) or "negative" (1-3 stars)
+
+  // Moderation
+  moderation_status ModerationStatus @default(PENDING)
+  approved_by       String?
+  approved_at       DateTime?
+  rejection_reason  String?
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([vendor_id])
+  @@index([rating])
+  @@index([moderation_status])
+  @@index([created_at])
+  @@map("reviews")
+}
+
+// ============================================
+// ADMIN OPERATIONS
+// ============================================
+
+model AdminActivityLog {
+  id       String @id @default(cuid())
+  admin_id String
+  admin    User   @relation(fields: [admin_id], references: [id])
+
+  action_type String // "nin_verification_approved", "review_rejected", etc.
+  target_id   String // ID of the affected resource
+  notes       String? @db.Text
+
+  created_at DateTime @default(now())
+
+  @@index([admin_id])
+  @@index([action_type])
+  @@index([created_at])
+  @@map("admin_activity_logs")
+}
+
+// ============================================
+// OTP TRACKING (for rate limiting)
+// ============================================
+
+model OTPLog {
+  id       String @id @default(cuid())
+  phone    String
+  otp_type String // "signup", "login", "password_reset"
+
+  sent_count   Int      @default(1)
+  last_sent_at DateTime @default(now())
+
+  @@index([phone, otp_type])
+  @@map("otp_logs")
+}
+
+// ============================================
+// RATE LIMITING
+// ============================================
+
+model RateLimit {
+  id     String @id @default(cuid())
+  key    String @unique // IP address or phone number
+  action String // "login_attempt", "signup_attempt", etc.
+
+  count    Int      @default(1)
+  reset_at DateTime
+
+  @@index([key, action])
+  @@map("rate_limits")
+}

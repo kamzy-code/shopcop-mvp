@@ -1,9 +1,4 @@
-export enum UserRole {
-  ADMIN = 'admin',
-  VENDOR = 'vendor',
-  BUYER = 'buyer',
-}
-
+import { UserRole } from "generated/prisma/enums.js";
 export interface JWTPayload {
   userId: string;
   role: UserRole;
