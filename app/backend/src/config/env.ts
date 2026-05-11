@@ -15,6 +15,9 @@ interface EnvConfig {
   
   // Database
   DATABASE_URL: string;
+
+  // Fontend
+  FRONTEND_URL: string;
   
   // Redis
   REDIS_HOST: string;
@@ -50,6 +53,7 @@ export const env: EnvConfig = {
   PORT: parseInt(getEnv('PORT', '5001')),
   
   DATABASE_URL: getEnv('DATABASE_URL'),
+  FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:3000'),
   REDIS_HOST: getEnv('REDIS_HOST', 'localhost'),
   REDIS_PORT: parseInt(getEnv('REDIS_PORT', '6379')),
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,

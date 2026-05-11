@@ -34,8 +34,8 @@ model User {
   id         String   @id @default(cuid())
   
   // Identity
-  email      String   @unique
   name       String?
+  email      String   @unique
   avatar_url String?
   
   // Authentication
@@ -44,16 +44,6 @@ model User {
   
   // Email verification
   email_verified Boolean  @default(false)
-  
-  // OTP fields (for email verification)
-  otp_code       String?
-  otp_expires_at DateTime?
-  otp_attempts   Int      @default(0)
-  otp_last_sent_at DateTime?
-  
-  // Magic link fields (for passwordless login)
-  magic_token    String?   @unique
-  magic_expires_at DateTime?
   
   // Role & Status
   role       UserRole @default(VENDOR)
@@ -66,14 +56,51 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   
-  // Relations (we'll add these later)
-  // vendor_profile VendorProfile?
-  // admin_actions  AdminActivityLog[]
+  // Relations
+  otp_codes   OtpCode[]
+  magic_links MagicLink[]
   
   @@index([email])
   @@index([google_id])
-  @@index([magic_token])
   @@map("users")
+}
+
+// ============================================
+// OTP CODES (email verification)
+// ============================================
+
+model OtpCode {
+  id         String   @id @default(cuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  code       String
+  attempts   Int      @default(0)
+  expires_at DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([code])
+  @@map("otp_codes")
+}
+
+// ============================================
+// MAGIC LINKS (passwordless login)
+// ============================================
+
+model MagicLink {
+  id         String    @id @default(cuid())
+  user_id    String
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  token      String    @unique
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  @@index([user_id])
+  @@index([token])
+  @@map("magic_links")
 }
 
 // ============================================

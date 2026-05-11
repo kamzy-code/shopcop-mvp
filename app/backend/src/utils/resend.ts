@@ -1,7 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '@config/env.js';
-import logger from './logger.js';
-import { timeStamp } from 'node:console';
+import { emailLogger } from './logger.js';
 
 const RESEND_API_KEY = env.RESEND_API_KEY;
 const resend = new Resend(RESEND_API_KEY);
@@ -18,21 +17,21 @@ export const sendEmail = async ({ to, subject, html }: SendEmailParams): Promise
       from: 'onboarding@resend.dev',
       to: to,
       subject: subject,
-      html: html
+      html: html,
     });
 
     if (error) {
-      logger.error('Email send error', { error, timeStamp: new Date().toISOString() });
+      emailLogger.error('Email send error', { error, timeStamp: new Date().toISOString() });
       return false;
     }
-    logger.info(`Email sent successfully to ${data?.id}`, {
+    emailLogger.info(`Email sent successfully to ${data?.id}`, {
       recipient: data?.id,
       timeStamp: new Date().toISOString(),
     });
     return true;
   } catch (error) {
     if (error instanceof Error) {
-      logger.error(error.message);
+      emailLogger.error(error.message);
     }
   }
   return false;

@@ -27,6 +27,49 @@ const logger = createLogger({
   ],
 });
 
+const emailLogger = createLogger({
+  level: "info",
+  format: combine(
+    timestamp(),
+    errors({ stack: true }),
+    splat(),
+    json(),
+    prettyPrint()
+  ),
+  transports: [
+    ...(env.NODE_ENV === "production"
+      ? [
+          //Log Transport for production environment
+        ]
+      : []),
+    new transports.Console(),
+  ],
+
+  defaultMeta:{service: 'emailService'}
+});
+
+const authLogger = createLogger({
+  level: "info",
+  format: combine(
+    timestamp(),
+    errors({ stack: true }),
+    splat(),
+    json(),
+    prettyPrint()
+  ),
+  transports: [
+    ...(env.NODE_ENV === "production"
+      ? [
+          //Log Transport for production environment
+        ]
+      : []),
+    new transports.Console(),
+  ],
+
+  defaultMeta: { service: "authService" },
+});
+
+
 // const authLogger = createLogger({
 //   level: "info",
 //   format: combine(
@@ -67,3 +110,4 @@ const logger = createLogger({
 
 
 export default logger;
+export { emailLogger, authLogger };
