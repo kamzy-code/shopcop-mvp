@@ -41,7 +41,7 @@ export class AuthService {
       update: {},
       create: {
         email,
-        role,
+        role: role.toUpperCase() as UserRole,
         auth_provider: AuthProvider.EMAIL,
         email_verified: false,
       },
