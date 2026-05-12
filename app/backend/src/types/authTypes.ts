@@ -1,8 +1,10 @@
-import { UserRole } from "generated/prisma/enums.js";
+import { UserRole } from 'generated/prisma/enums.js';
 export interface JWTPayload {
   userId: string;
   email: string;
   role: UserRole;
+  iat?: number;
+  exp?: number;
 }
 
 export interface SignupWithEmailParams {

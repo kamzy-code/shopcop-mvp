@@ -3,12 +3,9 @@ import { AppError } from './errorHandler.js';
 import { UserRole } from 'generated/prisma/enums.js';
 import logger from '@utils/logger.js';
 
-export interface AuthRequest extends Request {
-  user?: { userId: string; role: UserRole };
-}
 
 export const requireRole = (...allowedRoles: UserRole[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       logger.warn(`Forbidden: Authentication required`, {
         service: 'RBAC Middleware',
@@ -32,3 +29,19 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
     next();
   };
 };
+
+/**
+ * Requires user to be an ADMIN
+ */
+export const requireAdmin = requireRole(UserRole.ADMIN);
+
+/**
+ * Requires user to be a VENDOR
+ */
+export const requireVendor = requireRole(UserRole.VENDOR);
+
+/**
+ * Requires user to be either ADMIN or VENDOR
+ */
+export const requireAdminOrVendor = requireRole(UserRole.ADMIN, UserRole.VENDOR);
+
