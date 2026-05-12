@@ -5,6 +5,7 @@ import { errorHandler } from '@middleware/errorHandler.js';
 import authRouter from '@routes/authRoutes.js';
 import rateLimit from 'express-rate-limit';
 import logger from '@utils/logger.js';
+import userRouter from '@routes/userRoute.js';
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/users', userRouter);
 
 // 404 handler
 app.use((req, res) => {

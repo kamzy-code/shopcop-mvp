@@ -3,7 +3,6 @@ import { AppError } from './errorHandler.js';
 import { UserRole } from 'generated/prisma/enums.js';
 import logger from '@utils/logger.js';
 
-
 export const requireRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -45,3 +44,34 @@ export const requireVendor = requireRole(UserRole.VENDOR);
  */
 export const requireAdminOrVendor = requireRole(UserRole.ADMIN, UserRole.VENDOR);
 
+/**
+ * Checks if authenticated user is accessing their own resource
+ * Use when userId is in request params or body
+ */
+export const requireOwnership = (userIdField: 'params' | 'body' = 'params') => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    const targetUserId = userIdField === 'params' ? req.params.userId : req.body.userId;
+
+    // Admins can access any resource
+    if (req.user.role === UserRole.ADMIN) {
+      next();
+      return;
+    }
+
+    // Check if user is accessing their own resource
+    if (req.user.userId !== targetUserId) {
+      logger.warn(
+        `Ownership check failed: User ${req.user.userId} attempted to access resource of user ${targetUserId}`
+      );
+
+      throw new AppError('You can only access your own resources.', 403);
+    }
+
+    next();
+    return;
+  };
+};
