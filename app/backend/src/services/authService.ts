@@ -38,7 +38,7 @@ export class AuthService {
 
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { role: role.toUpperCase() as UserRole },
       create: {
         email,
         role: role.toUpperCase() as UserRole,
@@ -96,6 +96,7 @@ export class AuthService {
     if (!otpRecord) {
       authLogger.warn(`OTP verification attempt with invalid OTP: ${email}`, {
         action: 'verifyOTP',
+        email,
       });
       throw new AppError('No valid OTP found. Please request a new one.', 400);
     }
@@ -103,6 +104,7 @@ export class AuthService {
     if (otpRecord.attempts >= 5) {
       authLogger.warn(`OTP verification attempt with too many failed attempts: ${email}`, {
         action: 'verifyOTP',
+        email,
       });
       throw new AppError('Too many failed attempts. Please request a new OTP.', 400);
     }
@@ -115,6 +117,7 @@ export class AuthService {
 
       authLogger.warn(`OTP verification attempt with incorrect OTP: ${email}`, {
         action: 'verifyOTP',
+        email,
       });
       throw new AppError('Invalid OTP. Please try again.', 400);
     }
@@ -166,15 +169,27 @@ export class AuthService {
     });
 
     if (!user) {
+      authLogger.warn(`Magic link login attempt with non-existent email: ${email}`, {
+        action: 'sendMagicLink',
+        email,
+      });
       throw new AppError('No account found with this email. Please sign up first.', 404);
     }
 
     if (!user.email_verified) {
+      authLogger.warn(`Magic link login attempt with unverified email: ${email}`, {
+        action: 'sendMagicLink',
+        email,
+      });
       throw new AppError('Email not verified. Please complete signup first.', 400);
     }
 
     const canSend = await checkRateLimit(email, 'magic_link_send', 5, 60);
     if (!canSend) {
+      authLogger.warn(`Rate limit exceeded for magic link send: ${email}`, {
+        action: 'sendMagicLink',
+        email,
+      });
       throw new AppError('Too many login attempts. Please try again in 1 hour.', 429);
     }
 
@@ -198,10 +213,14 @@ export class AuthService {
     const emailSent = await sendMagicLinkEmail(email, magicLink);
 
     if (!emailSent) {
+      authLogger.error('Failed to send magic link', {
+        action: 'sendMagicLink',
+        email,
+      });
       throw new AppError('Failed to send magic link. Please try again.', 500);
     }
 
-    authLogger.info(`Magic link sent to ${email}`);
+    authLogger.info(`Magic link sent to ${email}`, { email, action: 'sendMagicLink' });
 
     return {
       message: 'Magic link sent to your email. Please check your inbox.',
@@ -217,14 +236,26 @@ export class AuthService {
     });
 
     if (!magicLink) {
+      authLogger.warn('Magic link verification attempt with invalid token', {
+        action: 'verifyMagicLink',
+        token,
+      });
       throw new AppError('Invalid or expired magic link.', 400);
     }
 
     if (magicLink.used_at) {
+      authLogger.warn('Magic link verification attempt with already used token', {
+        action: 'verifyMagicLink',
+        token,
+      });
       throw new AppError('Magic link has already been used.', 400);
     }
 
     if (new Date() > magicLink.expires_at) {
+      authLogger.warn('Magic link verification attempt with expired token', {
+        action: 'verifyMagicLink',
+        token,
+      });
       throw new AppError('Magic link expired. Please request a new one.', 400);
     }
 
@@ -245,7 +276,12 @@ export class AuthService {
       role: magicLink.user.role,
     });
 
-    authLogger.info(`User logged in via magic link: ${magicLink.user.email}`);
+    authLogger.info(`User logged in via magic link: ${magicLink.user.email}`, {
+      userId: magicLink.user.id,
+      email: magicLink.user.email,
+      role: magicLink.user.role,
+      action: 'verifyMagicLink',
+    });
 
     return {
       token: jwtToken,
@@ -266,15 +302,27 @@ export class AuthService {
     });
 
     if (!user) {
+      authLogger.warn(`OTP resend attempt for non-existent email: ${email}`, {
+        action: 'resendOTP',
+        email,
+      });
       throw new AppError('User not found.', 404);
     }
 
     if (user.email_verified) {
+      authLogger.warn(`OTP resend attempt for already verified email: ${email}`, {
+        action: 'resendOTP',
+        email,
+      });
       throw new AppError('Email already verified. Please sign in instead.', 400);
     }
 
     const canSend = await checkRateLimit(email, 'otp_send', 3, 15);
     if (!canSend) {
+      authLogger.warn(`Rate limit exceeded for OTP resend: ${email}`, {
+        action: 'resendOTP',
+        email,
+      });
       throw new AppError('Too many OTP requests. Please try again in 15 minutes.', 429);
     }
 
@@ -294,13 +342,15 @@ export class AuthService {
     const emailSent = await sendOTPEmail(email, otpCode);
 
     if (!emailSent) {
+      authLogger.error(`Failed to resend OTP email to ${email}`, { action: 'resendOTP', email });
       throw new AppError('Failed to send OTP. Please try again.', 500);
     }
 
-    authLogger.info(`OTP resent to ${email}`);
+    authLogger.info(`OTP resent to ${email}`, { email, action: 'resendOTP' });
 
     return {
       message: 'New OTP sent to your email.',
+      email: user.email,
     };
   }
 }

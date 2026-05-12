@@ -38,4 +38,147 @@ export class AuthController {
       return;
     }
   }
+
+  static async verifyAccount(req: Request, res: Response, next: NextFunction) {
+    const { email, otp } = req.body;
+
+    if (!email) {
+      authLogger.warn('OTP verification attempt with missing email', { action: 'verifyAccount' });
+      throw new AppError('Email is required', 400);
+    }
+
+    if (!otp) {
+      authLogger.warn('OTP verification attempt with missing OTP', {
+        email,
+        action: 'verifyAccount',
+      });
+      throw new AppError('OTP is required', 400);
+    }
+
+    try {
+      const result = await AuthService.verifyOTP({ email, otp_code: otp });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Account verified successfully',
+      });
+
+      authLogger.info('Account verified successfully', {
+        email,
+        action: 'verifyAccount',
+        isVerfied: result.user.email_verified,
+      });
+
+      return;
+    } catch (error) {
+      authLogger.error('Error during Account verification', {
+        email,
+        action: 'verifyAccount',
+        error: error instanceof Error ? error.message : error,
+      });
+      next(error);
+      return;
+    }
+  }
+
+  static async loginWithMagicLink(req: Request, res: Response, next: NextFunction) {
+    const { email } = req.body;
+
+    if (!email) {
+      authLogger.warn('Magic link login attempt with missing email', {
+        action: 'loginWithMagicLink',
+      });
+      throw new AppError('Email is required', 400);
+    }
+
+    try {
+      const result = await AuthService.sendMagicLink({ email });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Magic link sent successfully',
+      });
+
+      authLogger.info('Magic link sent successfully', { email, action: 'loginWithMagicLink' });
+      return;
+    } catch (error) {
+      authLogger.error('Error during magic link login', {
+        email,
+        action: 'loginWithMagicLink',
+        error: error instanceof Error ? error.message : error,
+      });
+      next(error);
+      return;
+    }
+  }
+
+  static async verifyLoginlink(req: Request, res: Response, next: NextFunction) {
+    const { token } = req.body;
+
+    if (!token) {
+      authLogger.warn('Magic link verification attempt with missing token', {
+        action: 'verifyLoginlink',
+      });
+      throw new AppError('Token is required', 400);
+    }
+
+    try {
+      const result = await AuthService.verifyMagicLink({ token });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Login successful',
+      });
+
+      authLogger.info('Login successful', {
+        action: 'verifyLoginlink',
+        status: 'success',
+        user: result.user.email,
+        userId: result.user.id,
+        role: result.user.role,
+      });
+      return;
+    } catch (error) {
+      authLogger.error('Error during magic link verification', {
+        token,
+        action: 'verifyLoginlink',
+        error: error instanceof Error ? error.message : error,
+      });
+      next(error);
+      return;
+    }
+  }
+
+  static async resendOTP(req: Request, res: Response, next: NextFunction) {
+    const { email } = req.body;
+
+    if (!email) {
+      authLogger.warn('OTP resend attempt with missing email', { action: 'resendOTP' });
+      throw new AppError('Email is required', 400);
+    }
+
+    try {
+      const result = await AuthService.resendOTP(email);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'OTP resent successfully',
+      });
+
+      authLogger.info('OTP resent successfully', { email, action: 'resendOTP' });
+      return;
+    } catch (error) {
+      authLogger.error('Error during OTP resend', {
+        email,
+        action: 'resendOTP',
+        error: error instanceof Error ? error.message : error,
+      });
+      next(error);
+      return;
+    }
+  }
 }
