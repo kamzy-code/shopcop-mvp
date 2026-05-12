@@ -109,7 +109,7 @@ model MagicLink {
 
 model RateLimit {
   id       String   @id @default(cuid())
-  key      String   @unique // email or IP address
+  key      String   //email or IP address
   action   String   // "otp_send", "magic_link_send", "login_attempt"
   
   count    Int      @default(1)
