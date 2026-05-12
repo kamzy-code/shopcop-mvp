@@ -21,12 +21,11 @@ export const sendEmail = async ({ to, subject, html }: SendEmailParams): Promise
     });
 
     if (error) {
-      emailLogger.error('Email send error', { error, timeStamp: new Date().toISOString() });
+      emailLogger.error('Email send error', { error });
       return false;
     }
     emailLogger.info(`Email sent successfully to ${data?.id}`, {
       recipient: data?.id,
-      timeStamp: new Date().toISOString(),
     });
     return true;
   } catch (error) {

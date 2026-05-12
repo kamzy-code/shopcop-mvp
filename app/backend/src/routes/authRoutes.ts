@@ -2,6 +2,6 @@ import { Router } from 'express';
 
 const authRouter = Router();
 
-authRouter.post('/register', (req, res) => {});
+authRouter.post('/credential-signup', (req, res) => {});
 
 export default authRouter;

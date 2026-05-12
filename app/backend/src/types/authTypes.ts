@@ -7,7 +7,6 @@ export interface JWTPayload {
 
 export interface SignupWithEmailParams {
   email: string;
-  name?: string;
   role?: UserRole;
 }
 

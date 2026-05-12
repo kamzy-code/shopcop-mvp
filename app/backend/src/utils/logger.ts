@@ -45,7 +45,7 @@ const emailLogger = createLogger({
     new transports.Console(),
   ],
 
-  defaultMeta:{service: 'emailService'}
+  defaultMeta:{service: 'emailService', timeStamp: new Date().toISOString()},
 });
 
 const authLogger = createLogger({
@@ -66,7 +66,7 @@ const authLogger = createLogger({
     new transports.Console(),
   ],
 
-  defaultMeta: { service: "authService" },
+  defaultMeta: { service: "authService", timeStamp: new Date().toISOString() },
 });
 
 

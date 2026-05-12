@@ -2,7 +2,6 @@ import { prisma } from '@config/prisma.js';
 import { sendOTPEmail, sendMagicLinkEmail } from '@utils/emailTemplates.js';
 import { authLogger } from '@utils/logger.js';
 import {
-  JWTPayload,
   SendMagicLinkParams,
   SignupWithEmailParams,
   VerifyMagicLinkParams,
@@ -16,17 +15,21 @@ import { AppError } from '@middleware/errorHandler.js';
 
 export class AuthService {
   // SIGNUP: Send OTP to email
-  static async signupWithEmail({ email, name, role = UserRole.BUYER }: SignupWithEmailParams) {
+  static async signupWithEmail({ email, role = UserRole.BUYER }: SignupWithEmailParams) {
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser && existingUser.email_verified) {
+      authLogger.warn(`Signup attempt with already registered email: ${email}`, {
+        action: 'signupWithEmail',
+      });
       throw new AppError('Email already registered. Please sign in instead.', 400);
     }
 
     const canSend = await checkRateLimit(email, 'otp_send', 3, 15);
     if (!canSend) {
+      authLogger.warn(`Rate limit exceeded for OTP send: ${email}`, { action: 'signupWithEmail' });
       throw new AppError('Too many OTP requests. Please try again in 15 minutes.', 429);
     }
 
@@ -35,10 +38,9 @@ export class AuthService {
 
     const user = await prisma.user.upsert({
       where: { email },
-      update: { name: name || undefined },
+      update: {},
       create: {
         email,
-        name,
         role,
         auth_provider: AuthProvider.EMAIL,
         email_verified: false,
@@ -55,13 +57,14 @@ export class AuthService {
       },
     });
 
-    const emailSent = await sendOTPEmail(email, otpCode, name);
+    const emailSent = await sendOTPEmail(email, otpCode);
 
     if (!emailSent) {
+      authLogger.error(`Failed to send OTP email to ${email}`, { action: 'signupWithEmail' });
       throw new AppError('Failed to send OTP email. Please try again.', 500);
     }
 
-    authLogger.info(`OTP sent to ${email}`);
+    authLogger.info(`OTP sent to ${email}`, { action: 'signupWithEmail' });
 
     return {
       message: 'OTP sent to your email. Please check your inbox.',
@@ -76,6 +79,9 @@ export class AuthService {
     });
 
     if (!user) {
+      authLogger.warn(`OTP verification attempt for non-existent email: ${email}`, {
+        action: 'verifyOTP',
+      });
       throw new AppError('User not found. Please sign up first.', 404);
     }
 
@@ -88,10 +94,16 @@ export class AuthService {
     });
 
     if (!otpRecord) {
+      authLogger.warn(`OTP verification attempt with invalid OTP: ${email}`, {
+        action: 'verifyOTP',
+      });
       throw new AppError('No valid OTP found. Please request a new one.', 400);
     }
 
     if (otpRecord.attempts >= 5) {
+      authLogger.warn(`OTP verification attempt with too many failed attempts: ${email}`, {
+        action: 'verifyOTP',
+      });
       throw new AppError('Too many failed attempts. Please request a new OTP.', 400);
     }
 
@@ -101,6 +113,9 @@ export class AuthService {
         data: { attempts: { increment: 1 } },
       });
 
+      authLogger.warn(`OTP verification attempt with incorrect OTP: ${email}`, {
+        action: 'verifyOTP',
+      });
       throw new AppError('Invalid OTP. Please try again.', 400);
     }
 
@@ -125,7 +140,12 @@ export class AuthService {
       role: verifiedUser.role,
     });
 
-    authLogger.info(`User verified and logged in: ${email}`);
+    authLogger.info(`User verified and logged in: ${email}`, {
+      userId: verifiedUser.id,
+      email: verifiedUser.email,
+      role: verifiedUser.role,
+      action: 'verifyOTP',
+    });
 
     return {
       token,
@@ -175,7 +195,7 @@ export class AuthService {
 
     const magicLink = `${env.FRONTEND_URL}/auth/verify?token=${magicToken}`;
 
-    const emailSent = await sendMagicLinkEmail(email, magicLink, user.name || undefined);
+    const emailSent = await sendMagicLinkEmail(email, magicLink);
 
     if (!emailSent) {
       throw new AppError('Failed to send magic link. Please try again.', 500);
@@ -271,7 +291,7 @@ export class AuthService {
       },
     });
 
-    const emailSent = await sendOTPEmail(email, otpCode, user.name || undefined);
+    const emailSent = await sendOTPEmail(email, otpCode);
 
     if (!emailSent) {
       throw new AppError('Failed to send OTP. Please try again.', 500);

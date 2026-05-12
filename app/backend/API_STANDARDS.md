@@ -37,6 +37,7 @@
 
 - **Endpoints:** `/api/v1/resource-name` (kebab-case, plural nouns)
 - **Request body:** `camelCase`
+- **logs:** `camelCase`
 - **Database columns:** `snake_case`
 - **Response data:** `camelCase`
 
