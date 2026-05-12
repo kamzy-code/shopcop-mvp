@@ -69,6 +69,27 @@ const authLogger = createLogger({
   defaultMeta: { service: "authService", timeStamp: new Date().toISOString() },
 });
 
+const userLogger = createLogger({
+  level: "info",
+  format: combine(
+    timestamp(),
+    errors({ stack: true }),
+    splat(),
+    json(),
+    prettyPrint()
+  ),
+  transports: [
+    ...(env.NODE_ENV === "production"
+      ? [
+          //Log Transport for production environment
+        ]
+      : []),
+    new transports.Console(),
+  ],
+
+  defaultMeta: { service: "userService", timeStamp: new Date().toISOString() },
+});
+
 
 // const authLogger = createLogger({
 //   level: "info",
@@ -110,4 +131,4 @@ const authLogger = createLogger({
 
 
 export default logger;
-export { emailLogger, authLogger };
+export { emailLogger, authLogger , userLogger};
