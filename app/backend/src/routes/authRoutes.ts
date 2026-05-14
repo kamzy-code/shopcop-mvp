@@ -7,7 +7,7 @@ const authRouter = Router();
 authRouter.post('/credential-signup', AuthController.credentialSignup);
 
 // POST /api/v1/auth/verify-account
-authRouter.post('/verify-account', AuthController.verifyAccount);
+authRouter.post('/verify-account', AuthController.verifyAccountViaOTP);
 
 // POST /api/v1/auth/login
 authRouter.post('/login', AuthController.loginWithMagicLink);

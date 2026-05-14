@@ -39,24 +39,32 @@ export class AuthController {
     }
   }
 
-  static async verifyAccount(req: Request, res: Response, next: NextFunction) {
+  static async verifyAccountViaOTP(req: Request, res: Response, next: NextFunction) {
     const { email, otp } = req.body;
 
     if (!email) {
-      authLogger.warn('OTP verification attempt with missing email', { action: 'verifyAccount' });
+      authLogger.warn('OTP verification attempt with missing email', { action: 'verifyAccountViaOTP' });
       throw new AppError('Email is required', 400);
     }
 
     if (!otp) {
       authLogger.warn('OTP verification attempt with missing OTP', {
         email,
-        action: 'verifyAccount',
+        action: 'verifyAccountViaOTP',
       });
       throw new AppError('OTP is required', 400);
     }
 
     try {
       const result = await AuthService.verifyOTP({ email, otp_code: otp });
+
+      res.cookie('auth_token', result.token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
 
       res.status(200).json({
         success: true,
@@ -66,7 +74,7 @@ export class AuthController {
 
       authLogger.info('Account verified successfully', {
         email,
-        action: 'verifyAccount',
+        action: 'verifyAccountViaOTP',
         isVerfied: result.user.email_verified,
       });
 
@@ -74,7 +82,7 @@ export class AuthController {
     } catch (error) {
       authLogger.error('Error during Account verification', {
         email,
-        action: 'verifyAccount',
+        action: 'verifyAccountViaOTP',
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -126,6 +134,14 @@ export class AuthController {
 
     try {
       const result = await AuthService.verifyMagicLink({ token });
+
+      res.cookie('auth_token', result.token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
 
       res.status(200).json({
         success: true,

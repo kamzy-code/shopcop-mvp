@@ -1,9 +1,11 @@
+export type UserRole = 'ADMIN' | 'VENDOR' | 'BUYER';
+
 export interface User {
   id: string;
   email: string;
   name?: string;
   avatar_url?: string;
-  role: 'ADMIN' | 'VENDOR' | 'BUYER';
+  role: UserRole;
   email_verified: boolean;
   is_active: boolean;
   created_at: string;
