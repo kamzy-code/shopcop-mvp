@@ -2,6 +2,7 @@
 
 import { useLogiWithMagicLink } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
+import { emailSchema } from '@/app/validators/authSchema';
 import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,27 +13,28 @@ export default function LoginPage() {
   const router = useRouter();
 
   const loginMutation = useLogiWithMagicLink();
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
 
-    loginMutation.mutate(
-      { email },
-      {
-        onSuccess: () => {
-          router.push(`/auth/verify-login?email=${encodeURIComponent(email)}`);
-        },
-        onError: (error) => {
-          toaster.create({
-            title: 'Login failed',
-            description: error instanceof Error ? error.message : 'An unknown error occurred',
-            type: 'error',
-          });
-          console.error('Login failed:', error);
-          // Optionally, show an error message to the user
-        },
-      }
-    );
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toaster.create({ title: emailResult.error.issues[0].message, type: 'error' });
+      return;
+    }
+
+    try {
+      await loginMutation.mutateAsync({ email });
+      router.push(`/auth/verify-login?email=${encodeURIComponent(email)}`);
+    } catch (error) {
+      toaster.create({
+        title: 'Login failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        type: 'error',
+      });
+      console.error('Login failed:', error);
+      // Optionally, show an error message to the user
+    }
   };
   return (
     <Center minH="100dvh" bg="bg">

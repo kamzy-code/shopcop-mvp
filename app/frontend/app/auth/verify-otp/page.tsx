@@ -1,14 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Center, Flex, Heading, Link, PinInput, Stack, Text } from '@chakra-ui/react';
-import { LuArrowLeft, LuShield } from 'react-icons/lu';
+import { LuArrowLeft, LuCircleAlert, LuShield } from 'react-icons/lu';
 import { useResendOTP, useVerifyAccounViaOTP } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
 import { useSearchParams } from 'next/navigation';
-import { ApiResponse } from '@/app/_types';
-import { ResendOTPResponse, VerifyOTPResponse } from '@/app/_types/authtypes';
-import { set } from 'zod';
 
 export default function VerifyOtpPage() {
   const [otp, setOtp] = useState<string[]>([]);
@@ -16,26 +13,76 @@ export default function VerifyOtpPage() {
   const email = searchParams.get('email');
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const [otpResent, setOtpResent] = useState(false);
+  const resendTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const verifyAccountMutation = useVerifyAccounViaOTP();
   const resendOTPMutation = useResendOTP();
 
-  const handleVerifyAccount = async () => {
-    if (!email) {
-      toaster.create({
-        title: 'Email not found',
-        description: 'Email is required for OTP verification.',
-        type: 'error',
-      });
-      return;
-    }
+  useEffect(() => {
+    return () => clearTimeout(resendTimerRef.current);
+  }, []);
 
+  if (!email) {
+    return (
+      <Center minH="100dvh" bg="bg">
+        <Flex
+          direction="column"
+          align="center"
+          w="full"
+          maxW="md"
+          px={{ base: 6, sm: 10 }}
+          py={{ base: 8, sm: 12 }}
+          bg="bg.panel"
+          borderWidth="1px"
+          borderColor="border"
+          borderRadius="2xl"
+          shadow="lg"
+          textAlign="center"
+        >
+          <Flex
+            w="16"
+            h="16"
+            align="center"
+            justify="center"
+            borderRadius="full"
+            bg="red.subtle"
+            mb={6}
+          >
+            <LuCircleAlert size={28} />
+          </Flex>
+
+          <Stack gap={2} mb={8}>
+            <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
+              Email not found
+            </Heading>
+            <Text color="fg.muted" textStyle="sm">
+              Email is required for OTP verification. Please start the signup process again.
+            </Text>
+          </Stack>
+
+          <Link
+            color="primary.fg"
+            fontWeight="medium"
+            href="/auth/signup"
+            display="inline-flex"
+            alignItems="center"
+            gap={1}
+          >
+            <LuArrowLeft />
+            Back to sign up
+          </Link>
+        </Flex>
+      </Center>
+    );
+  }
+
+
+  const handleVerifyAccount = async () => {
     try {
-      const result: ApiResponse<VerifyOTPResponse> = await verifyAccountMutation.mutateAsync({
+      const result = await verifyAccountMutation.mutateAsync({
         email,
         otp: otp.join(''),
       });
       setStatus('success');
-      console.log('OTP verification successful:', result);
     } catch (error) {
       console.error('OTP verification failed:', error);
       const message = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -45,17 +92,8 @@ export default function VerifyOtpPage() {
   };
 
   const handleResendOTP = async () => {
-    if (!email) {
-      toaster.create({
-        title: 'Email not found',
-        description: 'Email is required for OTP verification.',
-        type: 'error',
-      });
-      return;
-    }
-
     try {
-      const result: ApiResponse<ResendOTPResponse> = await resendOTPMutation.mutateAsync({ email });
+      await resendOTPMutation.mutateAsync({ email });
       toaster.create({
         title: 'OTP Resent',
         description: 'Check your email for a new OTP',
@@ -68,7 +106,7 @@ export default function VerifyOtpPage() {
       // Show error message to the user (e.g., using a toast)
       toaster.create({ title: 'Failed to resend OTP', description: message, type: 'error' });
     } finally {
-      setTimeout(() => {
+      resendTimerRef.current = setTimeout(() => {
         setOtpResent(false);
       }, 1000 * 30);
     }

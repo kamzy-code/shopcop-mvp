@@ -24,7 +24,7 @@ export default function VerifyLoginPage() {
       .mutateAsync({ token })
       .then((result) => {
         if (cancelled) return;
-        router.push(`/dashboard?token=${encodeURIComponent(result.data.token)}`);
+        router.push(`/dashboard`);
       })
       .catch((error) => {
         if (cancelled) return;

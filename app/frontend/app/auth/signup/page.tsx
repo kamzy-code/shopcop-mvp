@@ -3,23 +3,21 @@
 import { useState } from 'react';
 import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { LuArrowRight, LuBuilding2, LuShoppingBag, LuUser } from 'react-icons/lu';
+import { LuArrowRight, LuBuilding2, LuShoppingBag } from 'react-icons/lu';
 import { useSignUp } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
-import { ApiResponse } from '@/app/_types';
-import { SignupResponse } from '@/app/_types/authtypes';
+import { emailSchema } from '@/app/validators/authSchema';
 import { useRouter } from 'next/navigation';
-
-type Role = 'VENDOR' | 'BUYER' | null;
+import { UserRole } from '@/app/_types';
 
 export default function SignupPage() {
-  const [role, setRole] = useState<Role>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [step, setStep] = useState<'role' | 'email'>('role');
   const [email, setEmail] = useState('');
   const router = useRouter();
   const cardBg = useColorModeValue('white', 'gray.900');
 
-  function handleRoleSelect(selected: Role) {
+  function handleRoleSelect(selected: UserRole) {
     setRole(selected);
     setStep('email');
   }
@@ -30,8 +28,14 @@ export default function SignupPage() {
     e.preventDefault();
     if (!role) return;
 
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toaster.create({ title: emailResult.error.issues[0].message, type: 'error' });
+      return;
+    }
+
     try {
-      const result: ApiResponse<SignupResponse> = await signupMutation.mutateAsync({ role, email });
+      const result = await signupMutation.mutateAsync({ role, email });
 
       toaster.create({
         title: 'Verification code sent',
