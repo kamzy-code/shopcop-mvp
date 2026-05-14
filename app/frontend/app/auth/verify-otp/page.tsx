@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Center, Flex, Heading, Link, PinInput, Stack, Text } from '@chakra-ui/react';
 import { LuArrowLeft, LuCircleAlert, LuShield } from 'react-icons/lu';
-import { useResendOTP, useVerifyAccounViaOTP } from '@/app/_hooks/auth';
+import { useResendOTP, useVerifyAccounViaOTP, VerifyOTPResponse } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
 import { useSearchParams } from 'next/navigation';
+import { useAuthStore } from '@/app/_store/authStore';
+import { ApiResponse } from '@/app/_types';
 
 export default function VerifyOtpPage() {
   const [otp, setOtp] = useState<string[]>([]);
@@ -16,6 +18,7 @@ export default function VerifyOtpPage() {
   const resendTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const verifyAccountMutation = useVerifyAccounViaOTP();
   const resendOTPMutation = useResendOTP();
+  const setUser = useAuthStore((s) => s.setUser);
 
   useEffect(() => {
     return () => clearTimeout(resendTimerRef.current);
@@ -75,13 +78,13 @@ export default function VerifyOtpPage() {
     );
   }
 
-
   const handleVerifyAccount = async () => {
     try {
-      const result = await verifyAccountMutation.mutateAsync({
+      const result: ApiResponse<VerifyOTPResponse> = await verifyAccountMutation.mutateAsync({
         email,
         otp: otp.join(''),
       });
+      setUser(result.data.user);
       setStatus('success');
     } catch (error) {
       console.error('OTP verification failed:', error);

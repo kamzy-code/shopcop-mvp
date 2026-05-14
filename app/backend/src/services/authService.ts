@@ -167,8 +167,12 @@ export class AuthService {
         id: verifiedUser.id,
         email: verifiedUser.email,
         name: verifiedUser.name,
+        avatar_url: verifiedUser.avatar_url,
         role: verifiedUser.role,
         email_verified: verifiedUser.email_verified,
+        is_active: verifiedUser.is_active,
+        created_at: verifiedUser.created_at,
+        last_login_at: verifiedUser.last_login_at,
       },
     };
   }
@@ -300,8 +304,12 @@ export class AuthService {
         id: magicLink.user.id,
         email: magicLink.user.email,
         name: magicLink.user.name,
+        avatar_url: magicLink.user.avatar_url,
         role: magicLink.user.role,
         email_verified: magicLink.user.email_verified,
+        is_active: magicLink.user.is_active,
+        created_at: magicLink.user.created_at,
+        last_login_at: magicLink.user.last_login_at,
       },
     };
   }

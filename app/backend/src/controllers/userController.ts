@@ -4,7 +4,7 @@ import { userLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 
 export class UserController {
-  static async getProfile(req: Request, res: Response, next: NextFunction) {
+  static async getCurrentUser(req: Request, res: Response, next: NextFunction) {
     const userId = req.user?.userId;
 
     if (!userId) {

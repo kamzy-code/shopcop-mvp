@@ -43,7 +43,9 @@ export class AuthController {
     const { email, otp } = req.body;
 
     if (!email) {
-      authLogger.warn('OTP verification attempt with missing email', { action: 'verifyAccountViaOTP' });
+      authLogger.warn('OTP verification attempt with missing email', {
+        action: 'verifyAccountViaOTP',
+      });
       throw new AppError('Email is required', 400);
     }
 
@@ -56,9 +58,9 @@ export class AuthController {
     }
 
     try {
-      const result = await AuthService.verifyOTP({ email, otp_code: otp });
+      const { token, user } = await AuthService.verifyOTP({ email, otp_code: otp });
 
-      res.cookie('auth_token', result.token, {
+      res.cookie('auth_token', token, {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
@@ -68,14 +70,14 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        data: result,
+        data: { user },
         message: 'Account verified successfully',
       });
 
       authLogger.info('Account verified successfully', {
         email,
         action: 'verifyAccountViaOTP',
-        isVerfied: result.user.email_verified,
+        isVerfied: user.email_verified,
       });
 
       return;
@@ -133,9 +135,9 @@ export class AuthController {
     }
 
     try {
-      const result = await AuthService.verifyMagicLink({ token });
+      const { token: jwtToken, user } = await AuthService.verifyMagicLink({ token });
 
-      res.cookie('auth_token', result.token, {
+      res.cookie('auth_token', jwtToken, {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
@@ -145,16 +147,16 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        data: result,
+        data: { user },
         message: 'Login successful',
       });
 
       authLogger.info('Login successful', {
         action: 'verifyLoginlink',
         status: 'success',
-        user: result.user.email,
-        userId: result.user.id,
-        role: result.user.role,
+        user: user.email,
+        userId: user.id,
+        role: user.role,
       });
       return;
     } catch (error) {

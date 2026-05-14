@@ -5,8 +5,8 @@ import { requireAdmin } from '@middleware/rbac.js';
 
 const userRouter = Router();
 
-// GET /api/v1/user/profile
-userRouter.get('/profile', authenticate, UserController.getProfile);
+// GET /api/v1/user/me
+userRouter.get('/me', authenticate, UserController.getCurrentUser);
 
 // PUT /api/v1/user/profile
 userRouter.put('/profile', authenticate, UserController.updateProfile);

@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiFetch } from '../_lib/fetchWrapper';
-import { UserRole } from '../_types';
+import { UserRole, User } from '../_types';
 import {
   signupSchema,
   verifyOTPSchema,
@@ -20,7 +20,6 @@ export interface SignupParams {
   email: string;
 }
 
-
 export interface SignupResponse {
   message: string;
   email: string;
@@ -32,14 +31,7 @@ export interface VerifyOTPParams {
 }
 
 export interface VerifyOTPResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: UserRole;
-    email_verified: boolean;
-  };
+  user: User;
 }
 
 export interface MagicLinkLoginParams {
@@ -56,14 +48,7 @@ export interface VerifymagicLinkParams {
 }
 
 export interface VerifymagicLinkResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: UserRole;
-    email_verified: boolean;
-  };
+  user: User;
 }
 
 export interface ResendOTPParams {
@@ -74,7 +59,6 @@ export interface ResendOTPResponse {
   message: string;
   email: string;
 }
-
 
 export const useSignUp = () => {
   return useMutation({
@@ -134,4 +118,9 @@ export const useResendOTP = () => {
       });
     },
   });
+};
+
+export const fetchCurrentUser = async (): Promise<User> => {
+  const result = await apiFetch('/user/me');
+  return result.data;
 };

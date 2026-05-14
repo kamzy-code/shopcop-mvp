@@ -6,12 +6,14 @@ import { Button, Center, Flex, Heading, Link, Spinner, Stack, Text } from '@chak
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { LuArrowLeft, LuCircleAlert, LuMailCheck } from 'react-icons/lu';
+import { useAuthStore } from '@/app/_store/authStore';
 
 export default function VerifyLoginPage() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   const token = searchParams.get('token');
   const router = useRouter();
+  const setUser = useAuthStore(s => s.setUser)
 
   const verifyLoginMutation = useVerifyLoginLink();
 
@@ -24,6 +26,7 @@ export default function VerifyLoginPage() {
       .mutateAsync({ token })
       .then((result) => {
         if (cancelled) return;
+        setUser(result.data.user)
         router.push(`/dashboard`);
       })
       .catch((error) => {
