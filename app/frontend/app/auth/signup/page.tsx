@@ -1,24 +1,53 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from "@chakra-ui/react"
-import { useColorModeValue } from "@/components/ui/color-mode"
-import { LuArrowRight, LuBuilding2, LuShoppingBag, LuUser } from "react-icons/lu"
+import { useState } from 'react';
+import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from '@chakra-ui/react';
+import { useColorModeValue } from '@/components/ui/color-mode';
+import { LuArrowRight, LuBuilding2, LuShoppingBag, LuUser } from 'react-icons/lu';
+import { useSignUp } from '@/app/_hooks/auth';
+import { toaster } from '@/components/ui/toaster';
+import { ApiResponse } from '@/app/_types';
+import { SignupResponse } from '@/app/_types/authtypes';
+import { useRouter } from 'next/navigation';
 
-type Role = "VENDOR" | "BUYER" | null
+type Role = 'VENDOR' | 'BUYER' | null;
 
 export default function SignupPage() {
-  const [role, setRole] = useState<Role>(null)
-  const [step, setStep] = useState<"role" | "email">("role")
-  const [email, setEmail] = useState("")
-  const cardBg = useColorModeValue("white", "gray.900")
+  const [role, setRole] = useState<Role>(null);
+  const [step, setStep] = useState<'role' | 'email'>('role');
+  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const cardBg = useColorModeValue('white', 'gray.900');
 
   function handleRoleSelect(selected: Role) {
-    setRole(selected)
-    setStep("email")
+    setRole(selected);
+    setStep('email');
   }
 
-  if (step === "email") {
+  const signupMutation = useSignUp();
+
+  const handleSignUp = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!role) return;
+
+    try {
+      const result: ApiResponse<SignupResponse> = await signupMutation.mutateAsync({ role, email });
+
+      toaster.create({
+        title: 'Verification code sent',
+        description: `A verification code has been sent to ${result.data.email}. Please check your email to complete the signup process.`,
+        type: 'success',
+      });
+      router.push(`/auth/verify-otp?email=${encodeURIComponent(result.data.email)}`);
+    } catch (error) {
+      // Handle error (e.g., show error message)
+      console.error('Signup failed:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toaster.create({ title: 'Signup failed', description: message, type: 'error' });
+    }
+  };
+
+  if (step === 'email') {
     return (
       <Center minH="100dvh" bg="bg">
         <Flex
@@ -44,9 +73,9 @@ export default function SignupPage() {
             bg="primary.subtle"
             borderRadius="full"
           >
-            {role === "VENDOR" ? <LuBuilding2 size={14} /> : <LuShoppingBag size={14} />}
+            {role === 'VENDOR' ? <LuBuilding2 size={14} /> : <LuShoppingBag size={14} />}
             <Text textStyle="xs" fontWeight="medium" color="primary.fg">
-              Signing up as {role === "VENDOR" ? "a Vendor" : "a Buyer"}
+              Signing up as {role === 'VENDOR' ? 'a Vendor' : 'a Buyer'}
             </Text>
           </Flex>
 
@@ -63,7 +92,8 @@ export default function SignupPage() {
           {/* Form */}
           <form
             onSubmit={(e) => {
-              e.preventDefault()
+              e.preventDefault();
+              handleSignUp(e);
             }}
           >
             <Stack gap={6}>
@@ -82,7 +112,13 @@ export default function SignupPage() {
                 <Field.ErrorText />
               </Field.Root>
 
-              <Button type="submit" colorPalette="primary" size="lg" w="full">
+              <Button
+                type="submit"
+                colorPalette="primary"
+                size="lg"
+                w="full"
+                loading={signupMutation.isPending}
+              >
                 Send verification code
                 <LuArrowRight />
               </Button>
@@ -90,18 +126,12 @@ export default function SignupPage() {
           </form>
 
           {/* Back */}
-          <Button
-            variant="ghost"
-            size="sm"
-            mt={6}
-            color="fg.muted"
-            onClick={() => setStep("role")}
-          >
+          <Button variant="ghost" size="sm" mt={6} color="fg.muted" onClick={() => setStep('role')}>
             ← Back to role selection
           </Button>
         </Flex>
       </Center>
-    )
+    );
   }
 
   return (
@@ -141,9 +171,9 @@ export default function SignupPage() {
             borderRadius="xl"
             cursor="pointer"
             transition="all 0.15s"
-            _hover={{ borderColor: "primary.500", shadow: "sm" }}
-            _focusVisible={{ borderColor: "primary.500", shadow: "outline" }}
-            onClick={() => handleRoleSelect("BUYER")}
+            _hover={{ borderColor: 'primary.500', shadow: 'sm' }}
+            _focusVisible={{ borderColor: 'primary.500', shadow: 'outline' }}
+            onClick={() => handleRoleSelect('BUYER')}
           >
             <Flex
               w="10"
@@ -171,15 +201,14 @@ export default function SignupPage() {
             align="flex-start"
             gap={3}
             p={5}
-            bg={cardBg}
             borderWidth="2px"
             borderColor="border"
             borderRadius="xl"
             cursor="pointer"
             transition="all 0.15s"
-            _hover={{ borderColor: "primary.500", shadow: "sm" }}
-            _focusVisible={{ borderColor: "primary.500", shadow: "outline" }}
-            onClick={() => handleRoleSelect("VENDOR")}
+            _hover={{ borderColor: 'primary.500', shadow: 'sm' }}
+            _focusVisible={{ borderColor: 'primary.500', shadow: 'outline' }}
+            onClick={() => handleRoleSelect('VENDOR')}
           >
             <Flex
               w="10"
@@ -204,12 +233,12 @@ export default function SignupPage() {
 
         {/* Login link */}
         <Text mt={8} textStyle="sm" textAlign="center" color="fg.muted">
-          Already have an account?{" "}
-              <Link href="/auth/login" color="primary.fg" fontWeight="medium">
-                Sign in
-              </Link>
+          Already have an account?{' '}
+          <Link href="/auth/login" color="primary.fg" fontWeight="medium">
+            Sign in
+          </Link>
         </Text>
       </Flex>
     </Center>
-  )
+  );
 }

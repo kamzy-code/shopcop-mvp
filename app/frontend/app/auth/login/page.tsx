@@ -1,9 +1,39 @@
-"use client"
+'use client';
 
-import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from "@chakra-ui/react"
-import { LuArrowRight, LuMail } from "react-icons/lu"
+import { useLogiWithMagicLink } from '@/app/_hooks/auth';
+import { toaster } from '@/components/ui/toaster';
+import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { LuArrowRight, LuMail } from 'react-icons/lu';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const router = useRouter();
+
+  const loginMutation = useLogiWithMagicLink();
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email) return;
+
+    loginMutation.mutate(
+      { email },
+      {
+        onSuccess: () => {
+          router.push(`/auth/verify-login?email=${encodeURIComponent(email)}`);
+        },
+        onError: (error) => {
+          toaster.create({
+            title: 'Login failed',
+            description: error instanceof Error ? error.message : 'An unknown error occurred',
+            type: 'error',
+          });
+          console.error('Login failed:', error);
+          // Optionally, show an error message to the user
+        },
+      }
+    );
+  };
   return (
     <Center minH="100dvh" bg="bg">
       <Flex
@@ -29,20 +59,16 @@ export default function LoginPage() {
         </Stack>
 
         {/* Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-          }}
-        >
+        <form onSubmit={handleSubmit}>
           <Stack gap={6}>
             <Field.Root required>
-              <Field.Label color="fg">
-                Email address
-              </Field.Label>
+              <Field.Label color="fg">Email address</Field.Label>
               <Input
                 type="email"
                 placeholder="you@example.com"
                 size="lg"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 colorPalette="primary"
                 autoComplete="email"
                 autoFocus
@@ -55,6 +81,8 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              disabled={!email || loginMutation.isPending}
+              loading={loginMutation.isPending}
               colorPalette="primary"
               size="lg"
               w="full"
@@ -68,11 +96,11 @@ export default function LoginPage() {
 
         {/* Footer */}
         <Text mt={8} textStyle="xs" textAlign="center" color="fg.subtle">
-          By continuing, you agree to our{" "}
+          By continuing, you agree to our{' '}
           <Link href="#" color="primary.fg">
             Terms
-          </Link>{" "}
-          and{" "}
+          </Link>{' '}
+          and{' '}
           <Link href="#" color="primary.fg">
             Privacy Policy
           </Link>
@@ -80,5 +108,5 @@ export default function LoginPage() {
         </Text>
       </Flex>
     </Center>
-  )
+  );
 }

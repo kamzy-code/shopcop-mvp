@@ -60,6 +60,10 @@ export class AuthService {
     const emailSent = await sendOTPEmail(email, otpCode);
 
     if (!emailSent) {
+      await prisma.$transaction([
+        prisma.otpCode.deleteMany({ where: { user_id: user.id } }),
+        prisma.user.delete({ where: { id: user.id } }),
+      ]);
       authLogger.error(`Failed to send OTP email to ${email}`, { action: 'signupWithEmail' });
       throw new AppError('Failed to send OTP email. Please try again.', 500);
     }
@@ -83,6 +87,13 @@ export class AuthService {
         action: 'verifyOTP',
       });
       throw new AppError('User not found. Please sign up first.', 404);
+    }
+
+    if (user.email_verified) {
+      authLogger.warn(`OTP verification attempt for already verified email: ${email}`, {
+        action: 'verifyOTP',
+      });
+      throw new AppError('Email already verified. Please sign in instead.', 400);
     }
 
     const otpRecord = await prisma.otpCode.findFirst({
@@ -208,7 +219,7 @@ export class AuthService {
       },
     });
 
-    const magicLink = `${env.FRONTEND_URL}/auth/verify?token=${magicToken}`;
+    const magicLink = `${env.FRONTEND_URL}/auth/verify-login?token=${magicToken}`;
 
     const emailSent = await sendMagicLinkEmail(email, magicLink);
 

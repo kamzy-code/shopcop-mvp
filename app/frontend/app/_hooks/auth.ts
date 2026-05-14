@@ -1,73 +1,19 @@
 import { useMutation } from '@tanstack/react-query';
-import { ApiResponse, UserRole } from '../_types';
 import { apiFetch } from '../_lib/fetchWraper';
+import {
+  SignupParams,
+  VerifyOTPParams,
+  MagicLinkLoginParams,
+  VerifymagicLinkParams,
+  ResendOTPParams,
+} from '../_types/authtypes';
 import {
   signupSchema,
   verifyOTPSchema,
   magicLinkLoginSchema,
   verifyMagicLinkSchema,
   resendOTPSchema,
-} from '../validators/auth';
-
-
-interface SignupParams {
-  role: UserRole;
-  email: string;
-}
-
-interface SignupResponse {
-  message: string;
-  email: string;
-}
-
-interface VerifyOTPParams {
-  email: string;
-  otp: string;
-}
-
-interface VerifyOTPResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: UserRole;
-    email_verified: boolean;
-  };
-}
-
-interface MagicLinkLoginParams {
-  email: string;
-}
-
-interface MagicLinkLoginResponse {
-  message: string;
-  email: string;
-}
-
-interface VerifymagicLinkParams {
-  token: string;
-}
-
-interface VerifymagicLinkResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: UserRole;
-    email_verified: boolean;
-  };
-}
-
-interface ResendOTPParams {
-  email: string;
-}
-
-interface ResendOTPResponse {
-  message: string;
-  email: string;
-}
+} from '../validators/authSchema';
 
 export const useSignUp = () => {
   return useMutation({
@@ -76,7 +22,7 @@ export const useSignUp = () => {
       if (!result.success) {
         throw new Error(result.error.issues[0].message);
       }
-      return apiFetch('/auth/signup', {
+      return apiFetch('/auth/credential-signup', {
         method: 'POST',
         body: JSON.stringify(params),
       });
