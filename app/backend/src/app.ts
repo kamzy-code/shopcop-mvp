@@ -6,6 +6,7 @@ import authRouter from '@routes/authRoutes.js';
 import rateLimit from 'express-rate-limit';
 import logger from '@utils/logger.js';
 import userRouter from '@routes/userRoute.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -27,7 +28,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api', limiter);
-
+app.use(cookieParser())
 app.use((req, res, next) => {
   if (req.originalUrl === '/health') {
     next();

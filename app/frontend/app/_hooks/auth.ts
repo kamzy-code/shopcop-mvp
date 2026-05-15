@@ -121,6 +121,6 @@ export const useResendOTP = () => {
 };
 
 export const fetchCurrentUser = async (): Promise<User> => {
-  const result = await apiFetch('/user/me');
+  const result = await apiFetch('/users/me');
   return result.data;
 };

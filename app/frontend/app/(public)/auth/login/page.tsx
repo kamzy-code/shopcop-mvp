@@ -108,6 +108,13 @@ export default function LoginPage() {
           </Link>
           .
         </Text>
+
+        <Text mt={8} textStyle="sm" textAlign="center" color="fg.muted">
+          {"Don't have an account? "}
+          <Link href="/auth/signup" color="primary.fg" fontWeight="medium">
+            Signup
+          </Link>
+        </Text>
       </Flex>
     </Center>
   );

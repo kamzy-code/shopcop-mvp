@@ -1,63 +1,56 @@
 import { create } from 'zustand';
 import { User } from '../_types';
 import { fetchCurrentUser } from '../_hooks/auth';
+import { persist } from 'zustand/middleware';
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  isSessionReady: boolean;
   setUser: (user: User | null) => void;
-  setLoading: (loading: boolean) => void;
   logout: () => void;
-  initializeAuth: () => void;
+  revalidateSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-
-  setUser: (user) =>
-    set({
-      user,
-      isAuthenticated: !!user,
-      isLoading: false,
-    }),
-
-  setLoading: (loading) => set({ isLoading: loading }),
-
-  logout: () =>
-    set({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
-    }),
+      isSessionReady: false,
 
-  initializeAuth: async () => {
-    // Load user from localStorage on app init
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      setUser: (user) =>
+        set({
+          user,
+          isAuthenticated: !!user,
+          isSessionReady: true,
+        }),
+
+      logout: () =>
+        set({
+          user: null,
+          isAuthenticated: false,
+          isSessionReady: true,
+        }),
+
+      revalidateSession: async () => {
         try {
-          const user = JSON.parse(storedUser);
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-          });
-        } catch (error) {
-          console.error('Failed to parse stored user:', error);
-          set({ isLoading: false });
-        }
-      } else {
-        try {
-          const result = await fetchCurrentUser(); // GET /auth/me, cookie sent automatically
-          set({ user: result, isAuthenticated: true, isLoading: false });
+          const user = await fetchCurrentUser();
+          set({ user, isAuthenticated: true, isSessionReady: true });
         } catch {
-          set({ user: null, isAuthenticated: false, isLoading: false });
+          // Cookie expired or invalid — clear stale localStorage
+          set({ user: null, isAuthenticated: false, isSessionReady: true });
+        } finally {
+          set({ isSessionReady: true });
         }
-        set({ isLoading: false });
-      }
+      },
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
-  },
-}));
+  )
+);

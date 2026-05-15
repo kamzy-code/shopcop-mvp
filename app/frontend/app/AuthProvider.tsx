@@ -4,7 +4,10 @@ import { useEffect } from 'react';
 import { useAuthStore } from './_store/authStore';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const initializeAuth = useAuthStore(s => s.initializeAuth);
-  useEffect(() => { initializeAuth(); }, []);
+  const revalidateSession = useAuthStore((s) => s.revalidateSession);
+
+  useEffect(() => {
+    revalidateSession();
+  }, []);
   return <>{children}</>;
 }

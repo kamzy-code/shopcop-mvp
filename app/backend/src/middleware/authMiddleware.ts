@@ -16,16 +16,14 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      authLogger.warn('Authentication failed: No token provided', { action: 'authenticate' });
-      throw new AppError('Authentication required. Please provide a valid token.', 401);
+    //  reads from httpOnly cookie
+    const token = req.cookies?.auth_token;
+    if (!token) {
+      authLogger.warn('Authentication failed: No token cookie provided', {
+        action: 'authenticate',
+      });
+      throw new AppError('Authentication required. Please log in.', 401);
     }
-
-    // Extract token (remove "Bearer " prefix)
-    const token = authHeader.substring(7);
 
     // Verify JWT
     let decoded: JWTPayload;
@@ -109,19 +107,14 @@ export const optionalAuth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      authLogger.info('Optional auth: No token provided, continuing as guest', {
-        action: 'optionalAuth',
-        role: 'GUEST',
+    // After: reads from httpOnly cookie
+    const token = req.cookies?.auth_token;
+    if (!token) {
+      authLogger.warn('Authentication failed: No token cookie provided', {
+        action: 'authenticate',
       });
-      // No token provided, continue as unauthenticated
-      next();
-      return;
+      throw new AppError('Authentication required. Please log in.', 401);
     }
-
-    const token = authHeader.substring(7);
 
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET!) as JWTPayload;
