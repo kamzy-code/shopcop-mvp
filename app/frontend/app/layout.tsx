@@ -5,7 +5,7 @@ import QueryProviders from './queryClientProvider';
 import { Provider } from '@/components/ui/provider';
 import { Toaster } from '@/components/ui/toaster';
 import AuthProvider from './AuthProvider';
-
+import { ColorModeButton } from '@/components/ui/color-mode';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -37,6 +37,7 @@ export default function RootLayout({
           <AuthProvider>
             <Provider>
               <Toaster />
+              <ColorModeButton />
               {children}
             </Provider>
           </AuthProvider>

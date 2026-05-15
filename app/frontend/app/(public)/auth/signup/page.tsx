@@ -173,6 +173,7 @@ export default function SignupPage() {
             borderWidth="2px"
             borderColor="border"
             borderRadius="xl"
+            bg={cardBg}
             cursor="pointer"
             transition="all 0.15s"
             _hover={{ borderColor: 'primary.500', shadow: 'sm' }}
@@ -208,6 +209,7 @@ export default function SignupPage() {
             borderWidth="2px"
             borderColor="border"
             borderRadius="xl"
+            bg={cardBg}
             cursor="pointer"
             transition="all 0.15s"
             _hover={{ borderColor: 'primary.500', shadow: 'sm' }}
