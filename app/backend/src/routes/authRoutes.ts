@@ -1,5 +1,6 @@
 import { AuthController } from '@controllers/authController.js';
 import { Router } from 'express';
+import { authenticate } from '@middleware/authMiddleware.js';
 
 const authRouter = Router();
 
@@ -18,4 +19,6 @@ authRouter.post('/verify-login-link', AuthController.verifyLoginlink);
 // POST /api/v1/auth/resend-otp
 authRouter.post('/resend-otp', AuthController.resendOTP);
 
+// POST /api/v1/auth/logout
+authRouter.post('/logout', authenticate, AuthController.logout);
 export default authRouter;

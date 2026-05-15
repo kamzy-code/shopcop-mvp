@@ -199,4 +199,40 @@ export class AuthController {
       return;
     }
   }
+
+  static async logout(req: Request, res: Response, next: NextFunction) {
+    const user = req.user;
+
+    if (!user) {
+      authLogger.warn('Authentication is required to logout', {
+        action: 'logout',
+      });
+      throw new AppError('Authentication is required to logout', 400);
+    }
+    try {
+      res
+        .clearCookie('auth_token', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production', // only over HTTPS in production
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          path: '/',
+        })
+        .status(200)
+        .json({ success: true, message: 'Logout successful' });
+
+      authLogger.info('Logout successful', {
+        userId: user?.userId,
+        action: 'logout',
+      });
+      return;
+    } catch (error: any) {
+      authLogger.error(`Logout error: ${error.message}`, {
+        userId: user?.userId,
+        action: 'logout',
+        error,
+      });
+      next(error);
+      return;
+    }
+  }
 }

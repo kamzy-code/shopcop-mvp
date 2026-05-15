@@ -124,3 +124,11 @@ export const fetchCurrentUser = async (): Promise<User> => {
   const result = await apiFetch('/users/me');
   return result.data;
 };
+
+
+export const useLogout = () => {
+  return useMutation({
+    mutationFn: () =>
+      apiFetch('/auth/logout', { method: 'POST' }),
+  });
+};
