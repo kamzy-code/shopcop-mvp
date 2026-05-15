@@ -1,11 +1,420 @@
-import { LogoutButton } from '@/components/logoutBtn';
-import { Heading } from '@chakra-ui/react';
+'use client';
+import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
+import {
+  LuArrowRight,
+  LuPackage,
+  LuPlus,
+  LuShieldAlert,
+  LuShieldCheck,
+  LuShoppingCart,
+  LuStar,
+  LuStore,
+  LuTrendingUp,
+} from 'react-icons/lu';
+import { AppShell } from '@/components/shared/appShell';
+import { useAuthStore } from '@/app/_store/authStore';
+import { useProducts } from '@/app/_hooks/vendor';
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color = 'primary',
+  comingSoon = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+  comingSoon?: boolean;
+}) {
+  return (
+    <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+      <Flex justify="space-between" align="flex-start" mb={4}>
+        <Flex
+          w={10}
+          h={10}
+          borderRadius="lg"
+          bg={`${color}.subtle`}
+          align="center"
+          justify="center"
+          color={`${color}.fg`}
+        >
+          <Icon size={18} />
+        </Flex>
+        {comingSoon && (
+          <Box px={2} py={0.5} borderRadius="full" bg="bg.subtle" borderWidth="1px" borderColor="border">
+            <Text textStyle="2xs" color="fg.muted" fontWeight="medium">Soon</Text>
+          </Box>
+        )}
+      </Flex>
+      <Text textStyle="2xl" fontWeight="bold" color="fg">{value}</Text>
+      <Text textStyle="sm" color="fg.muted" mt={0.5}>{label}</Text>
+      {sub && <Text textStyle="xs" color="fg.subtle" mt={1}>{sub}</Text>}
+    </Box>
+  );
+}
+
+function OnboardingBanner({ onSetup }: { onSetup: () => void }) {
+  return (
+    <Box p={5} bg="primary.subtle" borderWidth="1.5px" borderColor="primary.200" borderRadius="xl">
+      <Flex align="center" gap={4} flexWrap="wrap">
+        <Flex
+          w={10}
+          h={10}
+          borderRadius="lg"
+          bg="primary.500"
+          align="center"
+          justify="center"
+          flexShrink={0}
+        >
+          <LuShieldAlert size={18} color="white" />
+        </Flex>
+        <Box flex={1} minW="200px">
+          <Text fontWeight="semibold" color="primary.fg" textStyle="sm">
+            Complete your vendor profile
+          </Text>
+          <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
+            Verify your BVN and NIN to get a verified badge and build buyer trust.
+          </Text>
+        </Box>
+        <Button colorPalette="primary" size="sm" flexShrink={0} onClick={onSetup}>
+          Complete Setup <LuArrowRight size={14} />
+        </Button>
+      </Flex>
+    </Box>
+  );
+}
 
 export default function Dashboard() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const { data: products } = useProducts();
+  const productCount = products?.length ?? 0;
+  const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
+  const firstName = user?.name?.split(' ')[0] || 'Vendor';
+
   return (
-    <>
-      <Heading>This is a protected route</Heading>
-      <LogoutButton />
-    </>
+    <AppShell>
+      <Stack gap={8}>
+        {/* Welcome header */}
+        <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
+          <Stack gap={1}>
+            <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
+              Welcome back, {firstName} 👋
+            </Heading>
+            <Text color="fg.muted" textStyle="sm">
+              Here is what is happening with your store today.
+            </Text>
+          </Stack>
+          <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
+            <LuPlus />
+            Add Product
+          </Button>
+        </Flex>
+
+        {/* Onboarding banner */}
+        <OnboardingBanner onSetup={() => router.push('/onboarding/business-info')} />
+
+        {/* Stats */}
+        <Box>
+          <Text
+            textStyle="xs"
+            fontWeight="semibold"
+            color="fg.muted"
+            textTransform="uppercase"
+            letterSpacing="wider"
+            mb={4}
+          >
+            Overview
+          </Text>
+          <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
+            <StatCard
+              icon={LuPackage}
+              label="Total Products"
+              value={productCount}
+              sub={`${inStockCount} in stock`}
+              color="primary"
+            />
+            <StatCard
+              icon={LuShoppingCart}
+              label="Orders"
+              value="—"
+              sub="Tracking soon"
+              color="warning"
+              comingSoon
+            />
+            <StatCard
+              icon={LuTrendingUp}
+              label="Profile Views"
+              value="—"
+              sub="Analytics soon"
+              color="success"
+              comingSoon
+            />
+            <StatCard
+              icon={LuStar}
+              label="Reviews"
+              value="—"
+              sub="Reviews soon"
+              color="rating"
+              comingSoon
+            />
+          </Grid>
+        </Box>
+
+        {/* Bottom grid */}
+        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+          {/* Verification status */}
+          <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+            <Flex align="center" gap={3} mb={4}>
+              <LuShieldCheck size={18} color="var(--chakra-colors-primary-600)" />
+              <Text fontWeight="semibold" color="fg" textStyle="sm">
+                Verification Status
+              </Text>
+            </Flex>
+            <Stack gap={3}>
+              {[
+                { label: 'Email Verified', done: user?.email_verified ?? false },
+                { label: 'BVN Verified', done: false },
+                { label: 'NIN Verified', done: false },
+                { label: 'Profile Active', done: false },
+              ].map((item) => (
+                <Flex key={item.label} align="center" gap={3}>
+                  <Flex
+                    w={5}
+                    h={5}
+                    borderRadius="full"
+                    bg={item.done ? 'success.500' : 'bg.subtle'}
+                    borderWidth={item.done ? 0 : '2px'}
+                    borderColor="border"
+                    align="center"
+                    justify="center"
+                    flexShrink={0}
+                  >
+                    {item.done && <LuShieldCheck size={10} color="white" />}
+                  </Flex>
+                  <Text textStyle="sm" color={item.done ? 'fg' : 'fg.muted'}>
+                    {item.label}
+                  </Text>
+                  <Text
+                    textStyle="xs"
+                    fontWeight="medium"
+                    color={item.done ? 'success.fg' : 'fg.subtle'}
+                    ml="auto"
+                  >
+                    {item.done ? 'Done' : 'Pending'}
+                  </Text>
+                </Flex>
+              ))}
+            </Stack>
+          </Box>
+
+          {/* Quick actions */}
+          <Box>
+            <Text
+              textStyle="xs"
+              fontWeight="semibold"
+              color="fg.muted"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              mb={4}
+            >
+              Quick Actions
+            </Text>
+            <Grid templateColumns="1fr 1fr" gap={3}>
+              {/* Add product */}
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+                <Flex
+                  w={10}
+                  h={10}
+                  borderRadius="lg"
+                  bg="primary.subtle"
+                  align="center"
+                  justify="center"
+                  mb={4}
+                  color="primary.fg"
+                >
+                  <LuPackage size={18} />
+                </Flex>
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
+                  Add Product
+                </Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>
+                  List a new product in your store.
+                </Text>
+                <Button
+                  size="sm"
+                  colorPalette="primary"
+                  variant="outline"
+                  w="full"
+                  onClick={() => router.push('/products/new')}
+                >
+                  Add now
+                </Button>
+              </Box>
+
+              {/* View profile (coming soon) */}
+              <Box
+                p={5}
+                bg="bg.panel"
+                borderWidth="1px"
+                borderColor="border"
+                borderRadius="xl"
+                opacity={0.6}
+              >
+                <Flex
+                  w={10}
+                  h={10}
+                  borderRadius="lg"
+                  bg="primary.subtle"
+                  align="center"
+                  justify="center"
+                  mb={4}
+                  color="primary.fg"
+                >
+                  <LuStore size={18} />
+                </Flex>
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
+                  View Profile
+                </Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>
+                  See how your store looks to buyers.
+                </Text>
+                <Button size="sm" variant="outline" w="full" disabled>
+                  Coming soon
+                </Button>
+              </Box>
+            </Grid>
+          </Box>
+        </Grid>
+
+        {/* Recent products */}
+        <Box>
+          <Flex align="center" justify="space-between" mb={4}>
+            <Text
+              textStyle="xs"
+              fontWeight="semibold"
+              color="fg.muted"
+              textTransform="uppercase"
+              letterSpacing="wider"
+            >
+              Recent Products
+            </Text>
+            {productCount > 0 && (
+              <Button
+                variant="ghost"
+                size="xs"
+                color="primary.fg"
+                onClick={() => router.push('/products')}
+              >
+                View all <LuArrowRight size={12} />
+              </Button>
+            )}
+          </Flex>
+
+          {productCount === 0 ? (
+            <Box
+              p={10}
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="xl"
+              textAlign="center"
+            >
+              <Flex
+                w={14}
+                h={14}
+                borderRadius="full"
+                bg="primary.subtle"
+                align="center"
+                justify="center"
+                mx="auto"
+                mb={4}
+                color="primary.fg"
+              >
+                <LuPackage size={24} />
+              </Flex>
+              <Text fontWeight="semibold" color="fg" mb={1}>
+                No products yet
+              </Text>
+              <Text color="fg.muted" textStyle="sm" mb={4}>
+                Add your first product to start selling on ShopCop.
+              </Text>
+              <Button
+                colorPalette="primary"
+                size="md"
+                onClick={() => router.push('/products/new')}
+              >
+                <LuPlus />
+                Add Your First Product
+              </Button>
+            </Box>
+          ) : (
+            <Grid
+              templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
+              gap={4}
+            >
+              {products?.slice(0, 6).map((product) => (
+                <Box
+                  key={product.id}
+                  p={4}
+                  bg="bg.panel"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="xl"
+                >
+                  <Box
+                    w="full"
+                    h="140px"
+                    bg="bg.subtle"
+                    borderRadius="lg"
+                    mb={3}
+                    overflow="hidden"
+                  >
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <Flex h="full" align="center" justify="center" color="fg.subtle">
+                        <LuPackage size={32} />
+                      </Flex>
+                    )}
+                  </Box>
+                  <Text fontWeight="medium" color="fg" textStyle="sm" truncate>
+                    {product.name}
+                  </Text>
+                  <Flex align="center" justify="space-between" mt={1}>
+                    <Text color="primary.fg" fontWeight="bold" textStyle="sm">
+                      ₦{product.price.toLocaleString()}
+                    </Text>
+                    <Box
+                      px={2}
+                      py={0.5}
+                      borderRadius="full"
+                      bg={product.stockStatus === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
+                    >
+                      <Text
+                        textStyle="2xs"
+                        fontWeight="medium"
+                        color={product.stockStatus === 'IN_STOCK' ? 'success.fg' : 'red.600'}
+                      >
+                        {product.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </Box>
+              ))}
+            </Grid>
+          )}
+        </Box>
+      </Stack>
+    </AppShell>
   );
 }

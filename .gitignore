@@ -12,6 +12,8 @@ pnpm-debug.log*
 .next/
 coverage/
 .vscode/
+.claude/
+*.agent.md
 
 # Frontend ignores
 app/frontend/node_modules/
@@ -26,6 +28,8 @@ app/frontend/out/
 app/frontend/next-env.d.ts
 app/frontend/.vercel/
 app/frontend/coverage/
+app/frontend/CLAUDE.md
+app/frontend/agents.md
 
 # Backend ignores
 app/backend/node_modules/

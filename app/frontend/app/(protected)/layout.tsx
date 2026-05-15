@@ -1,6 +1,6 @@
 'use client';
 import { useAuthStore } from '@/app/_store/authStore';
-import FullPageSpinner from '@/components/fullPageSpinner';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
