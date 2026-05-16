@@ -8,28 +8,28 @@ export class FileUploadController {
     const user = req.user;
     if (!user) {
       fileUplaodLogger.warn('Authentication is required', {
-        action: 'getUplaodSignature',
+        action: 'getUploadSignature',
       });
-      throw new AppError('Get uplaod signature attempt without authentication', 401);
+      throw new AppError('Get upload signature attempt without authentication', 401);
     }
 
     try {
-      const signature = await CloudinaryService.generateUplaodSignature('sopcop/documents');
+      const signature = await CloudinaryService.generateUplaodSignature('shopcop/documents');
 
       res.status(200).json({
         success: true,
         data: signature,
-        message: 'Ulaod signature generated successfully',
+        message: 'Upload signature generated successfully',
       });
 
-      fileUplaodLogger.info('Uplaod signature generated successfully', {
+      fileUplaodLogger.info('Upload signature generated successfully', {
         userId: user.userId,
         role: user.role,
         folder: signature.folder,
         action: 'getUploadSignature',
       });
     } catch (error) {
-      fileUplaodLogger.error('Error generating uplaod signature', {
+      fileUplaodLogger.error('Error generating upload signature', {
         userId: user.userId,
         action: 'getUploadSignature',
         error: error instanceof Error ? error.message : error,

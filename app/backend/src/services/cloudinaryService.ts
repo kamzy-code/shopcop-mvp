@@ -14,7 +14,7 @@ export class CloudinaryService {
 
     const params = {
       timestamp,
-      upload_presets: env.CLOUDINARY_UPLOAD_PRESET,
+      upload_preset: env.CLOUDINARY_UPLOAD_PRESET,
       folder,
       type: 'authenticated',
     };
@@ -29,7 +29,6 @@ export class CloudinaryService {
     return {
       ...params,
       signature,
-      cloudName: env.CLOUDINARY_CLOUD_NAME,
       apiKey: env.CLOUDINARY_API_KEY,
     };
   }
