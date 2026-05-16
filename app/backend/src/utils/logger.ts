@@ -1,24 +1,16 @@
 // import winston, { createLogger, transports, format } from "winston";
 // import DailyRotateFile from "winston-daily-rotate-file";
 
-import { createLogger, transports, format } from "winston";
-import { env } from "@config/env.js";
+import { createLogger, transports, format } from 'winston';
+import { env } from '@config/env.js';
 
 const { combine, json, timestamp, prettyPrint, splat, errors } = format;
 
-
-
 const logger = createLogger({
-  level: "info",
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    splat(),
-    json(),
-    prettyPrint()
-  ),
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
   transports: [
-    ...(env.NODE_ENV === "production"
+    ...(env.NODE_ENV === 'production'
       ? [
           //Log Transport for production environment
         ]
@@ -28,16 +20,10 @@ const logger = createLogger({
 });
 
 const emailLogger = createLogger({
-  level: "info",
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    splat(),
-    json(),
-    prettyPrint()
-  ),
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
   transports: [
-    ...(env.NODE_ENV === "production"
+    ...(env.NODE_ENV === 'production'
       ? [
           //Log Transport for production environment
         ]
@@ -45,20 +31,14 @@ const emailLogger = createLogger({
     new transports.Console(),
   ],
 
-  defaultMeta:{service: 'emailService', timeStamp: new Date().toISOString()},
+  defaultMeta: { service: 'emailService', timeStamp: new Date().toISOString() },
 });
 
 const authLogger = createLogger({
-  level: "info",
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    splat(),
-    json(),
-    prettyPrint()
-  ),
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
   transports: [
-    ...(env.NODE_ENV === "production"
+    ...(env.NODE_ENV === 'production'
       ? [
           //Log Transport for production environment
         ]
@@ -66,20 +46,14 @@ const authLogger = createLogger({
     new transports.Console(),
   ],
 
-  defaultMeta: { service: "authService", timeStamp: new Date().toISOString() },
+  defaultMeta: { service: 'authService', timeStamp: new Date().toISOString() },
 });
 
 const userLogger = createLogger({
-  level: "info",
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    splat(),
-    json(),
-    prettyPrint()
-  ),
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
   transports: [
-    ...(env.NODE_ENV === "production"
+    ...(env.NODE_ENV === 'production'
       ? [
           //Log Transport for production environment
         ]
@@ -87,9 +61,23 @@ const userLogger = createLogger({
     new transports.Console(),
   ],
 
-  defaultMeta: { service: "userService", timeStamp: new Date().toISOString() },
+  defaultMeta: { service: 'userService', timeStamp: new Date().toISOString() },
 });
 
+const fileUplaodLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production'
+      ? [
+          //Log Transport for production environment
+        ]
+      : []),
+    new transports.Console(),
+  ],
+
+  defaultMeta: { service: 'fileUplaod', store: 'cloduinary', timeStamp: new Date().toISOString() },
+});
 
 // const authLogger = createLogger({
 //   level: "info",
@@ -129,6 +117,5 @@ const userLogger = createLogger({
 //   defaultMeta: { service: "authService" },
 // });
 
-
 export default logger;
-export { emailLogger, authLogger , userLogger};
+export { emailLogger, authLogger, userLogger, fileUplaodLogger };

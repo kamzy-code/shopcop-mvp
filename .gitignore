@@ -29,7 +29,9 @@ app/frontend/next-env.d.ts
 app/frontend/.vercel/
 app/frontend/coverage/
 app/frontend/CLAUDE.md
-app/frontend/agents.md
+app/frontend/AGENTS.md
+app/frontend/requirements.md
+app/frontend/plan
 
 # Backend ignores
 app/backend/node_modules/

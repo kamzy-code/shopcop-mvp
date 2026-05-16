@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import logger from '@utils/logger.js';
 import userRouter from '@routes/userRoute.js';
 import cookieParser from 'cookie-parser';
+import fileUploadRouter from '@routes/fileUplaodRoute.js';
 
 dotenv.config();
 
@@ -28,7 +29,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api', limiter);
-app.use(cookieParser())
+app.use(cookieParser());
 app.use((req, res, next) => {
   if (req.originalUrl === '/health') {
     next();
@@ -57,9 +58,16 @@ app.get('/health', (req, res) => {
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
+app.use('api/v1/uplaod', fileUploadRouter);
 
 // 404 handler
 app.use((req, res) => {
+  logger.warn('Route not found', {
+    service: 'notFound',
+    action: 'logMissingRoute',
+    url: req.originalUrl,
+  });
+
   res.status(404).json({
     success: false,
     message: 'Route not found',

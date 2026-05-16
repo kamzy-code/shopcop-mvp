@@ -35,6 +35,7 @@ interface EnvConfig {
   CLOUDINARY_CLOUD_NAME?: string;
   CLOUDINARY_API_KEY?: string;
   CLOUDINARY_API_SECRET?: string;
+  CLOUDINARY_UPLOAD_PRESET?: string;
   NIN_API_KEY?: string;
   NIN_API_URL?: string;
   GOOGLE_MAPS_API_KEY?: string;
@@ -67,6 +68,7 @@ export const env: EnvConfig = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
   NIN_API_KEY: process.env.NIN_API_KEY,
   NIN_API_URL: process.env.NIN_API_URL,
   GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
