@@ -7,6 +7,7 @@ const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 export interface UploadResult {
   url: string;
   publicId: string;
+  resourceType: string;
   width?: number;
   height?: number;
 }
@@ -40,6 +41,7 @@ export function useUploadPublicMedia() {
       return {
         url: data.secure_url,
         publicId: data.public_id,
+        resourceType: data.resource_type,
         width: data.width,
         height: data.height,
       };
@@ -83,6 +85,7 @@ export function useUploadSensitiveDocument() {
       return {
         url: data.secure_url,
         publicId: data.public_id,
+        resourceType: data.resource_type,
       };
     },
   });

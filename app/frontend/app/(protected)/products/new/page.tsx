@@ -20,11 +20,7 @@ import { productSchema, ProductFormData, PRODUCT_CATEGORIES } from '@/app/valida
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { useCreateProduct } from '@/app/_hooks/vendor';
-import {
-  UploadResult,
-  useUploadPublicMedia,
-  useUploadSensitiveDocument,
-} from '@/app/_hooks/upload';
+import { UploadResult, useUploadPublicMedia } from '@/app/_hooks/upload';
 
 //TODO
 // - FIX UPLAOD PROGRESS DISPLAY
@@ -83,11 +79,19 @@ function ImageSlot({
       >
         {preview ? (
           <>
-            <img
-              src={preview}
-              alt={`Product image ${index + 1}`}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
+            {file?.resourceType === 'video' ? (
+              <video
+                src={preview}
+                controls
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              />
+            ) : (
+              <img
+                src={preview}
+                alt={`Product image ${index + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            )}
             {isPrimary && (
               <Box
                 position="absolute"
@@ -146,9 +150,15 @@ function ImageSlot({
 export default function NewProductPage() {
   const router = useRouter();
   const createMutation = useCreateProduct();
-  const uploadMutation = useUploadSensitiveDocument();
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [images, setImages] = useState<(UploadResult | null)[]>([null, null, null, null, null]);
+  const uploadMutation = useUploadPublicMedia();
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
+  const [mediaFiles, setMediaFiles] = useState<(UploadResult | null)[]>([
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
 
   const {
     register,
@@ -170,13 +180,12 @@ export default function NewProductPage() {
       const uploadResult = await uploadMutation.mutateAsync({
         file,
         setUploadProgress: (percent) => {
-          setUploadProgress(percent);
+          setUploadProgress((prev) => ({ ...prev, [index]: percent }));
         },
       });
 
-      console.log(uploadResult);
-
-      setImages((prev) => {
+      setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+      setMediaFiles((prev) => {
         const next = [...prev];
         next[index] = uploadResult;
         return next;
@@ -190,7 +199,7 @@ export default function NewProductPage() {
   };
 
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => {
+    setMediaFiles((prev) => {
       const next = [...prev];
       next[index] = null;
       return next;
@@ -198,22 +207,20 @@ export default function NewProductPage() {
   };
 
   const onSubmit = async (data: ProductFormData) => {
-    const hasImage = images.some(Boolean);
-    if (!hasImage) {
+    const hasMedia = mediaFiles.some(Boolean);
+    if (!hasMedia) {
       toaster.create({ title: 'Please upload at least one product image', type: 'error' });
       return;
     }
 
-    console.log(images);
-
-    const imageURLs = images.filter(Boolean).map((img) => img!.url);
-    if (imageURLs.length === 0) {
+    const mediaURLs = mediaFiles.filter(Boolean).map((m) => m!.url);
+    if (mediaURLs.length === 0) {
       toaster.create({ title: 'Please upload at least one product image', type: 'error' });
       return;
     }
 
     try {
-      await createMutation.mutateAsync({ ...data, images: imageURLs });
+      await createMutation.mutateAsync({ ...data, images: mediaURLs });
       toaster.create({ title: 'Product added successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
@@ -261,7 +268,7 @@ export default function NewProductPage() {
                 2MB each.
               </Text>
               <Grid templateColumns="repeat(5, 1fr)" gap={3}>
-                {images.map((file, index) => (
+                {mediaFiles.map((file, index) => (
                   <Box key={index}>
                     <ImageSlot
                       index={index}
@@ -269,7 +276,7 @@ export default function NewProductPage() {
                       onAdd={handleAddImage}
                       onRemove={handleRemoveImage}
                       isPrimary={index === 0 && !!file}
-                      uploadProgress={uploadProgress}
+                      uploadProgress={uploadProgress[index] || 0}
                     />
                   </Box>
                 ))}
