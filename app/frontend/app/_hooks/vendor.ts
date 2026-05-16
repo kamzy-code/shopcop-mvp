@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
 import { Product, VendorProfile } from '../_types';
+import { ProductFormData } from '../validators/vendorSchema';
 
 export const useVendorProfile = () =>
   useQuery<VendorProfile>({
@@ -46,8 +47,7 @@ export const useVerifyNin = () =>
 
 export const useCompleteOnboarding = () =>
   useMutation({
-    mutationFn: () =>
-      apiFetch('/vendors/complete-onboarding', { method: 'POST' }),
+    mutationFn: () => apiFetch('/vendors/complete-onboarding', { method: 'POST' }),
   });
 
 export const useProducts = () =>
@@ -61,18 +61,17 @@ export const useProducts = () =>
 
 export const useCreateProduct = () =>
   useMutation({
-    mutationFn: (data: FormData) =>
+    mutationFn: (data: ProductFormData & { images: string[] }) =>
       apiFetch('/products', {
         method: 'POST',
-        body: data,
+        body: JSON.stringify(data),
         headers: {},
       }),
   });
 
 export const useDeleteProduct = () =>
   useMutation({
-    mutationFn: (productId: string) =>
-      apiFetch(`/products/${productId}`, { method: 'DELETE' }),
+    mutationFn: (productId: string) => apiFetch(`/products/${productId}`, { method: 'DELETE' }),
   });
 
 export const useUpdateProduct = () =>

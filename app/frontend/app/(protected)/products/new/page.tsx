@@ -20,6 +20,16 @@ import { productSchema, ProductFormData, PRODUCT_CATEGORIES } from '@/app/valida
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { useCreateProduct } from '@/app/_hooks/vendor';
+import {
+  UploadResult,
+  useUploadPublicMedia,
+  useUploadSensitiveDocument,
+} from '@/app/_hooks/upload';
+
+//TODO
+// - FIX UPLAOD PROGRESS DISPLAY
+// - FIX PREVIEW FOR VIDEO FILES
+// - IMPLEMENT AUTHENTICATED SIGNED URL GENERATION
 
 function ImageSlot({
   index,
@@ -27,23 +37,25 @@ function ImageSlot({
   onAdd,
   onRemove,
   isPrimary,
+  uploadProgress,
 }: {
   index: number;
-  file: File | null;
+  file: UploadResult | null;
   onAdd: (index: number, file: File) => void;
   onRemove: (index: number) => void;
   isPrimary: boolean;
+  uploadProgress: number;
 }) {
-  const preview = file ? URL.createObjectURL(file) : null;
+  const preview = file ? file.url : null;
 
   const handleClick = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png';
+    input.accept = 'image/jpeg,image/png,video/mp4,video/quicktime,video/webm';
     input.onchange = (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
       if (!f) return;
-      if (f.size > 2 * 1024 * 1024) {
+      if (f.size > 10 * 1024 * 1024) {
         toaster.create({ title: 'Image must be under 2MB', type: 'error' });
         return;
       }
@@ -53,66 +65,90 @@ function ImageSlot({
   };
 
   return (
-    <Box
-      w="full"
-      aspectRatio={1}
-      borderRadius="xl"
-      borderWidth="2px"
-      borderStyle={file ? 'solid' : 'dashed'}
-      borderColor={file ? 'primary.300' : 'border'}
-      bg={file ? 'transparent' : 'bg.subtle'}
-      position="relative"
-      overflow="hidden"
-      cursor={file ? 'default' : 'pointer'}
-      transition="all 0.15s"
-      onClick={file ? undefined : handleClick}
-      _hover={file ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
-    >
-      {preview ? (
-        <>
-          <img
-            src={preview}
-            alt={`Product image ${index + 1}`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-          {isPrimary && (
-            <Box position="absolute" bottom={1} left={1} px={1.5} py={0.5} borderRadius="md" bg="primary.500">
-              <Text textStyle="2xs" color="white" fontWeight="bold">Primary</Text>
-            </Box>
-          )}
-          <Button
-            position="absolute"
-            top={1}
-            right={1}
-            size="xs"
-            colorPalette="red"
-            borderRadius="full"
-            w={5}
-            h={5}
-            minW={5}
-            p={0}
-            onClick={(e) => { e.stopPropagation(); onRemove(index); }}
-            aria-label="Remove image"
-          >
-            <LuX size={10} />
-          </Button>
-        </>
-      ) : (
-        <Flex direction="column" align="center" justify="center" h="full" gap={1} p={3}>
-          <LuImage size={20} color="var(--chakra-colors-fg-subtle)" />
-          {index === 0 && (
-            <Text textStyle="2xs" color="fg.muted" textAlign="center">Primary</Text>
-          )}
-        </Flex>
+    <Stack>
+      <Box
+        w="full"
+        aspectRatio={1}
+        borderRadius="xl"
+        borderWidth="2px"
+        borderStyle={file ? 'solid' : 'dashed'}
+        borderColor={file ? 'primary.300' : 'border'}
+        bg={file ? 'transparent' : 'bg.subtle'}
+        position="relative"
+        overflow="hidden"
+        cursor={file ? 'default' : 'pointer'}
+        transition="all 0.15s"
+        onClick={file ? undefined : handleClick}
+        _hover={file ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
+      >
+        {preview ? (
+          <>
+            <img
+              src={preview}
+              alt={`Product image ${index + 1}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {isPrimary && (
+              <Box
+                position="absolute"
+                bottom={1}
+                left={1}
+                px={1.5}
+                py={0.5}
+                borderRadius="md"
+                bg="primary.500"
+              >
+                <Text textStyle="2xs" color="white" fontWeight="bold">
+                  Primary
+                </Text>
+              </Box>
+            )}
+            <Button
+              position="absolute"
+              top={1}
+              right={1}
+              size="xs"
+              colorPalette="red"
+              borderRadius="full"
+              w={5}
+              h={5}
+              minW={5}
+              p={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(index);
+              }}
+              aria-label="Remove image"
+            >
+              <LuX size={10} />
+            </Button>
+          </>
+        ) : (
+          <Flex direction="column" align="center" justify="center" h="full" gap={1} p={3}>
+            <LuImage size={20} color="var(--chakra-colors-fg-subtle)" />
+            {index === 0 && (
+              <Text textStyle="2xs" color="fg.muted" textAlign="center">
+                Primary
+              </Text>
+            )}
+          </Flex>
+        )}
+      </Box>
+      {uploadProgress > 0 && uploadProgress < 100 && (
+        <div className="progress-bar">
+          <div style={{ width: `${uploadProgress}%` }}>{uploadProgress}%</div>
+        </div>
       )}
-    </Box>
+    </Stack>
   );
 }
 
 export default function NewProductPage() {
   const router = useRouter();
   const createMutation = useCreateProduct();
-  const [images, setImages] = useState<(File | null)[]>([null, null, null, null, null]);
+  const uploadMutation = useUploadSensitiveDocument();
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [images, setImages] = useState<(UploadResult | null)[]>([null, null, null, null, null]);
 
   const {
     register,
@@ -129,12 +165,36 @@ export default function NewProductPage() {
   const selectedCategory = watch('category');
   const selectedStock = watch('stockStatus');
 
-  const handleAddImage = (index: number, file: File) => {
-    setImages((prev) => { const next = [...prev]; next[index] = file; return next; });
+  const handleAddImage = async (index: number, file: File) => {
+    try {
+      const uploadResult = await uploadMutation.mutateAsync({
+        file,
+        setUploadProgress: (percent) => {
+          setUploadProgress(percent);
+        },
+      });
+
+      console.log(uploadResult);
+
+      setImages((prev) => {
+        const next = [...prev];
+        next[index] = uploadResult;
+        return next;
+      });
+    } catch (error) {
+      toaster.create({
+        title: 'Failed to upload file',
+        type: 'error',
+      });
+    }
   };
 
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => { const next = [...prev]; next[index] = null; return next; });
+    setImages((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
   };
 
   const onSubmit = async (data: ProductFormData) => {
@@ -144,16 +204,16 @@ export default function NewProductPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('price', String(data.price));
-    formData.append('category', data.category);
-    formData.append('stockStatus', data.stockStatus);
-    if (data.description) formData.append('description', data.description);
-    images.filter(Boolean).forEach((img) => { if (img) formData.append('images', img); });
+    console.log(images);
+
+    const imageURLs = images.filter(Boolean).map((img) => img!.url);
+    if (imageURLs.length === 0) {
+      toaster.create({ title: 'Please upload at least one product image', type: 'error' });
+      return;
+    }
 
     try {
-      await createMutation.mutateAsync(formData);
+      await createMutation.mutateAsync({ ...data, images: imageURLs });
       toaster.create({ title: 'Product added successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
@@ -197,18 +257,21 @@ export default function NewProductPage() {
                 Product Images *
               </Text>
               <Text color="fg.muted" textStyle="xs" mb={4}>
-                Upload up to 5 images. The first image is the primary display image. JPG or PNG, max 2MB each.
+                Upload up to 5 images. The first image is the primary display image. JPG or PNG, max
+                2MB each.
               </Text>
               <Grid templateColumns="repeat(5, 1fr)" gap={3}>
                 {images.map((file, index) => (
-                  <ImageSlot
-                    key={index}
-                    index={index}
-                    file={file}
-                    onAdd={handleAddImage}
-                    onRemove={handleRemoveImage}
-                    isPrimary={index === 0 && !!file}
-                  />
+                  <Box key={index}>
+                    <ImageSlot
+                      index={index}
+                      file={file}
+                      onAdd={handleAddImage}
+                      onRemove={handleRemoveImage}
+                      isPrimary={index === 0 && !!file}
+                      uploadProgress={uploadProgress}
+                    />
+                  </Box>
                 ))}
               </Grid>
             </Box>
@@ -233,7 +296,9 @@ export default function NewProductPage() {
                 <Field.Root invalid={!!errors.description}>
                   <Field.Label color="fg">
                     Description{' '}
-                    <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text>
+                    <Text as="span" color="fg.muted" fontWeight="normal">
+                      (optional)
+                    </Text>
                   </Field.Label>
                   <Textarea
                     {...register('description')}
@@ -249,8 +314,18 @@ export default function NewProductPage() {
                 {/* Price */}
                 <Field.Root invalid={!!errors.price} required>
                   <Field.Label color="fg">Price (₦)</Field.Label>
-                  <Flex align="center" borderWidth="1px" borderColor="border" borderRadius="lg" px={4} h="48px" gap={2}>
-                    <Text color="fg.muted" fontWeight="medium" flexShrink={0}>₦</Text>
+                  <Flex
+                    align="center"
+                    borderWidth="1px"
+                    borderColor="border"
+                    borderRadius="lg"
+                    px={4}
+                    h="48px"
+                    gap={2}
+                  >
+                    <Text color="fg.muted" fontWeight="medium" flexShrink={0}>
+                      ₦
+                    </Text>
                     <input
                       {...register('price', { valueAsNumber: true })}
                       type="number"
@@ -281,8 +356,13 @@ export default function NewProductPage() {
                           key={cat}
                           role="button"
                           tabIndex={0}
-                          onClick={() => { setValue('category', cat, { shouldValidate: true }); clearErrors('category'); }}
-                          onKeyDown={(e) => e.key === 'Enter' && setValue('category', cat, { shouldValidate: true })}
+                          onClick={() => {
+                            setValue('category', cat, { shouldValidate: true });
+                            clearErrors('category');
+                          }}
+                          onKeyDown={(e) =>
+                            e.key === 'Enter' && setValue('category', cat, { shouldValidate: true })
+                          }
                           align="center"
                           px={3}
                           py={1.5}
@@ -331,8 +411,15 @@ export default function NewProductPage() {
                           justify="center"
                           transition="all 0.15s"
                           userSelect="none"
-                          onClick={() => setValue('stockStatus', option.value as 'IN_STOCK' | 'OUT_OF_STOCK', { shouldValidate: true })}
-                          onKeyDown={(e) => e.key === 'Enter' && setValue('stockStatus', option.value as 'IN_STOCK' | 'OUT_OF_STOCK')}
+                          onClick={() =>
+                            setValue('stockStatus', option.value as 'IN_STOCK' | 'OUT_OF_STOCK', {
+                              shouldValidate: true,
+                            })
+                          }
+                          onKeyDown={(e) =>
+                            e.key === 'Enter' &&
+                            setValue('stockStatus', option.value as 'IN_STOCK' | 'OUT_OF_STOCK')
+                          }
                           _hover={{ borderColor: `${option.color}.300` }}
                         >
                           <Text

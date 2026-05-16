@@ -38,25 +38,16 @@ export const businessInfoSchema = z.object({
     .min(1, 'Select at least one category')
     .max(3, 'Select at most 3 categories'),
   address: z.string().min(5, 'Please enter a valid address'),
-  description: z
-    .string()
-    .max(500, 'Description must be at most 500 characters')
-    .optional(),
+  description: z.string().max(500, 'Description must be at most 500 characters').optional(),
 });
 
 export const bvnSchema = z.object({
-  bvn: z
-    .string()
-    .regex(/^\d{11}$/, 'BVN must be exactly 11 digits'),
+  bvn: z.string().regex(/^\d{11}$/, 'BVN must be exactly 11 digits'),
 });
 
 export const ninSchema = z.object({
-  fullName: z
-    .string()
-    .min(2, 'Full legal name is required'),
-  nin: z
-    .string()
-    .regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
+  fullName: z.string().min(2, 'Full legal name is required'),
+  nin: z.string().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
 });
 
 export const productSchema = z.object({
@@ -64,10 +55,7 @@ export const productSchema = z.object({
     .string()
     .min(1, 'Product name is required')
     .max(100, 'Product name must be at most 100 characters'),
-  description: z
-    .string()
-    .max(500, 'Description must be at most 500 characters')
-    .optional(),
+  description: z.string().max(500, 'Description must be at most 500 characters').optional(),
   price: z.number().positive('Price must be greater than 0'),
   category: z.string().min(1, 'Please select a category'),
   stockStatus: z.enum(['IN_STOCK', 'OUT_OF_STOCK']),

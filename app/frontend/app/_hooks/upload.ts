@@ -4,7 +4,7 @@ import { apiFetch } from '../_lib/fetchWrapper';
 
 const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-interface UploadResult {
+export interface UploadResult {
   url: string;
   publicId: string;
   width?: number;
