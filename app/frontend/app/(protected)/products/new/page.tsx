@@ -22,10 +22,6 @@ import { toaster } from '@/components/ui/toaster';
 import { useCreateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia } from '@/app/_hooks/upload';
 
-//TODO
-// - FIX UPLAOD PROGRESS DISPLAY
-// - FIX PREVIEW FOR VIDEO FILES
-// - IMPLEMENT AUTHENTICATED SIGNED URL GENERATION
 
 function ImageSlot({
   index,

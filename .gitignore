@@ -14,6 +14,8 @@ coverage/
 .vscode/
 .claude/
 *.agent.md
+plan/
+requirements.md
 
 # Frontend ignores
 app/frontend/node_modules/
