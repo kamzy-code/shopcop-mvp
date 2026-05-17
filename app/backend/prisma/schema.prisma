@@ -11,6 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
 // ============================================
 // ENUMS
 // ============================================
@@ -22,8 +23,96 @@ enum UserRole {
 }
 
 enum AuthProvider {
-  EMAIL      // Email/magic link
-  GOOGLE     // Google OAuth
+  EMAIL // Email/magic link
+  GOOGLE // Google OAuth
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+}
+
+enum VendorTier {
+  TIER_0 // Unverified
+  TIER_1 // Basic verified
+  TIER_2 // Business verified
+  TIER_3 // Elite seller
+  TIER_4 // Premium verified
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VerificationType {
+  NIN // National Identification Number
+  CAC // Corporate Affairs Commission
+  SMEDAN // Small & Medium Enterprises Development Agency
+  ADDRESS // Address verification
+}
+
+enum BusinessType {
+  // For CAC
+  LIMITED_LIABILITY
+  BUSINESS_NAME
+  INCORPORATED_TRUSTEES
+
+  // For SMEDAN
+  SOLE_PROPRIETOR
+  PARTNERSHIP
+  COOPERATIVE
+}
+
+enum PaymentModel {
+  FULL_PAYMENT
+  PART_PAYMENT
+  PAY_ON_DELIVERY
+  INSTALLMENT
+}
+
+enum PrimaryContactMethod {
+  WHATSAPP
+  INSTAGRAM
+  TIKTOK
+  FACEBOOK
+  PHONE_CALL
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  SENT_OUT
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RefundPolicyType {
+  NO_REFUNDS // No refunds accepted
+  FULL_REFUND // Full refund within duration
+  PARTIAL_REFUND // Partial refund (e.g., minus shipping)
+  EXCHANGE_ONLY // Product exchange only
+  STORE_CREDIT // Store credit instead of cash
+  CASE_BY_CASE // Evaluated individually
+}
+
+enum ProductMediaType {
+  IMAGE
+  VIDEO
 }
 
 // ============================================
@@ -31,35 +120,38 @@ enum AuthProvider {
 // ============================================
 
 model User {
-  id         String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Identity
   name       String?
-  email      String   @unique
+  email      String  @unique
   avatar_url String?
-  
+
   // Authentication
   auth_provider AuthProvider @default(EMAIL)
   google_id     String?      @unique // Google OAuth ID
-  
+
   // Email verification
-  email_verified Boolean  @default(false)
-  
+  email_verified Boolean @default(false)
+
   // Role & Status
-  role       UserRole @default(VENDOR)
-  is_active  Boolean  @default(true)
-  
+  role      UserRole @default(VENDOR)
+  is_active Boolean  @default(true)
+
   // Session tracking
   last_login_at DateTime?
-  
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  
+
   // Relations
-  otp_codes   OtpCode[]
-  magic_links MagicLink[]
-  
+  otp_codes      OtpCode[]
+  magic_links    MagicLink[]
+  vendor_profile VendorProfile[]
+  buyer_profile  BuyerProfile[]
+  admin_actions  AdminActivityLog[]
+
   @@index([email])
   @@index([google_id])
   @@map("users")
@@ -108,16 +200,436 @@ model MagicLink {
 // ============================================
 
 model RateLimit {
-  id       String   @id @default(cuid())
-  key      String   //email or IP address
-  action   String   // "otp_send", "magic_link_send", "login_attempt"
-  
+  id     String @id @default(cuid())
+  key    String //email or IP address
+  action String // "otp_send", "magic_link_send", "login_attempt"
+
   count    Int      @default(1)
   reset_at DateTime
-  
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  
+
   @@index([key, action])
   @@map("rate_limits")
 }
+
+// ============================================
+// VENDOR PROFILE (EXTENDED)
+// ============================================
+
+model VendorProfile {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // ========== STEP 1: PERSONAL INFORMATION ==========
+  first_name    String?
+  middle_name   String?
+  last_name     String?
+  gender        Gender?
+  date_of_birth DateTime?
+  phone_number  String?
+
+  // ========== STEP 2: BUSINESS INFORMATION ==========
+
+  // Basic Details
+  business_name        String?
+  business_description String? @db.Text
+  slug                 String? @unique
+  profile_photo_url    String?
+
+  // Location
+  country        String  @default("Nigeria")
+  state          String?
+  city           String?
+  street_address String?
+  landmark       String?
+  latitude       Float?
+  longitude      Float?
+
+  // Categorization
+  primary_category String?
+  subcategories    String[] @default([])
+
+  // Make payment Information multiple and have a primary payment info
+  // Payment Information
+  bank_name      String?
+  account_number String?
+  account_name   String?
+  payment_models PaymentModel[] @default([])
+
+  //Refund Policy
+  refund_policy_type   RefundPolicyType @default(NO_REFUNDS)
+  refund_duration_days Int? // e.g., 7, 14, 30
+  refund_conditions    String[]         @default([]) // Array of conditions
+  refund_custom_notes  String?          @db.Text // Additional vendor notes
+
+  // Social Media
+  instagram_handle String?
+  tiktok_handle    String?
+  facebook_url     String?
+  whatsapp_number  String?
+  primary_contact  PrimaryContactMethod?
+
+  // ========== VERIFICATION & TIERING ==========
+
+  // Tier Status
+  current_tier        VendorTier @default(TIER_0)
+  verification_points Int        @default(0)
+
+  // Profile Completeness
+  personal_info_complete Boolean @default(false)
+  business_info_complete Boolean @default(false)
+  profile_completeness   Int     @default(0) // 0-100%
+
+  // ========== CALCULATED METRICS ==========
+  total_transactions Int   @default(0)
+  fulfillment_rate   Float @default(0)
+  average_rating     Float @default(0)
+
+  // Status
+  profile_status String @default("active") // active, inactive, suspended
+
+  // Timestamps
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  last_transaction_at DateTime?
+
+  // Relations
+  verifications VendorVerification[]
+  products      Product[]
+  transactions  Transaction[]
+  reviews       Review[]
+  posts         VendorPost[]
+
+  @@index([slug])
+  @@index([state, city])
+  @@index([current_tier])
+  @@index([verification_points])
+  @@index([total_transactions])
+  @@index([created_at])
+  //@@fulltext([business_name, business_description])
+  @@map("vendor_profiles")
+}
+
+// ============================================
+// VENDOR VERIFICATIONS
+// ============================================
+
+model VendorVerification {
+  id        String        @id @default(cuid())
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  // Verification Details
+  type   VerificationType
+  status VerificationStatus @default(PENDING)
+
+  // Points awarded (used for tier calculation)
+  points_value Int @default(0)
+
+  // NIN Verification Fields
+  nin_number        String? // 11 digits
+  nin_full_name     String?
+  govt_id_front_url String?
+  govt_id_back_url  String?
+
+  // CAC Verification Fields
+  cac_rc_number       String?
+  cac_company_type    BusinessType?
+  cac_certificate_url String?
+
+  // SMEDAN Verification Fields
+  smedan_suin            String?
+  smedan_business_type   BusinessType?
+  smedan_certificate_url String?
+
+  // Address Verification Fields
+  address_document_url String? // Utility bill
+
+  // Admin Review
+  reviewed_by      String? // Admin user ID
+  reviewed_at      DateTime?
+  rejection_reason String?   @db.Text
+  admin_notes      String?   @db.Text
+
+  // Timestamps
+  submitted_at DateTime  @default(now())
+  approved_at  DateTime?
+  updated_at   DateTime  @updatedAt
+
+  @@index([vendor_id])
+  @@index([type, status])
+  @@index([status])
+  @@map("vendor_verifications")
+}
+
+// ============================================
+// BUSINESS CATEGORIES (Predefined)
+// ============================================
+
+model BusinessCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  icon_url    String?
+
+  // Subcategories stored as JSON array for flexibility
+  subcategories String[] @default([])
+
+  // Ordering
+  display_order Int     @default(0)
+  is_active     Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([slug])
+  @@index([is_active])
+  @@map("business_categories")
+}
+
+// ============================================
+// BUYER PROFILE
+// ============================================
+
+model BuyerProfile {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  name String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  transactions Transaction[]
+  reviews      Review[]
+
+  @@map("buyer_profiles")
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+
+model Product {
+  id        String        @id @default(cuid())
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?     @db.Text
+  price        Float
+  category     String
+  stock_status StockStatus @default(IN_STOCK)
+
+  // Media
+  images    ProductMedia[]
+  video_url String?
+
+  // Timestamps
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  transactions Transaction[]
+
+  @@index([vendor_id])
+  @@index([category])
+  @@index([created_at])
+  @@index([deleted_at])
+  //@@fulltext([name, description])
+  @@map("products")
+}
+
+model ProductMedia {
+  id         String  @id @default(cuid())
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  media_url  String
+  public_id  String? // Cloudinary public ID for deletion
+  media_type ProductMediaType
+  is_primary Boolean          @default(false)
+  position   Int              @default(0)
+
+  created_at DateTime @default(now())
+
+  @@index([product_id])
+  @@map("product_images")
+}
+
+// ============================================
+// VENDOR POSTS (Social Feed)
+// ============================================
+
+model VendorPost {
+  id        String        @id @default(cuid())
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  caption    String? @db.Text
+  media_type String // 'image' or 'video'
+  media_url  String
+  public_id  String? // Cloudinary public ID
+
+  // Engagement
+  view_count Int @default(0)
+  like_count Int @default(0)
+
+  // Timestamps
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  @@index([vendor_id])
+  @@index([created_at])
+  @@index([deleted_at])
+  @@map("vendor_posts")
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+
+model Transaction {
+  id String @id @default(cuid())
+
+  // Vendor
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id])
+
+  // Buyer
+  buyer_id    String?
+  buyer       BuyerProfile? @relation(fields: [buyer_id], references: [id])
+  buyer_phone String?
+
+  // Product
+  product_id   String?
+  product      Product? @relation(fields: [product_id], references: [id])
+  product_name String
+
+  // Transaction Details
+  amount Float
+  status TransactionStatus @default(PENDING)
+
+  // Verification
+  payment_proof_url   String?
+  verification_status VerificationStatus @default(PENDING)
+  verified_by         String?
+  verified_at         DateTime?
+  rejection_reason    String?
+
+  // Tracking
+  tracking_slug      String    @unique
+  estimated_delivery DateTime?
+
+  // Timestamps
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  delivered_at DateTime?
+
+  // Relations
+  status_history TransactionStatusHistory[]
+  review         Review?
+
+  @@index([vendor_id])
+  @@index([buyer_id])
+  @@index([status])
+  @@index([verification_status])
+  @@index([tracking_slug])
+  @@index([created_at])
+  @@map("transactions")
+}
+
+model TransactionStatusHistory {
+  id             String      @id @default(cuid())
+  transaction_id String
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+
+  status TransactionStatus
+  notes  String?
+
+  created_at DateTime @default(now())
+
+  @@index([transaction_id])
+  @@map("transaction_status_history")
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id String @id @default(cuid())
+
+  // Transaction
+  transaction_id String      @unique
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+
+  // Vendor
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  // Buyer
+  buyer_id   String?
+  buyer      BuyerProfile? @relation(fields: [buyer_id], references: [id])
+  buyer_name String
+
+  // Review Content
+  rating            Int // 1-5 stars
+  review_text       String?  @db.Text
+  review_categories String[] @default([])
+
+  // Categorization
+  review_type String // "positive" or "negative"
+
+  // Moderation
+  moderation_status ModerationStatus @default(PENDING)
+  approved_by       String?
+  approved_at       DateTime?
+  rejection_reason  String?
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([vendor_id])
+  @@index([rating])
+  @@index([moderation_status])
+  @@index([created_at])
+  @@map("reviews")
+}
+
+// ============================================
+// ADMIN OPERATIONS
+// ============================================
+
+model AdminActivityLog {
+  id       String @id @default(cuid())
+  admin_id String
+  admin    User   @relation(fields: [admin_id], references: [id])
+
+  action_type String // "nin_approved", "cac_rejected", etc.
+  target_type String // "vendor_verification", "review", etc.
+  target_id   String // ID of the affected resource
+  notes       String? @db.Text
+
+  // Store snapshot of data before change (for audit)
+  before_data Json?
+  after_data  Json?
+
+  created_at DateTime @default(now())
+
+  @@index([admin_id])
+  @@index([action_type])
+  @@index([target_type, target_id])
+  @@index([created_at])
+  @@map("admin_activity_logs")
+}
+

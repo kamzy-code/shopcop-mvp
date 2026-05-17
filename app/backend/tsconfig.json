@@ -27,6 +27,6 @@
       "@types/*": ["types/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/config/seed.ts"],
   "exclude": ["node_modules", "dist"]
 }
