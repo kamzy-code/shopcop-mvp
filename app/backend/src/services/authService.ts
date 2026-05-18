@@ -8,7 +8,7 @@ import {
   VerifyOTPParams,
 } from '../types/authTypes.js';
 import crypto from 'crypto';
-import { UserRole, AuthProvider } from '../generated/prisma/client.js';
+import { UserRole, AuthProvider, VendorTier } from '../generated/prisma/client.js';
 import { checkRateLimit, generateOTP, generateJWT } from 'helpers/authHelper.js';
 import { env } from '@config/env.js';
 import { AppError } from '@middleware/errorHandler.js';
@@ -140,10 +140,24 @@ export class AuthService {
         data: {
           email_verified: true,
           last_login_at: new Date(),
+          ...(user.role === UserRole.VENDOR
+            ? {
+                vendor_profile: {
+                  create: {
+                    current_tier: VendorTier.TIER_0,
+                    verification_points: 0,
+                    personal_info_complete: false,
+                    business_info_complete: false,
+                    profile_completeness: 0,
+                  },
+                },
+              }
+            : {}),
         },
+        include: user.role === UserRole.VENDOR ? { vendor_profile: true } : undefined,
       }),
     ]);
-
+    
     const verifiedUser = await prisma.user.findUniqueOrThrow({
       where: { id: user.id },
     });

@@ -2,12 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { errorHandler } from '@middleware/errorHandler.js';
-import authRouter from '@routes/authRoutes.js';
+import authRouter from '@routes/authRoute.js';
 import rateLimit from 'express-rate-limit';
 import logger from '@utils/logger.js';
 import userRouter from '@routes/userRoute.js';
 import cookieParser from 'cookie-parser';
 import fileUploadRouter from '@routes/fileUplaodRoute.js';
+import vendorRouter from '@routes/vendorRoute.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/uploads', fileUploadRouter);
+app.use('/api/v1/vendors', vendorRouter);
 
 // 404 handler
 app.use((req, res) => {
