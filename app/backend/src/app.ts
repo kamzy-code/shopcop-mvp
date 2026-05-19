@@ -9,6 +9,7 @@ import userRouter from '@routes/userRoute.js';
 import cookieParser from 'cookie-parser';
 import fileUploadRouter from '@routes/fileUplaodRoute.js';
 import vendorRouter from '@routes/vendorRoute.js';
+import verificationRouter from '@routes/verificationRoute.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/uploads', fileUploadRouter);
 app.use('/api/v1/vendors', vendorRouter);
+app.use('/api/v1/verifications', verificationRouter);
 
 // 404 handler
 app.use((req, res) => {
