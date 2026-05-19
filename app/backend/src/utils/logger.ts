@@ -94,6 +94,22 @@ const vendorLogger = createLogger({
 
   defaultMeta: { service: 'vendorService', timeStamp: new Date().toISOString() },
 });
+
+
+const adminLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production'
+      ? [
+          //Log Transport for production environment
+        ]
+      : []),
+    new transports.Console(),
+  ],
+
+  defaultMeta: { service: 'adminService', timeStamp: new Date().toISOString() },
+});
 // const authLogger = createLogger({
 //   level: "info",
 //   format: combine(
@@ -133,4 +149,4 @@ const vendorLogger = createLogger({
 // });
 
 export default logger;
-export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger };
+export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger };
