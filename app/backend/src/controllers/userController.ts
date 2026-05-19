@@ -5,10 +5,11 @@ import { AppError } from '@middleware/errorHandler.js';
 
 export class UserController {
   static async getCurrentUser(req: Request, res: Response, next: NextFunction) {
+    const action = 'getCurrentUser';
     const userId = req.user?.userId;
 
     if (!userId) {
-      userLogger.warn('Get profile attempt without authentication', { action: 'getProfile' });
+      userLogger.warn('Get profile attempt without authentication', { action });
       throw new AppError('Authentication required', 401);
     }
 
@@ -21,16 +22,11 @@ export class UserController {
         message: 'User profile fetched successfully',
       });
 
-      userLogger.info('User profile fetched successfully', {
-        userId,
-        role: result.role,
-        action: 'getProfile',
-      });
-      return;
+      userLogger.info('User profile fetched successfully', { userId, role: result.role, action });
     } catch (error) {
       userLogger.error('Error fetching user profile', {
         userId,
-        action: 'getProfile',
+        action,
         error: error instanceof AppError ? error.message : error,
       });
       next(error);
@@ -38,10 +34,11 @@ export class UserController {
   }
 
   static async updateProfile(req: Request, res: Response, next: NextFunction) {
+    const action = 'updateProfile';
     const userId = req.user?.userId;
 
     if (!userId) {
-      userLogger.warn('Update profile attempt without authentication', { action: 'updateProfile' });
+      userLogger.warn('Update profile attempt without authentication', { action });
       throw new AppError('Authentication required', 401);
     }
 
@@ -61,13 +58,12 @@ export class UserController {
         role: result.role,
         name: result.name,
         avatar_url: result.avatar_url,
-        action: 'updateProfile',
+        action,
       });
-      return;
     } catch (error) {
       userLogger.error('Error updating user profile', {
         userId,
-        action: 'updateProfile',
+        action,
         error: error instanceof AppError ? error.message : error,
       });
       next(error);
@@ -75,6 +71,8 @@ export class UserController {
   }
 
   static async listUsers(req: Request, res: Response, next: NextFunction) {
+    const action = 'listUsers';
+
     try {
       const result = await UserService.getAllUsers();
 
@@ -84,14 +82,10 @@ export class UserController {
         message: 'User list fetched successfully',
       });
 
-      userLogger.info('User list fetched successfully', {
-        action: 'listUsers',
-        count: result.length,
-      });
-      return;
+      userLogger.info('User list fetched successfully', { action, count: result.length });
     } catch (error) {
       userLogger.error('Error fetching user list', {
-        action: 'listUsers',
+        action,
         error: error instanceof AppError ? error.message : error,
       });
       next(error);

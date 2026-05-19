@@ -5,15 +5,16 @@ import { AppError } from '@middleware/errorHandler.js';
 
 export class AuthController {
   static async credentialSignup(req: Request, res: Response, next: NextFunction) {
+    const action = 'credentialSignup';
     const { email, role } = req.body;
 
     if (!email) {
-      authLogger.warn('Signup attempt with missing email', { action: 'credentialSignup' });
+      authLogger.warn('Signup attempt with missing email', { action });
       throw new AppError('Email is required', 400);
     }
 
     if (!role) {
-      authLogger.warn('Signup attempt with missing role', { email, action: 'credentialSignup' });
+      authLogger.warn('Signup attempt with missing role', { email, action });
       throw new AppError('Role is required', 400);
     }
 
@@ -26,12 +27,12 @@ export class AuthController {
         message: result.message,
       });
 
-      authLogger.info('Signup OTP sent successfully', { email, action: 'credentialSignup' });
+      authLogger.info('Signup OTP sent successfully', { email, action });
       return;
     } catch (error) {
       authLogger.error('Error during credential signup', {
         email,
-        action: 'credentialSignup',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -40,20 +41,16 @@ export class AuthController {
   }
 
   static async verifyAccountViaOTP(req: Request, res: Response, next: NextFunction) {
+    const action = 'verifyAccountViaOTP';
     const { email, otp } = req.body;
 
     if (!email) {
-      authLogger.warn('OTP verification attempt with missing email', {
-        action: 'verifyAccountViaOTP',
-      });
+      authLogger.warn('OTP verification attempt with missing email', { action });
       throw new AppError('Email is required', 400);
     }
 
     if (!otp) {
-      authLogger.warn('OTP verification attempt with missing OTP', {
-        email,
-        action: 'verifyAccountViaOTP',
-      });
+      authLogger.warn('OTP verification attempt with missing OTP', { email, action });
       throw new AppError('OTP is required', 400);
     }
 
@@ -76,15 +73,15 @@ export class AuthController {
 
       authLogger.info('Account verified successfully', {
         email,
-        action: 'verifyAccountViaOTP',
-        isVerfied: user.email_verified,
+        action,
+        isVerified: user.email_verified,
       });
 
       return;
     } catch (error) {
       authLogger.error('Error during Account verification', {
         email,
-        action: 'verifyAccountViaOTP',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -93,12 +90,11 @@ export class AuthController {
   }
 
   static async loginWithMagicLink(req: Request, res: Response, next: NextFunction) {
+    const action = 'loginWithMagicLink';
     const { email } = req.body;
 
     if (!email) {
-      authLogger.warn('Magic link login attempt with missing email', {
-        action: 'loginWithMagicLink',
-      });
+      authLogger.warn('Magic link login attempt with missing email', { action });
       throw new AppError('Email is required', 400);
     }
 
@@ -111,12 +107,12 @@ export class AuthController {
         message: 'Magic link sent successfully',
       });
 
-      authLogger.info('Magic link sent successfully', { email, action: 'loginWithMagicLink' });
+      authLogger.info('Magic link sent successfully', { email, action });
       return;
     } catch (error) {
       authLogger.error('Error during magic link login', {
         email,
-        action: 'loginWithMagicLink',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -125,12 +121,11 @@ export class AuthController {
   }
 
   static async verifyLoginlink(req: Request, res: Response, next: NextFunction) {
+    const action = 'verifyLoginlink';
     const { token } = req.body;
 
     if (!token) {
-      authLogger.warn('Magic link verification attempt with missing token', {
-        action: 'verifyLoginlink',
-      });
+      authLogger.warn('Magic link verification attempt with missing token', { action });
       throw new AppError('Token is required', 400);
     }
 
@@ -152,7 +147,7 @@ export class AuthController {
       });
 
       authLogger.info('Login successful', {
-        action: 'verifyLoginlink',
+        action,
         status: 'success',
         user: user.email,
         userId: user.id,
@@ -162,7 +157,7 @@ export class AuthController {
     } catch (error) {
       authLogger.error('Error during magic link verification', {
         token,
-        action: 'verifyLoginlink',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -171,10 +166,11 @@ export class AuthController {
   }
 
   static async resendOTP(req: Request, res: Response, next: NextFunction) {
+    const action = 'resendOTP';
     const { email } = req.body;
 
     if (!email) {
-      authLogger.warn('OTP resend attempt with missing email', { action: 'resendOTP' });
+      authLogger.warn('OTP resend attempt with missing email', { action });
       throw new AppError('Email is required', 400);
     }
 
@@ -187,12 +183,12 @@ export class AuthController {
         message: 'OTP resent successfully',
       });
 
-      authLogger.info('OTP resent successfully', { email, action: 'resendOTP' });
+      authLogger.info('OTP resent successfully', { email, action });
       return;
     } catch (error) {
       authLogger.error('Error during OTP resend', {
         email,
-        action: 'resendOTP',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
@@ -201,35 +197,31 @@ export class AuthController {
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
+    const action = 'logout';
     const user = req.user;
 
     if (!user) {
-      authLogger.warn('Authentication is required to logout', {
-        action: 'logout',
-      });
+      authLogger.warn('Authentication is required to logout', { action });
       throw new AppError('Authentication is required to logout', 400);
     }
     try {
       res
         .clearCookie('auth_token', {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // only over HTTPS in production
+          secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
           path: '/',
         })
         .status(200)
         .json({ success: true, message: 'Logout successful' });
 
-      authLogger.info('Logout successful', {
-        userId: user?.userId,
-        action: 'logout',
-      });
+      authLogger.info('Logout successful', { userId: user?.userId, action });
       return;
-    } catch (error: any) {
-      authLogger.error(`Logout error: ${error.message}`, {
+    } catch (error) {
+      authLogger.error('Logout error', {
         userId: user?.userId,
-        action: 'logout',
-        error,
+        action,
+        error: error instanceof Error ? error.message : error,
       });
       next(error);
       return;

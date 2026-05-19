@@ -1,60 +1,89 @@
-import { PersonalInfoInput, BusinessInfoInput } from "../types/vendorProfileTypes.js";
+import { PersonalInfoInput, BusinessInfoInput } from '../types/vendorProfileTypes.js';
+import { sectionWeights } from '../types/vendorVerificationTypes.js';
+import { VerificationType, VerificationStatus } from '../generated/prisma/client.js';
+
+interface VendorProfileWithVerifications {
+  personal_info_complete: boolean;
+  business_info_complete: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
+  gender?: string | null;
+  date_of_birth?: Date | null;
+  phone_number?: string | null;
+  business_name?: string | null;
+  business_description?: string | null;
+  state?: string | null;
+  city?: string | null;
+  street_address?: string | null;
+  primary_category?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  verifications?: { type: string; status: string }[];
+}
 
 // ============================================
 // PROFILE COMPLETENESS CALCULATOR
 // ============================================
 
 export class ProfileCompletenessService {
+  private static calculatePartialCredit(
+    fields: (string | null | undefined | boolean | Date)[],
+    weight: number
+  ): number {
+    const completed = fields.filter(Boolean).length;
+    return (completed / fields.length) * weight;
+  }
+
   /**
    * Calculate profile completeness percentage
    */
-  static calculateCompleteness(vendorProfile: any): number {
+  static calculateCompleteness(vendorProfile: VendorProfileWithVerifications): number {
     let totalWeight = 0;
     let completedWeight = 0;
 
     // Personal Info - 20%
-    const personalInfoWeight = 20;
+    const personalInfoWeight = sectionWeights.PERSONAL_INFO;
     if (vendorProfile.personal_info_complete) {
       completedWeight += personalInfoWeight;
     } else {
-      // Partial credit for personal info
-      const personalFields = [
-        vendorProfile.first_name,
-        vendorProfile.last_name,
-        vendorProfile.gender,
-        vendorProfile.date_of_birth,
-        vendorProfile.phone_number,
-      ];
-      const completedPersonalFields = personalFields.filter(Boolean).length;
-      completedWeight += (completedPersonalFields / 5) * personalInfoWeight;
+      completedWeight += this.calculatePartialCredit(
+        [
+          vendorProfile.first_name,
+          vendorProfile.last_name,
+          vendorProfile.gender,
+          vendorProfile.date_of_birth,
+          vendorProfile.phone_number,
+        ],
+        personalInfoWeight
+      );
     }
     totalWeight += personalInfoWeight;
 
     // Business Info - 20%
-    const businessInfoWeight = 20;
+    const businessInfoWeight = sectionWeights.BUSINESS_INFO;
     if (vendorProfile.business_info_complete) {
       completedWeight += businessInfoWeight;
     } else {
-      // Partial credit for business info
-      const businessFields = [
-        vendorProfile.business_name,
-        vendorProfile.business_description,
-        vendorProfile.state,
-        vendorProfile.city,
-        vendorProfile.street_address,
-        vendorProfile.primary_category,
-        vendorProfile.bank_name,
-        vendorProfile.account_number,
-      ];
-      const completedBusinessFields = businessFields.filter(Boolean).length;
-      completedWeight += (completedBusinessFields / 8) * businessInfoWeight;
+      completedWeight += this.calculatePartialCredit(
+        [
+          vendorProfile.business_name,
+          vendorProfile.business_description,
+          vendorProfile.state,
+          vendorProfile.city,
+          vendorProfile.street_address,
+          vendorProfile.primary_category,
+          vendorProfile.bank_name,
+          vendorProfile.account_number,
+        ],
+        businessInfoWeight
+      );
     }
     totalWeight += businessInfoWeight;
 
     // NIN Verification - 20%
-    const ninVerificationWeight = 20;
+    const ninVerificationWeight = sectionWeights.NIN_VERIFICATION;
     const ninVerification = vendorProfile.verifications?.find(
-      (v: any) => v.type === 'NIN' && v.status === 'APPROVED'
+      (v) => v.type === VerificationType.NIN && v.status === VerificationStatus.APPROVED
     );
     if (ninVerification) {
       completedWeight += ninVerificationWeight;
@@ -62,9 +91,9 @@ export class ProfileCompletenessService {
     totalWeight += ninVerificationWeight;
 
     // Address Verification - 15%
-    const addressVerificationWeight = 15;
+    const addressVerificationWeight = sectionWeights.ADDRESS_VERIFICATION;
     const addressVerification = vendorProfile.verifications?.find(
-      (v: any) => v.type === 'ADDRESS' && v.status === 'APPROVED'
+      (v) => v.type === VerificationType.ADDRESS && v.status === VerificationStatus.APPROVED
     );
     if (addressVerification) {
       completedWeight += addressVerificationWeight;
@@ -72,9 +101,11 @@ export class ProfileCompletenessService {
     totalWeight += addressVerificationWeight;
 
     // Business Verification (CAC or SMEDAN) - 25%
-    const businessVerificationWeight = 25;
+    const businessVerificationWeight = sectionWeights.BUSINESS_VERIFICATION;
     const businessVerification = vendorProfile.verifications?.find(
-      (v: any) => (v.type === 'CAC' || v.type === 'SMEDAN') && v.status === 'APPROVED'
+      (v) =>
+        (v.type === VerificationType.CAC || v.type === VerificationType.SMEDAN) &&
+        v.status === VerificationStatus.APPROVED
     );
     if (businessVerification) {
       completedWeight += businessVerificationWeight;

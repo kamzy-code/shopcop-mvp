@@ -6,6 +6,22 @@ import {
   RefundPolicyType,
 } from '../generated/prisma/client.js';
 
+const NAME_REGEX = /^[a-zA-Z\s'-]+$/;
+const NAME_REGEX_MSG = 'Can only contain letters, spaces, hyphens, and apostrophes';
+
+function normalizePhone(val: string) {
+  if (val.startsWith('0')) return '+234' + val.slice(1);
+  return val;
+}
+
+function optionalUrl() {
+  return z.url().optional().or(z.literal(''));
+}
+
+function optionalSocialHandle() {
+  return z.string().regex(/^@?[\w.]+$/, 'Invalid handle').optional().or(z.literal(''));
+}
+
 // ============================================
 // PERSONAL INFO VALIDATION
 // ============================================
@@ -15,35 +31,24 @@ export const personalInfoSchema = z.object({
     .string()
     .min(2, 'First name must be at least 2 characters')
     .max(50, 'First name must be less than 50 characters')
-    .regex(
-      /^[a-zA-Z\s'-]+$/,
-      'First name can only contain letters, spaces, hyphens, and apostrophes'
-    ),
+    .regex(NAME_REGEX, `First name ${NAME_REGEX_MSG}`),
 
   middle_name: z
     .string()
     .max(50, 'Middle name must be less than 50 characters')
-    .regex(
-      /^[a-zA-Z\s'-]*$/,
-      'Middle name can only contain letters, spaces, hyphens, and apostrophes'
-    )
+    .regex(NAME_REGEX, `Middle name ${NAME_REGEX_MSG}`)
     .optional(),
 
   last_name: z
     .string()
     .min(2, 'Last name must be at least 2 characters')
     .max(50, 'Last name must be less than 50 characters')
-    .regex(
-      /^[a-zA-Z\s'-]+$/,
-      'Last name can only contain letters, spaces, hyphens, and apostrophes'
-    ),
+    .regex(NAME_REGEX, `Last name ${NAME_REGEX_MSG}`),
 
   gender: z.enum(Gender, 'Gender must be MALE, FEMALE, or PREFER_NOT_TO_SAY'),
 
-  date_of_birth: z
-    .string()
-    .or(z.date())
-    .transform((val) => new Date(val))
+  date_of_birth: z.coerce
+    .date()
     .refine((date) => {
       const age = new Date().getFullYear() - date.getFullYear();
       return age >= 16 && age <= 120;
@@ -52,13 +57,7 @@ export const personalInfoSchema = z.object({
   phone_number: z
     .string()
     .regex(/^(\+234|0)[789]\d{9}$/, 'Invalid Nigerian phone number')
-    .transform((val) => {
-      // Normalize to +234 format
-      if (val.startsWith('0')) {
-        return '+234' + val.slice(1);
-      }
-      return val;
-    }),
+    .transform(normalizePhone),
 });
 
 // ============================================
@@ -66,7 +65,6 @@ export const personalInfoSchema = z.object({
 // ============================================
 
 export const businessInfoSchema = z.object({
-  // Basic Details
   business_name: z
     .string()
     .min(3, 'Business name must be at least 3 characters')
@@ -77,20 +75,17 @@ export const businessInfoSchema = z.object({
     .min(50, 'Business description must be at least 50 characters')
     .max(500, 'Business description must be less than 500 characters'),
 
-  // Location
   state: z.string().min(2, 'State is required'),
   city: z.string().min(2, 'City is required'),
   street_address: z.string().min(5, 'Street address is required'),
   landmark: z.string().optional(),
 
-  // Categories
   primary_category: z.string().min(1, 'Primary category is required'),
   subcategories: z
     .array(z.string())
     .min(1, 'Select at least one subcategory')
     .max(3, 'You can select up to 3 subcategories'),
 
-  // Payment Information
   bank_name: z.string().min(2, 'Bank name is required'),
   account_number: z.string().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
   account_name: z
@@ -99,37 +94,19 @@ export const businessInfoSchema = z.object({
     .max(100, 'Account name must be less than 100 characters'),
   payment_models: z.array(z.enum(PaymentModel)).min(1, 'Select at least one payment model'),
 
-  // Social Media
-  instagram_handle: z
-    .string()
-    .regex(/^@?[\w.]+$/, 'Invalid Instagram handle')
-    .optional()
-    .or(z.literal('')),
-
-  tiktok_handle: z
-    .string()
-    .regex(/^@?[\w.]+$/, 'Invalid TikTok handle')
-    .optional()
-    .or(z.literal('')),
-
-  facebook_url: z.url('Invalid Facebook URL').optional().or(z.literal('')),
+  instagram_handle: optionalSocialHandle(),
+  tiktok_handle: optionalSocialHandle(),
+  facebook_url: optionalUrl(),
 
   whatsapp_number: z
     .string()
     .regex(/^(\+234|0)[789]\d{9}$/, 'Invalid WhatsApp number')
     .optional()
     .or(z.literal(''))
-    .transform((val) => {
-      if (!val) return val;
-      if (val.startsWith('0')) {
-        return '+234' + val.slice(1);
-      }
-      return val;
-    }),
+    .transform((val) => (val ? normalizePhone(val) : val)),
 
   primary_contact: z.enum(PrimaryContactMethod).optional(),
 
-  // Refund Policy
   refund_policy_type: z.enum(RefundPolicyType, 'Invalid refund policy type'),
 
   refund_duration_days: z

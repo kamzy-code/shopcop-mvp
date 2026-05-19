@@ -5,11 +5,10 @@ import { AppError } from '@middleware/errorHandler.js';
 
 export class FileUploadController {
   static async getUploadSignature(req: Request, res: Response, next: NextFunction) {
+    const action = 'getUploadSignature';
     const user = req.user;
     if (!user) {
-      fileUplaodLogger.warn('Authentication is required', {
-        action: 'getUploadSignature',
-      });
+      fileUplaodLogger.warn('Authentication is required', { action });
       throw new AppError('Get upload signature attempt without authentication', 401);
     }
 
@@ -26,16 +25,15 @@ export class FileUploadController {
         userId: user.userId,
         role: user.role,
         folder: signature.folder,
-        action: 'getUploadSignature',
+        action,
       });
     } catch (error) {
       fileUplaodLogger.error('Error generating upload signature', {
         userId: user.userId,
-        action: 'getUploadSignature',
+        action,
         error: error instanceof Error ? error.message : error,
       });
       next(error);
-      return;
     }
   }
 

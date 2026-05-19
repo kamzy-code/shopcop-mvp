@@ -4,6 +4,7 @@ import { ProfileCompletenessService } from './profileCompletenessService.js';
 import { PersonalInfoInput, BusinessInfoInput } from '../types/vendorProfileTypes.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { VerificationStatus, VerificationType } from 'generated/prisma/enums.js';
+import { sectionWeights } from '../types/vendorVerificationTypes.js';
 
 // ============================================
 // VENDOR PROFILE SERVICE
@@ -69,7 +70,7 @@ export class VendorProfileService {
 
     if (!existingProfile) {
       vendorLogger.warn('please complete personal information first', {
-        action: 'updateBusinesssInformation',
+        action: 'updateBusinessInfo',
         userId,
       });
       throw new AppError('Please complete personal information first', 400);
@@ -108,10 +109,17 @@ export class VendorProfileService {
     };
   }
 
-  /**
+   /**
    * Get vendor profile
    */
   static async getVendorProfile(userId: string) {
+    return prisma.vendorProfile.findUnique({ where: { user_id: userId } });
+  }
+
+  /**
+   * Get vendor profile with verifications
+   */
+  static async getVendorProfileWithVerifications(userId: string) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
       where: { user_id: userId },
       include: {
@@ -154,11 +162,23 @@ export class VendorProfileService {
       return {
         total_completeness: 0,
         sections: {
-          personal_info: { completed: false, weight: 20, percentage: 0 },
-          business_info: { completed: false, weight: 20, percentage: 0 },
-          nin_verification: { completed: false, weight: 20, percentage: 0 },
-          address_verification: { completed: false, weight: 15, percentage: 0 },
-          business_verification: { completed: false, weight: 25, percentage: 0 },
+          personal_info: { completed: false, weight: sectionWeights.PERSONAL_INFO, percentage: 0 },
+          business_info: { completed: false, weight: sectionWeights.BUSINESS_INFO, percentage: 0 },
+          nin_verification: {
+            completed: false,
+            weight: sectionWeights.NIN_VERIFICATION,
+            percentage: 0,
+          },
+          address_verification: {
+            completed: false,
+            weight: sectionWeights.ADDRESS_VERIFICATION,
+            percentage: 0,
+          },
+          business_verification: {
+            completed: false,
+            weight: sectionWeights.BUSINESS_VERIFICATION,
+            percentage: 0,
+          },
         },
       };
     }
@@ -180,27 +200,27 @@ export class VendorProfileService {
       sections: {
         personal_info: {
           completed: vendorProfile.personal_info_complete,
-          weight: 20,
+          weight: sectionWeights.PERSONAL_INFO,
           percentage: vendorProfile.personal_info_complete ? 20 : 0,
         },
         business_info: {
           completed: vendorProfile.business_info_complete,
-          weight: 20,
+          weight: sectionWeights.BUSINESS_INFO,
           percentage: vendorProfile.business_info_complete ? 20 : 0,
         },
         nin_verification: {
           completed: ninVerified,
-          weight: 20,
+          weight: sectionWeights.NIN_VERIFICATION,
           percentage: ninVerified ? 20 : 0,
         },
         address_verification: {
           completed: addressVerified,
-          weight: 15,
+          weight: sectionWeights.ADDRESS_VERIFICATION,
           percentage: addressVerified ? 15 : 0,
         },
         business_verification: {
           completed: businessVerified,
-          weight: 25,
+          weight: sectionWeights.BUSINESS_VERIFICATION,
           percentage: businessVerified ? 25 : 0,
         },
       },
@@ -265,7 +285,7 @@ export class VendorProfileService {
       attempts++;
     }
     vendorLogger.warn('Failed to generate unique slug', {
-      action: 'generateUnqiueSlug',
+      action: 'generateUniqueSlug',
       businessName,
     });
     throw new AppError('Failed to generate unique slug');
