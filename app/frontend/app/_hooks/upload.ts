@@ -2,6 +2,15 @@ import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { apiFetch } from '../_lib/fetchWrapper';
 
+interface UploadSignature {
+  apiKey: string;
+  timestamp: number;
+  signature: string;
+  upload_preset: string;
+  folder: string;
+  type: string;
+}
+
 const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 export interface UploadResult {
@@ -60,7 +69,7 @@ export function useUploadSensitiveDocument() {
     }): Promise<UploadResult> => {
       if (!cloudName) throw new Error('Cloudinary configuration is missing');
 
-      const sig = await apiFetch('/uploads/signature').then((r) => r.data);
+      const sig = await apiFetch<UploadSignature>('/uploads/signature').then((r) => r.data);
 
       const formData = new FormData();
       formData.append('file', file);

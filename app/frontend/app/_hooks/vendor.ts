@@ -7,10 +7,11 @@ export const useVendorProfile = () =>
   useQuery<VendorProfile>({
     queryKey: ['vendor-profile'],
     queryFn: async () => {
-      const res = await apiFetch('/vendors/me');
+      const res = await apiFetch<VendorProfile>('/vendors/');
       return res.data;
     },
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
 export const useSubmitBusinessInfo = () =>
@@ -54,9 +55,10 @@ export const useProducts = () =>
   useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await apiFetch('/products');
+      const res = await apiFetch<Product[]>('/products');
       return res.data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 
 export const useCreateProduct = () =>

@@ -64,7 +64,7 @@ export const useSignUp = () => {
   return useMutation({
     mutationFn: (params: SignupParams) => {
       validateOrThrow(signupSchema, params);
-      return apiFetch('/auth/credential-signup', {
+      return apiFetch<SignupResponse>('/auth/credential-signup', {
         method: 'POST',
         body: JSON.stringify(params),
       });
@@ -72,11 +72,11 @@ export const useSignUp = () => {
   });
 };
 
-export const useVerifyAccounViaOTP = () => {
+export const useVerifyAccountViaOTP = () => {
   return useMutation({
     mutationFn: (params: VerifyOTPParams) => {
       validateOrThrow(verifyOTPSchema, params);
-      return apiFetch('/auth/verify-account', {
+      return apiFetch<VerifyOTPResponse>('/auth/verify-account', {
         method: 'POST',
         body: JSON.stringify(params),
       });
@@ -84,23 +84,29 @@ export const useVerifyAccounViaOTP = () => {
   });
 };
 
-export const useLogiWithMagicLink = () => {
+/** @deprecated Use useVerifyAccountViaOTP */
+export const useVerifyAccounViaOTP = useVerifyAccountViaOTP;
+
+export const useLoginWithMagicLink = () => {
   return useMutation({
     mutationFn: (params: MagicLinkLoginParams) => {
       validateOrThrow(magicLinkLoginSchema, params);
-      return apiFetch('/auth/login', {
+      return apiFetch<MagicLinkLoginResponse>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(params),
       });
     },
   });
 };
+
+/** @deprecated Use useLoginWithMagicLink */
+export const useLogiWithMagicLink = useLoginWithMagicLink;
 
 export const useVerifyLoginLink = () => {
   return useMutation({
     mutationFn: (params: VerifymagicLinkParams) => {
       validateOrThrow(verifyMagicLinkSchema, params);
-      return apiFetch('/auth/verify-login-link', {
+      return apiFetch<VerifymagicLinkResponse>('/auth/verify-login-link', {
         method: 'POST',
         body: JSON.stringify(params),
       });
@@ -112,7 +118,7 @@ export const useResendOTP = () => {
   return useMutation({
     mutationFn: (params: ResendOTPParams) => {
       validateOrThrow(resendOTPSchema, params);
-      return apiFetch('/auth/resend-otp', {
+      return apiFetch<ResendOTPResponse>('/auth/resend-otp', {
         method: 'POST',
         body: JSON.stringify(params),
       });
@@ -121,7 +127,7 @@ export const useResendOTP = () => {
 };
 
 export const fetchCurrentUser = async (): Promise<User> => {
-  const result = await apiFetch('/users/me');
+  const result = await apiFetch<User>('/users/me');
   return result.data;
 };
 
