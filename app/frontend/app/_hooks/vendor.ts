@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import { Product, VendorProfile, VerificationRecord } from '../_types';
+import { Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
 import { ProductFormData } from '../validators/vendorSchema';
 
 export const useVendorProfile = () =>
@@ -62,6 +62,56 @@ export const useSubmitNINVerification = () =>
 
 /** @deprecated Use useSubmitNINVerification */
 export const useVerifyNin = useSubmitNINVerification;
+
+export const useSubmitCACVerification = () =>
+  useMutation({
+    mutationFn: (data: {
+      cac_rc_number: string;
+      cac_company_type: 'LIMITED_LIABILITY' | 'BUSINESS_NAME' | 'INCORPORATED_TRUSTEES';
+      cac_certificate_url: string;
+      cac_certificate_public_id: string;
+    }) =>
+      apiFetch<VerificationRecord>('/verifications/cac', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  });
+
+export const useSubmitSMEDANVerification = () =>
+  useMutation({
+    mutationFn: (data: {
+      smedan_suin: string;
+      smedan_business_type: 'SOLE_PROPRIETOR' | 'PARTNERSHIP' | 'COOPERATIVE';
+      smedan_certificate_url: string;
+      smedan_certificate_public_id: string;
+    }) =>
+      apiFetch<VerificationRecord>('/verifications/smedan', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  });
+
+export const useSubmitAddressVerification = () =>
+  useMutation({
+    mutationFn: (data: {
+      address_document_url: string;
+      address_document_public_id: string;
+    }) =>
+      apiFetch<VerificationRecord>('/verifications/address', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  });
+
+export const useProfileCompleteness = () =>
+  useQuery<ProfileCompletenessBreakdown>({
+    queryKey: ['profile-completeness'],
+    queryFn: async () => {
+      const res = await apiFetch<ProfileCompletenessBreakdown>('/vendors/completeness');
+      return res.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 
 export const useProducts = () =>
   useQuery<Product[]>({

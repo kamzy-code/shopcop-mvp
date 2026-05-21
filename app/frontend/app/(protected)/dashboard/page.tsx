@@ -3,6 +3,8 @@ import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react'
 import { useRouter } from 'next/navigation';
 import {
   LuArrowRight,
+  LuBuilding2,
+  LuMapPin,
   LuPackage,
   LuPlus,
   LuShieldAlert,
@@ -14,7 +16,7 @@ import {
 } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
 import { useAuthStore } from '@/app/_store/authStore';
-import { useProducts } from '@/app/_hooks/vendor';
+import { useProducts, useProfileCompleteness } from '@/app/_hooks/vendor';
 
 function StatCard({
   icon: Icon,
@@ -58,33 +60,23 @@ function StatCard({
   );
 }
 
-function OnboardingBanner({ onSetup }: { onSetup: () => void }) {
+function ProfileCompletenessBar({ pct }: { pct: number }) {
+  const color = pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'primary';
   return (
-    <Box p={5} bg="primary.subtle" borderWidth="1.5px" borderColor="primary.200" borderRadius="xl">
-      <Flex align="center" gap={4} flexWrap="wrap">
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="lg"
-          bg="primary.500"
-          align="center"
-          justify="center"
-          flexShrink={0}
-        >
-          <LuShieldAlert size={18} color="white" />
-        </Flex>
-        <Box flex={1} minW="200px">
-          <Text fontWeight="semibold" color="primary.fg" textStyle="sm">
-            Complete your vendor profile
-          </Text>
-          <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-            Verify your BVN and NIN to get a verified badge and build buyer trust.
-          </Text>
-        </Box>
-        <Button colorPalette="primary" size="sm" flexShrink={0} onClick={onSetup}>
-          Complete Setup <LuArrowRight size={14} />
-        </Button>
+    <Box>
+      <Flex justify="space-between" mb={1}>
+        <Text textStyle="xs" color="fg.muted">Profile completeness</Text>
+        <Text textStyle="xs" fontWeight="semibold" color={`${color}.fg`}>{pct}%</Text>
       </Flex>
+      <Box h="6px" borderRadius="full" bg="bg.subtle" overflow="hidden">
+        <Box
+          h="full"
+          borderRadius="full"
+          bg={`${color}.500`}
+          w={`${pct}%`}
+          transition="width 0.4s ease"
+        />
+      </Box>
     </Box>
   );
 }
@@ -93,9 +85,46 @@ export default function Dashboard() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data: products } = useProducts();
+  const { data: completeness } = useProfileCompleteness();
+
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
   const firstName = user?.name?.split(' ')[0] || 'Vendor';
+  const totalPct = completeness?.total_completeness ?? 0;
+  const isProfileComplete = totalPct >= 100;
+
+  const verificationItems = [
+    {
+      label: 'Email Verified',
+      done: user?.email_verified ?? false,
+      href: undefined,
+    },
+    {
+      label: 'Personal Info',
+      done: completeness?.sections.personal_info.completed ?? false,
+      href: '/onboarding/personal-info',
+    },
+    {
+      label: 'Business Info',
+      done: completeness?.sections.business_info.completed ?? false,
+      href: '/onboarding/business-info',
+    },
+    {
+      label: 'NIN Verified',
+      done: completeness?.sections.nin_verification.completed ?? false,
+      href: '/onboarding/nin',
+    },
+    {
+      label: 'Address Verified',
+      done: completeness?.sections.address_verification.completed ?? false,
+      href: '/verifications/address',
+    },
+    {
+      label: 'Business Verified',
+      done: completeness?.sections.business_verification.completed ?? false,
+      href: '/verifications/cac',
+    },
+  ];
 
   return (
     <AppShell>
@@ -116,8 +145,43 @@ export default function Dashboard() {
           </Button>
         </Flex>
 
-        {/* Onboarding banner */}
-        <OnboardingBanner onSetup={() => router.push('/onboarding/business-info')} />
+        {/* Onboarding banner — only shown when profile is incomplete */}
+        {!isProfileComplete && (
+          <Box p={5} bg="primary.subtle" borderWidth="1.5px" borderColor="primary.200" borderRadius="xl">
+            <Flex align="center" gap={4} flexWrap="wrap">
+              <Flex
+                w={10}
+                h={10}
+                borderRadius="lg"
+                bg="primary.500"
+                align="center"
+                justify="center"
+                flexShrink={0}
+              >
+                <LuShieldAlert size={18} color="white" />
+              </Flex>
+              <Box flex={1} minW="200px">
+                <Text fontWeight="semibold" color="primary.fg" textStyle="sm">
+                  Complete your vendor profile
+                </Text>
+                <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
+                  Verify your identity and business details to get a verified badge and build buyer trust.
+                </Text>
+                <Box mt={2}>
+                  <ProfileCompletenessBar pct={totalPct} />
+                </Box>
+              </Box>
+              <Button
+                colorPalette="primary"
+                size="sm"
+                flexShrink={0}
+                onClick={() => router.push('/onboarding/personal-info')}
+              >
+                Complete Setup <LuArrowRight size={14} />
+              </Button>
+            </Flex>
+          </Box>
+        )}
 
         {/* Stats */}
         <Box>
@@ -168,21 +232,19 @@ export default function Dashboard() {
 
         {/* Bottom grid */}
         <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          {/* Verification status */}
+          {/* Verification status — wired to real completeness data */}
           <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
-            <Flex align="center" gap={3} mb={4}>
-              <LuShieldCheck size={18} color="var(--chakra-colors-primary-600)" />
-              <Text fontWeight="semibold" color="fg" textStyle="sm">
-                Verification Status
-              </Text>
+            <Flex align="center" justify="space-between" mb={4}>
+              <Flex align="center" gap={3}>
+                <LuShieldCheck size={18} color="var(--chakra-colors-primary-600)" />
+                <Text fontWeight="semibold" color="fg" textStyle="sm">
+                  Verification Status
+                </Text>
+              </Flex>
+              <Text textStyle="xs" fontWeight="semibold" color="primary.fg">{totalPct}%</Text>
             </Flex>
             <Stack gap={3}>
-              {[
-                { label: 'Email Verified', done: user?.email_verified ?? false },
-                { label: 'BVN Verified', done: false },
-                { label: 'NIN Verified', done: false },
-                { label: 'Profile Active', done: false },
-              ].map((item) => (
+              {verificationItems.map((item) => (
                 <Flex key={item.label} align="center" gap={3}>
                   <Flex
                     w={5}
@@ -200,14 +262,25 @@ export default function Dashboard() {
                   <Text textStyle="sm" color={item.done ? 'fg' : 'fg.muted'}>
                     {item.label}
                   </Text>
-                  <Text
-                    textStyle="xs"
-                    fontWeight="medium"
-                    color={item.done ? 'success.fg' : 'fg.subtle'}
-                    ml="auto"
-                  >
-                    {item.done ? 'Done' : 'Pending'}
-                  </Text>
+                  <Box ml="auto">
+                    {item.done ? (
+                      <Text textStyle="xs" fontWeight="medium" color="success.fg">Done</Text>
+                    ) : item.href ? (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        color="primary.fg"
+                        px={2}
+                        h="auto"
+                        py={0.5}
+                        onClick={() => router.push(item.href!)}
+                      >
+                        Start
+                      </Button>
+                    ) : (
+                      <Text textStyle="xs" fontWeight="medium" color="fg.subtle">Pending</Text>
+                    )}
+                  </Box>
                 </Flex>
               ))}
             </Stack>
@@ -226,66 +299,63 @@ export default function Dashboard() {
               Quick Actions
             </Text>
             <Grid templateColumns="1fr 1fr" gap={3}>
-              {/* Add product */}
               <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
                 <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
+                  w={10} h={10} borderRadius="lg" bg="primary.subtle"
+                  align="center" justify="center" mb={4} color="primary.fg"
                 >
                   <LuPackage size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  Add Product
-                </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
-                  List a new product in your store.
-                </Text>
-                <Button
-                  size="sm"
-                  colorPalette="primary"
-                  variant="outline"
-                  w="full"
-                  onClick={() => router.push('/products/new')}
-                >
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Add Product</Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>List a new product in your store.</Text>
+                <Button size="sm" colorPalette="primary" variant="outline" w="full"
+                  onClick={() => router.push('/products/new')}>
                   Add now
                 </Button>
               </Box>
 
-              {/* View profile (coming soon) */}
-              <Box
-                p={5}
-                bg="bg.panel"
-                borderWidth="1px"
-                borderColor="border"
-                borderRadius="xl"
-                opacity={0.6}
-              >
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
                 <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
+                  w={10} h={10} borderRadius="lg" bg="primary.subtle"
+                  align="center" justify="center" mb={4} color="primary.fg"
+                >
+                  <LuBuilding2 size={18} />
+                </Flex>
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>CAC Verification</Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>Verify your business registration.</Text>
+                <Button size="sm" colorPalette="primary" variant="outline" w="full"
+                  onClick={() => router.push('/verifications/cac')}>
+                  Submit
+                </Button>
+              </Box>
+
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+                <Flex
+                  w={10} h={10} borderRadius="lg" bg="primary.subtle"
+                  align="center" justify="center" mb={4} color="primary.fg"
                 >
                   <LuStore size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  View Profile
-                </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
-                  See how your store looks to buyers.
-                </Text>
-                <Button size="sm" variant="outline" w="full" disabled>
-                  Coming soon
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>SMEDAN</Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>Register as an SME for higher tiers.</Text>
+                <Button size="sm" colorPalette="primary" variant="outline" w="full"
+                  onClick={() => router.push('/verifications/smedan')}>
+                  Submit
+                </Button>
+              </Box>
+
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+                <Flex
+                  w={10} h={10} borderRadius="lg" bg="primary.subtle"
+                  align="center" justify="center" mb={4} color="primary.fg"
+                >
+                  <LuMapPin size={18} />
+                </Flex>
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Address Proof</Text>
+                <Text color="fg.muted" textStyle="xs" mb={4}>Confirm your business location.</Text>
+                <Button size="sm" colorPalette="primary" variant="outline" w="full"
+                  onClick={() => router.push('/verifications/address')}>
+                  Submit
                 </Button>
               </Box>
             </Grid>
@@ -305,76 +375,35 @@ export default function Dashboard() {
               Recent Products
             </Text>
             {productCount > 0 && (
-              <Button
-                variant="ghost"
-                size="xs"
-                color="primary.fg"
-                onClick={() => router.push('/products')}
-              >
+              <Button variant="ghost" size="xs" color="primary.fg"
+                onClick={() => router.push('/products')}>
                 View all <LuArrowRight size={12} />
               </Button>
             )}
           </Flex>
 
           {productCount === 0 ? (
-            <Box
-              p={10}
-              bg="bg.panel"
-              borderWidth="1px"
-              borderColor="border"
-              borderRadius="xl"
-              textAlign="center"
-            >
+            <Box p={10} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" textAlign="center">
               <Flex
-                w={14}
-                h={14}
-                borderRadius="full"
-                bg="primary.subtle"
-                align="center"
-                justify="center"
-                mx="auto"
-                mb={4}
-                color="primary.fg"
+                w={14} h={14} borderRadius="full" bg="primary.subtle"
+                align="center" justify="center" mx="auto" mb={4} color="primary.fg"
               >
                 <LuPackage size={24} />
               </Flex>
-              <Text fontWeight="semibold" color="fg" mb={1}>
-                No products yet
-              </Text>
+              <Text fontWeight="semibold" color="fg" mb={1}>No products yet</Text>
               <Text color="fg.muted" textStyle="sm" mb={4}>
                 Add your first product to start selling on ShopCop.
               </Text>
-              <Button
-                colorPalette="primary"
-                size="md"
-                onClick={() => router.push('/products/new')}
-              >
+              <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
                 <LuPlus />
                 Add Your First Product
               </Button>
             </Box>
           ) : (
-            <Grid
-              templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
-              gap={4}
-            >
+            <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={4}>
               {products?.slice(0, 6).map((product) => (
-                <Box
-                  key={product.id}
-                  p={4}
-                  bg="bg.panel"
-                  borderWidth="1px"
-                  borderColor="border"
-                  borderRadius="xl"
-                >
-                  <Box
-                    w="full"
-                    h="140px"
-                    bg="bg.subtle"
-                    borderRadius="lg"
-                    mb={3}
-                    overflow="hidden"
-                  >
+                <Box key={product.id} p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+                  <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
@@ -387,22 +416,17 @@ export default function Dashboard() {
                       </Flex>
                     )}
                   </Box>
-                  <Text fontWeight="medium" color="fg" textStyle="sm" truncate>
-                    {product.name}
-                  </Text>
+                  <Text fontWeight="medium" color="fg" textStyle="sm" truncate>{product.name}</Text>
                   <Flex align="center" justify="space-between" mt={1}>
                     <Text color="primary.fg" fontWeight="bold" textStyle="sm">
                       ₦{product.price.toLocaleString()}
                     </Text>
                     <Box
-                      px={2}
-                      py={0.5}
-                      borderRadius="full"
+                      px={2} py={0.5} borderRadius="full"
                       bg={product.stockStatus === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
                     >
                       <Text
-                        textStyle="2xs"
-                        fontWeight="medium"
+                        textStyle="2xs" fontWeight="medium"
                         color={product.stockStatus === 'IN_STOCK' ? 'success.fg' : 'red.600'}
                       >
                         {product.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}

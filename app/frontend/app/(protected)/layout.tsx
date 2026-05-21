@@ -9,6 +9,7 @@ const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/onboarding', roles: ['VENDOR'] },
   { prefix: '/dashboard', roles: ['VENDOR'] },
   { prefix: '/products', roles: ['VENDOR'] },
+  { prefix: '/verifications', roles: ['VENDOR'] },
 ];
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {

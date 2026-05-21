@@ -149,3 +149,20 @@ export interface VerificationRecord {
   rejection_reason: string | null;
   admin_notes: string | null;
 }
+
+export interface ProfileCompletenessSection {
+  completed: boolean;
+  weight: number;
+  percentage: number;
+}
+
+export interface ProfileCompletenessBreakdown {
+  total_completeness: number;
+  sections: {
+    personal_info: ProfileCompletenessSection;
+    business_info: ProfileCompletenessSection;
+    nin_verification: ProfileCompletenessSection;
+    address_verification: ProfileCompletenessSection;
+    business_verification: ProfileCompletenessSection;
+  };
+}
