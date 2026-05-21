@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -14,7 +13,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuBuilding2, LuCheck } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
 import {
   businessInfoSchema,
   BusinessInfoFormData,
@@ -26,6 +25,7 @@ import {
 import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { toaster } from '@/components/ui/toaster';
 import { useSubmitBusinessInfo } from '@/app/_hooks/vendor';
+import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -47,13 +47,6 @@ export default function BusinessInfoPage() {
   const setBusinessInfo = useOnboardingStore((s) => s.setBusinessInfo);
   const savedInfo = useOnboardingStore((s) => s.businessInfo);
   const submitMutation = useSubmitBusinessInfo();
-
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
-    savedInfo?.subcategories || []
-  );
-  const [selectedPaymentModels, setSelectedPaymentModels] = useState<string[]>(
-    savedInfo?.payment_models || []
-  );
 
   const {
     register,
@@ -82,26 +75,10 @@ export default function BusinessInfoPage() {
   });
 
   const selectedPrimaryCategory = watch('primary_category');
+  const selectedSubcategories = watch('subcategories') || [];
+  const selectedPaymentModels = watch('payment_models') || [];
   const selectedRefundPolicy = watch('refund_policy_type');
   const descriptionValue = watch('business_description') || '';
-
-  const toggleSubcategory = (cat: string) => {
-    const next = selectedSubcategories.includes(cat)
-      ? selectedSubcategories.filter((c) => c !== cat)
-      : selectedSubcategories.length < 3
-        ? [...selectedSubcategories, cat]
-        : selectedSubcategories;
-    setSelectedSubcategories(next);
-    setValue('subcategories', next, { shouldValidate: true });
-  };
-
-  const togglePaymentModel = (model: string) => {
-    const next = selectedPaymentModels.includes(model)
-      ? selectedPaymentModels.filter((m) => m !== model)
-      : [...selectedPaymentModels, model];
-    setSelectedPaymentModels(next);
-    setValue('payment_models', next as BusinessInfoFormData['payment_models'], { shouldValidate: true });
-  };
 
   const onSubmit = async (data: BusinessInfoFormData) => {
     try {
@@ -252,37 +229,11 @@ export default function BusinessInfoPage() {
 
           <Field.Root invalid={!!errors.primary_category} required>
             <Field.Label color="fg">Primary Category</Field.Label>
-            <Flex gap={2} flexWrap="wrap" pt={1}>
-              {PRODUCT_CATEGORIES.map((cat) => {
-                const isSelected = selectedPrimaryCategory === cat;
-                return (
-                  <Flex
-                    key={cat}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setValue('primary_category', cat, { shouldValidate: true })}
-                    onKeyDown={(e) => e.key === 'Enter' && setValue('primary_category', cat, { shouldValidate: true })}
-                    align="center"
-                    gap={1.5}
-                    px={3}
-                    py={1.5}
-                    borderRadius="full"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    _hover={{ borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    {isSelected && <LuCheck size={12} />}
-                    <Text textStyle="xs">{cat}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
+            <SingleChipSelect
+              options={PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))}
+              value={selectedPrimaryCategory}
+              onChange={(v) => setValue('primary_category', v, { shouldValidate: true })}
+            />
             <Field.ErrorText>{errors.primary_category?.message}</Field.ErrorText>
           </Field.Root>
 
@@ -291,42 +242,12 @@ export default function BusinessInfoPage() {
               Subcategories{' '}
               <Text as="span" color="fg.muted" fontWeight="normal">(select up to 3)</Text>
             </Field.Label>
-            <Flex gap={2} flexWrap="wrap" pt={1}>
-              {PRODUCT_CATEGORIES.map((cat) => {
-                const isSelected = selectedSubcategories.includes(cat);
-                const isDisabled = !isSelected && selectedSubcategories.length >= 3;
-                return (
-                  <Flex
-                    key={cat}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => !isDisabled && toggleSubcategory(cat)}
-                    onKeyDown={(e) => e.key === 'Enter' && !isDisabled && toggleSubcategory(cat)}
-                    align="center"
-                    gap={1.5}
-                    px={3}
-                    py={1.5}
-                    borderRadius="full"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor={isDisabled ? 'not-allowed' : 'pointer'}
-                    opacity={isDisabled ? 0.4 : 1}
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    _hover={isDisabled ? {} : { borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    {isSelected && <LuCheck size={12} />}
-                    <Text textStyle="xs">{cat}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
-            {selectedSubcategories.length > 0 && (
-              <Text textStyle="xs" color="fg.muted">{selectedSubcategories.length} of 3 selected</Text>
-            )}
+            <MultiChipSelect
+              options={PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))}
+              value={selectedSubcategories as string[]}
+              onChange={(v) => setValue('subcategories', v, { shouldValidate: true })}
+              max={3}
+            />
             <Field.ErrorText>{errors.subcategories?.message}</Field.ErrorText>
           </Field.Root>
 
@@ -373,37 +294,15 @@ export default function BusinessInfoPage() {
 
           <Field.Root invalid={!!errors.payment_models} required>
             <Field.Label color="fg">Accepted Payment Methods</Field.Label>
-            <Flex gap={2} flexWrap="wrap" pt={1}>
-              {PAYMENT_MODEL_OPTIONS.map(({ value, label }) => {
-                const isSelected = selectedPaymentModels.includes(value);
-                return (
-                  <Flex
-                    key={value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => togglePaymentModel(value)}
-                    onKeyDown={(e) => e.key === 'Enter' && togglePaymentModel(value)}
-                    align="center"
-                    gap={1.5}
-                    px={3}
-                    py={1.5}
-                    borderRadius="full"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    _hover={{ borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    {isSelected && <LuCheck size={12} />}
-                    <Text textStyle="xs">{label}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
+            <MultiChipSelect
+              options={[...PAYMENT_MODEL_OPTIONS]}
+              value={selectedPaymentModels as string[]}
+              onChange={(v) =>
+                setValue('payment_models', v as BusinessInfoFormData['payment_models'], {
+                  shouldValidate: true,
+                })
+              }
+            />
             <Field.ErrorText>{errors.payment_models?.message}</Field.ErrorText>
           </Field.Root>
 
@@ -412,37 +311,15 @@ export default function BusinessInfoPage() {
 
           <Field.Root invalid={!!errors.refund_policy_type} required>
             <Field.Label color="fg">Refund Policy</Field.Label>
-            <Flex gap={2} flexWrap="wrap" pt={1}>
-              {REFUND_POLICY_OPTIONS.map(({ value, label }) => {
-                const isSelected = selectedRefundPolicy === value;
-                return (
-                  <Flex
-                    key={value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setValue('refund_policy_type', value, { shouldValidate: true })}
-                    onKeyDown={(e) => e.key === 'Enter' && setValue('refund_policy_type', value, { shouldValidate: true })}
-                    align="center"
-                    gap={1.5}
-                    px={3}
-                    py={1.5}
-                    borderRadius="full"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    _hover={{ borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    {isSelected && <LuCheck size={12} />}
-                    <Text textStyle="xs">{label}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
+            <SingleChipSelect
+              options={[...REFUND_POLICY_OPTIONS]}
+              value={selectedRefundPolicy}
+              onChange={(v) =>
+                setValue('refund_policy_type', v as BusinessInfoFormData['refund_policy_type'], {
+                  shouldValidate: true,
+                })
+              }
+            />
             <Field.ErrorText>{errors.refund_policy_type?.message}</Field.ErrorText>
           </Field.Root>
 

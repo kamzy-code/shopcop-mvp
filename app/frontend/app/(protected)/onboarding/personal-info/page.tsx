@@ -17,6 +17,7 @@ import { personalInfoSchema, PersonalInfoFormData } from '@/app/validators/vendo
 import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { useSubmitPersonalInfo } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
+import { SingleChipSelect } from '@/components/shared/chipSelect';
 
 const GENDER_OPTIONS = [
   { value: 'MALE', label: 'Male' },
@@ -147,39 +148,15 @@ export default function PersonalInfoPage() {
           {/* Gender */}
           <Field.Root invalid={!!errors.gender} required>
             <Field.Label color="fg">Gender</Field.Label>
-            <Flex gap={2} pt={1}>
-              {GENDER_OPTIONS.map(({ value, label }) => {
-                const isSelected = selectedGender === value;
-                return (
-                  <Flex
-                    key={value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setValue('gender', value, { shouldValidate: true })}
-                    onKeyDown={(e) =>
-                      e.key === 'Enter' && setValue('gender', value, { shouldValidate: true })
-                    }
-                    align="center"
-                    justify="center"
-                    px={4}
-                    py={2}
-                    borderRadius="full"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    flex={1}
-                    _hover={{ borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    <Text textStyle="sm">{label}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
+            <SingleChipSelect
+              options={[...GENDER_OPTIONS]}
+              value={selectedGender}
+              onChange={(v) =>
+                setValue('gender', v as PersonalInfoFormData['gender'], { shouldValidate: true })
+              }
+              showCheck={false}
+              stretch={true}
+            />
             <Field.ErrorText>{errors.gender?.message}</Field.ErrorText>
           </Field.Root>
 

@@ -22,6 +22,8 @@ import {
 import { useSubmitCACVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
+import { SingleChipSelect } from '@/components/shared/chipSelect';
+import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
 import { toaster } from '@/components/ui/toaster';
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'failed';
@@ -160,38 +162,16 @@ export default function CacVerificationPage() {
 
           <Field.Root invalid={!!errors.cac_company_type} required>
             <Field.Label color="fg">Company Type</Field.Label>
-            <Stack gap={2} pt={1}>
-              {CAC_COMPANY_TYPES.map(({ value, label }) => {
-                const isSelected = selectedType === value;
-                return (
-                  <Flex
-                    key={value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setValue('cac_company_type', value, { shouldValidate: true })}
-                    onKeyDown={(e) =>
-                      e.key === 'Enter' &&
-                      setValue('cac_company_type', value, { shouldValidate: true })
-                    }
-                    align="center"
-                    px={4}
-                    py={3}
-                    borderRadius="lg"
-                    borderWidth="1.5px"
-                    borderColor={isSelected ? 'primary.500' : 'border'}
-                    bg={isSelected ? 'primary.subtle' : 'transparent'}
-                    color={isSelected ? 'primary.fg' : 'fg.muted'}
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    fontWeight={isSelected ? 'medium' : 'normal'}
-                    userSelect="none"
-                    _hover={{ borderColor: 'primary.400', color: 'fg' }}
-                  >
-                    <Text textStyle="sm">{label}</Text>
-                  </Flex>
-                );
-              })}
-            </Stack>
+            <SingleChipSelect
+              options={[...CAC_COMPANY_TYPES]}
+              value={selectedType}
+              onChange={(v) =>
+                setValue('cac_company_type', v as CacVerificationFormData['cac_company_type'], {
+                  shouldValidate: true,
+                })
+              }
+              direction="column"
+            />
             <Field.ErrorText>{errors.cac_company_type?.message}</Field.ErrorText>
           </Field.Root>
 
@@ -214,14 +194,7 @@ export default function CacVerificationPage() {
           </Field.Root>
 
           {submitState === 'failed' && (
-            <Box p={4} borderRadius="lg" bg="red.subtle" borderWidth="1px" borderColor="red.200">
-              <Text textStyle="sm" color="red.600" fontWeight="medium">Submission Failed</Text>
-              <Text textStyle="xs" color="red.500" mt={1}>
-                {verifyMutation.error instanceof Error
-                  ? verifyMutation.error.message
-                  : 'An error occurred. Please try again.'}
-              </Text>
-            </Box>
+            <MutationErrorAlert error={verifyMutation.error} />
           )}
 
           <Button

@@ -19,6 +19,7 @@ import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { useSubmitNINVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
+import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
 import { toaster } from '@/components/ui/toaster';
 
 type VerifyState = 'idle' | 'verifying' | 'success' | 'failed';
@@ -210,14 +211,7 @@ export default function NinPage() {
             </Field.Root>
 
             {verifyState === 'failed' && (
-              <Box p={4} borderRadius="lg" bg="red.subtle" borderWidth="1px" borderColor="red.200">
-                <Text textStyle="sm" color="red.600" fontWeight="medium">
-                  Submission Failed
-                </Text>
-                <Text textStyle="xs" color="red.500" mt={1}>
-                  {verifyMutation.error instanceof Error ? verifyMutation.error.message : 'An error occurred while submitting your verification. Please try again.'}
-                </Text>
-              </Box>
+              <MutationErrorAlert error={verifyMutation.error} />
             )}
 
             <Button

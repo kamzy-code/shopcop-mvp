@@ -2,6 +2,7 @@
 import { useAuthStore } from '@/app/_store/authStore';
 import { UserRole } from '@/app/_types';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
+import { ErrorBoundary } from '@/components/shared/errorBoundary';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -37,5 +38,5 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
   if (requirement && user && !requirement.roles.includes(user.role)) return null;
 
-  return <>{children}</>;
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }
