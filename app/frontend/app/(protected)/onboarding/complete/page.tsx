@@ -19,7 +19,7 @@ export default function CompletePage() {
   // If someone lands here without completing steps, redirect them
   useEffect(() => {
     if (!businessInfo) {
-      router.replace('/onboarding/business-info');
+      router.replace('/onboarding/personal-info');
     }
   }, [businessInfo, router]);
 
@@ -82,7 +82,7 @@ export default function CompletePage() {
           <Text color="fg.muted" textStyle="sm" maxW="360px">
             Welcome to ShopCop,{' '}
             <Text as="span" fontWeight="semibold" color="fg">
-              {businessInfo.businessName}
+              {businessInfo.business_name}
             </Text>
             ! Your vendor profile is now active. Start adding products to begin selling.
           </Text>
@@ -102,9 +102,9 @@ export default function CompletePage() {
           </Text>
           <Stack gap={2} textAlign="left">
             {[
+              { label: 'Personal Information', done: true },
               { label: 'Business Information', done: true },
-              { label: 'BVN Verified', done: true },
-              { label: 'NIN Verified', done: true },
+              { label: 'NIN Verification', done: true },
             ].map((item) => (
               <Flex key={item.label} align="center" gap={3}>
                 <Flex

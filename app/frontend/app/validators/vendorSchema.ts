@@ -11,34 +11,64 @@ export const PRODUCT_CATEGORIES = [
   'Other',
 ] as const;
 
-export const DELIVERY_AREAS = [
-  'Lagos',
-  'Abuja',
-  'Port Harcourt',
-  'Kano',
-  'Ibadan',
-  'Benin City',
-  'Nationwide',
+export const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT (Abuja)', 'Gombe',
+  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+  'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
 ] as const;
 
-export const PAYMENT_METHODS = [
-  'Full Upfront',
-  'Cash on Delivery',
-  'Part Payment',
-  'Bank Transfer',
+export const PAYMENT_MODEL_OPTIONS = [
+  { value: 'FULL_PAYMENT', label: 'Full Payment' },
+  { value: 'PAY_ON_DELIVERY', label: 'Pay on Delivery' },
+  { value: 'PART_PAYMENT', label: 'Part Payment' },
+  { value: 'INSTALLMENT', label: 'Installment' },
+] as const;
+
+export const REFUND_POLICY_OPTIONS = [
+  { value: 'NO_REFUNDS', label: 'No Refunds' },
+  { value: 'FULL_REFUND', label: 'Full Refund' },
+  { value: 'PARTIAL_REFUND', label: 'Partial Refund' },
+  { value: 'EXCHANGE_ONLY', label: 'Exchange Only' },
+  { value: 'STORE_CREDIT', label: 'Store Credit' },
+  { value: 'CASE_BY_CASE', label: 'Case by Case' },
 ] as const;
 
 export const businessInfoSchema = z.object({
-  businessName: z
+  business_name: z
     .string()
-    .min(2, 'Business name must be at least 2 characters')
-    .max(100, 'Business name must be at most 100 characters'),
-  categories: z
+    .min(3, 'Business name must be at least 3 characters')
+    .max(100, 'Business name must be less than 100 characters'),
+  business_description: z
+    .string()
+    .min(50, 'Description must be at least 50 characters')
+    .max(500, 'Description must be less than 500 characters'),
+  state: z.string().min(2, 'Please select a state'),
+  city: z.string().min(2, 'City is required'),
+  street_address: z.string().min(5, 'Street address is required'),
+  landmark: z.string().optional(),
+  primary_category: z.string().min(1, 'Please select a primary category'),
+  subcategories: z
     .array(z.string())
-    .min(1, 'Select at least one category')
-    .max(3, 'Select at most 3 categories'),
-  address: z.string().min(5, 'Please enter a valid address'),
-  description: z.string().max(500, 'Description must be at most 500 characters').optional(),
+    .min(1, 'Select at least one subcategory')
+    .max(3, 'Select up to 3 subcategories'),
+  bank_name: z.string().min(2, 'Bank name is required'),
+  account_number: z
+    .string()
+    .regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
+  account_name: z
+    .string()
+    .min(3, 'Account name is required')
+    .max(100, 'Account name must be less than 100 characters'),
+  payment_models: z
+    .array(z.enum(['FULL_PAYMENT', 'PAY_ON_DELIVERY', 'PART_PAYMENT', 'INSTALLMENT']))
+    .min(1, 'Select at least one payment model'),
+  refund_policy_type: z.enum(
+    ['NO_REFUNDS', 'FULL_REFUND', 'PARTIAL_REFUND', 'EXCHANGE_ONLY', 'STORE_CREDIT', 'CASE_BY_CASE'],
+    { error: 'Please select a refund policy' }
+  ),
+  refund_duration_days: z.number().int().min(1).max(90).optional(),
 });
 
 const NAME_REGEX = /^[a-zA-Z\s'-]+$/;

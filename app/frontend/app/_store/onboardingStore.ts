@@ -11,10 +11,20 @@ interface PersonalInfo {
 }
 
 interface BusinessInfo {
-  businessName: string;
-  categories: string[];
-  address: string;
-  description: string;
+  business_name: string;
+  business_description: string;
+  state: string;
+  city: string;
+  street_address: string;
+  landmark?: string;
+  primary_category: string;
+  subcategories: string[];
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  payment_models: string[];
+  refund_policy_type: string;
+  refund_duration_days?: number;
 }
 
 interface NinData {
