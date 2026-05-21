@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
- const isSessionReady = useAuthStore((s) => s.isSessionReady);
+  const isSessionReady = useAuthStore((s) => s.isSessionReady);
   const router = useRouter();
 
   useEffect(() => {

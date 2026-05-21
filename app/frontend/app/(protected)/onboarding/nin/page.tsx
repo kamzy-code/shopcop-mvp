@@ -241,7 +241,7 @@ export default function NinPage() {
               onClick={() => router.push('/onboarding/business-info')}
             >
               <LuArrowLeft size={14} />
-              Back to BVN Verification
+              Back to Business Info
             </Button>
           </Stack>
         </form>
