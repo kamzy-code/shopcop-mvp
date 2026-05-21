@@ -330,23 +330,28 @@ model VendorVerification {
   points_value Int @default(0)
 
   // NIN Verification Fields
-  nin_number        String? // 11 digits
-  nin_full_name     String?
-  govt_id_front_url String?
-  govt_id_back_url  String?
+  nin_number              String? // 11 digits
+  nin_full_name           String?
+  govt_id_front_url       String?
+  govt_id_front_public_id String? // Cloudinary public ID
+  govt_id_back_url        String?
+  govt_id_back_public_id  String? // Cloudinary public ID
 
   // CAC Verification Fields
-  cac_rc_number       String?
-  cac_company_type    BusinessType?
-  cac_certificate_url String?
+  cac_rc_number             String?
+  cac_company_type          BusinessType?
+  cac_certificate_url       String?
+  cac_certificate_public_id String? // Cloudinary public ID
 
   // SMEDAN Verification Fields
-  smedan_suin            String?
-  smedan_business_type   BusinessType?
-  smedan_certificate_url String?
+  smedan_suin                  String?
+  smedan_business_type         BusinessType?
+  smedan_certificate_url       String?
+  smedan_certificate_public_id String? // Cloudinary public ID
 
   // Address Verification Fields
-  address_document_url String? // Utility bill
+  address_document_url       String? // Utility bill
+  address_document_public_id String? // Cloudinary public ID
 
   // Admin Review
   reviewed_by      String? // Admin user ID

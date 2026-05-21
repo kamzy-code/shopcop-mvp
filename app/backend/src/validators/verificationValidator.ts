@@ -20,8 +20,10 @@ export const ninVerificationSchema = z.object({
     ),
 
   govt_id_front_url: z.url('Invalid government ID front image URL'),
+  govt_id_front_public_id: z.string().min(1, 'Front ID public_id is required'),
 
   govt_id_back_url: z.url('Invalid government ID back image URL').optional(),
+  govt_id_back_public_id: z.string().min(1, 'Back ID public_id is required').optional(),
 });
 
 // ============================================
@@ -38,6 +40,7 @@ export const cacVerificationSchema = z.object({
   cac_company_type: z.enum(BusinessType, 'Invalid company type'),
 
   cac_certificate_url: z.url('Invalid CAC certificate URL'),
+  cac_certificate_public_id: z.string().min(1, 'CAC certificate public_id is required'),
 });
 
 // ============================================
@@ -54,6 +57,7 @@ export const smedanVerificationSchema = z.object({
   smedan_business_type: z.enum(BusinessType, 'Invalid company type'),
 
   smedan_certificate_url: z.url('Invalid SMEDAN certificate URL'),
+  smedan_certificate_public_id: z.string().min(1, 'SMEDAN certificate public_id is required'),
 });
 
 // ============================================
@@ -62,6 +66,7 @@ export const smedanVerificationSchema = z.object({
 
 export const addressVerificationSchema = z.object({
   address_document_url: z.url('Invalid address document URL'),
+  address_document_public_id: z.string().min(1, 'Address document public_id is required'),
 });
 
 // ============================================

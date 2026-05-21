@@ -36,4 +36,26 @@ export class CloudinaryService {
   static async deleteMedia(publicId: string) {
     return cloudinary.uploader.destroy(publicId);
   }
+
+  /**
+   * Generate a signed URL for an authenticated (private) Cloudinary asset.
+   * Signed URLs are time-bound and require the API secret to generate.
+   */
+  static getSignedUrl(
+    publicId: string,
+    options?: {
+      expiresIn?: number;
+      resourceType?: string;
+    }
+  ): string {
+    const expiresAt = Math.floor(Date.now() / 1000) + (options?.expiresIn ?? 3600);
+
+    return cloudinary.url(publicId, {
+      type: 'authenticated',
+      sign_url: true,
+      secure: true,
+      expires_at: expiresAt,
+      resource_type: options?.resourceType ?? 'image',
+    });
+  }
 }

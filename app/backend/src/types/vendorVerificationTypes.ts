@@ -4,23 +4,28 @@ export interface NINVerificationInput {
   nin_number: string;
   nin_full_name: string;
   govt_id_front_url: string;
+  govt_id_front_public_id: string;
   govt_id_back_url?: string;
+  govt_id_back_public_id?: string;
 }
 
 export interface CACVerificationInput {
   cac_rc_number: string;
   cac_company_type: BusinessType;
   cac_certificate_url: string;
+  cac_certificate_public_id: string;
 }
 
 export interface SMEDANVerificationInput {
   smedan_suin: string;
   smedan_business_type: BusinessType;
   smedan_certificate_url: string;
+  smedan_certificate_public_id: string;
 }
 
 export interface AddressVerificationInput {
   address_document_url: string;
+  address_document_public_id: string;
 }
 
 export const sectionWeights = {

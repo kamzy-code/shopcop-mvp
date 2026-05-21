@@ -202,7 +202,7 @@ export class VerificationController {
     try {
       const verifications = await VerificationService.getVendorVerifications(vendorProfile.id);
 
-      res.json({ success: true, data: verifications });
+      res.status(200).json({ success: true, data: verifications });
 
       vendorLogger.info('Verifications fetched', { action, userId });
     } catch (error) {
@@ -237,7 +237,7 @@ export class VerificationController {
         throw new AppError('Access denied', 403);
       }
 
-      res.json({ success: true, data: verification });
+      res.status(200).json({ success: true, data: verification });
 
       vendorLogger.info('Verification fetched', { action, verificationId: id, userId });
     } catch (error) {
@@ -282,7 +282,7 @@ export class VerificationController {
         parsed.data
       );
 
-      res.json({
+      res.status(201).json({
         success: true,
         data: verification,
         message: 'Verification resubmitted successfully. Awaiting admin review.',
