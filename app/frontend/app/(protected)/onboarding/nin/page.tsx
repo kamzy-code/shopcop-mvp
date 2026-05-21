@@ -3,17 +3,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Box,
   Button,
   Field,
-  Flex,
-  Heading,
   Input,
   Stack,
-  Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuIdCard, LuShieldCheck } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuIdCard } from 'react-icons/lu';
+import { FormCard } from '@/components/shared/formCard';
+import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
 import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { FileUpload } from '@/components/shared/fileUpload';
@@ -95,62 +93,18 @@ export default function NinPage() {
   };
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuIdCard size={20} color="var(--chakra-colors-primary-600)" />}
+      title="NIN Verification"
+      description="Your National Identification Number verifies your identity as a registered vendor."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuIdCard size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          NIN Verification
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Your National Identification Number verifies your identity as a registered vendor.
-        </Text>
-      </Stack>
-
       {verifyState === 'success' ? (
-        <Stack gap={6}>
-          <Flex direction="column" align="center" gap={4} py={8}>
-            <Flex
-              w={16}
-              h={16}
-              borderRadius="full"
-              bg="success.subtle"
-              align="center"
-              justify="center"
-            >
-              <LuShieldCheck size={32} color="var(--chakra-colors-success-600)" />
-            </Flex>
-            <Stack gap={1} textAlign="center">
-              <Text fontWeight="semibold" color="fg" textStyle="lg">
-                Identity Verified
-              </Text>
-              <Text color="fg.muted" textStyle="sm">
-                Your NIN has been successfully verified. You are all set!
-              </Text>
-            </Stack>
-          </Flex>
-
-          <Button colorPalette="primary" size="lg" w="full" onClick={handleContinue}>
-            Complete Setup
-            <LuArrowRight />
-          </Button>
-        </Stack>
+        <VerificationSuccessCard
+          title="Identity Verified"
+          description="Your NIN has been successfully verified. You are all set!"
+          actionLabel="Complete Setup"
+          onAction={handleContinue}
+        />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack gap={6}>
@@ -240,6 +194,6 @@ export default function NinPage() {
           </Stack>
         </form>
       )}
-    </Box>
+    </FormCard>
   );
 }

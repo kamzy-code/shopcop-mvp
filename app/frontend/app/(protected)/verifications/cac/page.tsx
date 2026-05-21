@@ -3,17 +3,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Box,
   Button,
   Field,
-  Flex,
-  Heading,
   Input,
   Stack,
-  Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuBuilding2, LuShieldCheck } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
+import { FormCard } from '@/components/shared/formCard';
+import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import {
   cacVerificationSchema,
   CacVerificationFormData,
@@ -76,73 +74,22 @@ export default function CacVerificationPage() {
 
   if (submitState === 'success') {
     return (
-      <Box
-        bg="bg.panel"
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="2xl"
-        p={{ base: 6, sm: 8 }}
-        shadow="lg"
-      >
-        <Stack gap={6}>
-          <Flex direction="column" align="center" gap={4} py={8}>
-            <Flex
-              w={16}
-              h={16}
-              borderRadius="full"
-              bg="success.subtle"
-              align="center"
-              justify="center"
-            >
-              <LuShieldCheck size={32} color="var(--chakra-colors-success-600)" />
-            </Flex>
-            <Stack gap={1} textAlign="center">
-              <Text fontWeight="semibold" color="fg" textStyle="lg">
-                CAC Submitted
-              </Text>
-              <Text color="fg.muted" textStyle="sm">
-                Your CAC certificate has been submitted and is under review. We will notify you once it is approved.
-              </Text>
-            </Stack>
-          </Flex>
-          <Button colorPalette="primary" size="lg" w="full" onClick={() => router.push('/dashboard')}>
-            Back to Dashboard
-            <LuArrowRight />
-          </Button>
-        </Stack>
-      </Box>
+      <VerificationSuccessCard
+        standalone
+        title="CAC Submitted"
+        description="Your CAC certificate has been submitted and is under review. We will notify you once it is approved."
+        actionLabel="Back to Dashboard"
+        onAction={() => router.push('/dashboard')}
+      />
     );
   }
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />}
+      title="CAC Verification"
+      description="Submit your Corporate Affairs Commission registration to unlock higher verification tiers."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          CAC Verification
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Submit your Corporate Affairs Commission registration to unlock higher verification tiers.
-        </Text>
-      </Stack>
-
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={6}>
           <Field.Root invalid={!!errors.cac_rc_number} required>
@@ -221,6 +168,6 @@ export default function CacVerificationPage() {
           </Button>
         </Stack>
       </form>
-    </Box>
+    </FormCard>
   );
 }

@@ -3,17 +3,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Box,
   Button,
   Field,
-  Flex,
-  Heading,
   Input,
   Stack,
-  Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuShieldCheck, LuStore } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuStore } from 'react-icons/lu';
+import { FormCard } from '@/components/shared/formCard';
+import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import {
   smedanVerificationSchema,
   SmedanVerificationFormData,
@@ -76,73 +74,22 @@ export default function SmedanVerificationPage() {
 
   if (submitState === 'success') {
     return (
-      <Box
-        bg="bg.panel"
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="2xl"
-        p={{ base: 6, sm: 8 }}
-        shadow="lg"
-      >
-        <Stack gap={6}>
-          <Flex direction="column" align="center" gap={4} py={8}>
-            <Flex
-              w={16}
-              h={16}
-              borderRadius="full"
-              bg="success.subtle"
-              align="center"
-              justify="center"
-            >
-              <LuShieldCheck size={32} color="var(--chakra-colors-success-600)" />
-            </Flex>
-            <Stack gap={1} textAlign="center">
-              <Text fontWeight="semibold" color="fg" textStyle="lg">
-                SMEDAN Submitted
-              </Text>
-              <Text color="fg.muted" textStyle="sm">
-                Your SMEDAN certificate has been submitted and is under review. We will notify you once it is approved.
-              </Text>
-            </Stack>
-          </Flex>
-          <Button colorPalette="primary" size="lg" w="full" onClick={() => router.push('/dashboard')}>
-            Back to Dashboard
-            <LuArrowRight />
-          </Button>
-        </Stack>
-      </Box>
+      <VerificationSuccessCard
+        standalone
+        title="SMEDAN Submitted"
+        description="Your SMEDAN certificate has been submitted and is under review. We will notify you once it is approved."
+        actionLabel="Back to Dashboard"
+        onAction={() => router.push('/dashboard')}
+      />
     );
   }
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuStore size={20} color="var(--chakra-colors-primary-600)" />}
+      title="SMEDAN Verification"
+      description="Submit your SMEDAN registration to verify your small or medium enterprise status."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuStore size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          SMEDAN Verification
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Submit your SMEDAN registration to verify your small or medium enterprise status.
-        </Text>
-      </Stack>
-
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={6}>
           <Field.Root invalid={!!errors.smedan_suin} required>
@@ -223,6 +170,6 @@ export default function SmedanVerificationPage() {
           </Button>
         </Stack>
       </form>
-    </Box>
+    </FormCard>
   );
 }

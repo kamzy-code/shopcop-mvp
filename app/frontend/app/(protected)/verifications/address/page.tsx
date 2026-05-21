@@ -5,15 +5,17 @@ import {
   Button,
   Field,
   Flex,
-  Heading,
   Stack,
   Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuMapPin, LuShieldCheck } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuMapPin } from 'react-icons/lu';
 import { useSubmitAddressVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
+import { FormCard } from '@/components/shared/formCard';
+import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
+import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
 import { toaster } from '@/components/ui/toaster';
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'failed';
@@ -52,73 +54,22 @@ export default function AddressVerificationPage() {
 
   if (submitState === 'success') {
     return (
-      <Box
-        bg="bg.panel"
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="2xl"
-        p={{ base: 6, sm: 8 }}
-        shadow="lg"
-      >
-        <Stack gap={6}>
-          <Flex direction="column" align="center" gap={4} py={8}>
-            <Flex
-              w={16}
-              h={16}
-              borderRadius="full"
-              bg="success.subtle"
-              align="center"
-              justify="center"
-            >
-              <LuShieldCheck size={32} color="var(--chakra-colors-success-600)" />
-            </Flex>
-            <Stack gap={1} textAlign="center">
-              <Text fontWeight="semibold" color="fg" textStyle="lg">
-                Address Document Submitted
-              </Text>
-              <Text color="fg.muted" textStyle="sm">
-                Your proof of address has been submitted and is under review. We will notify you once it is approved.
-              </Text>
-            </Stack>
-          </Flex>
-          <Button colorPalette="primary" size="lg" w="full" onClick={() => router.push('/dashboard')}>
-            Back to Dashboard
-            <LuArrowRight />
-          </Button>
-        </Stack>
-      </Box>
+      <VerificationSuccessCard
+        standalone
+        title="Address Document Submitted"
+        description="Your proof of address has been submitted and is under review. We will notify you once it is approved."
+        actionLabel="Back to Dashboard"
+        onAction={() => router.push('/dashboard')}
+      />
     );
   }
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuMapPin size={20} color="var(--chakra-colors-primary-600)" />}
+      title="Address Verification"
+      description="Upload a proof of address document to confirm your business location."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuMapPin size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          Address Verification
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Upload a proof of address document to confirm your business location.
-        </Text>
-      </Stack>
-
       <Stack gap={6}>
         <Box p={4} borderRadius="lg" bg="bg.subtle" borderWidth="1px" borderColor="border">
           <Text textStyle="sm" fontWeight="semibold" color="fg" mb={2}>
@@ -158,14 +109,7 @@ export default function AddressVerificationPage() {
         </Field.Root>
 
         {submitState === 'failed' && (
-          <Box p={4} borderRadius="lg" bg="red.subtle" borderWidth="1px" borderColor="red.200">
-            <Text textStyle="sm" color="red.600" fontWeight="medium">Submission Failed</Text>
-            <Text textStyle="xs" color="red.500" mt={1}>
-              {verifyMutation.error instanceof Error
-                ? verifyMutation.error.message
-                : 'An error occurred. Please try again.'}
-            </Text>
-          </Box>
+          <MutationErrorAlert error={verifyMutation.error} />
         )}
 
         <Button
@@ -191,6 +135,6 @@ export default function AddressVerificationPage() {
           Back to Dashboard
         </Button>
       </Stack>
-    </Box>
+    </FormCard>
   );
 }

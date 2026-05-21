@@ -2,17 +2,16 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Box,
   Button,
   Field,
   Flex,
-  Heading,
   Input,
   Stack,
   Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowRight, LuUser } from 'react-icons/lu';
+import { FormCard } from '@/components/shared/formCard';
 import { personalInfoSchema, PersonalInfoFormData } from '@/app/validators/vendorSchema';
 import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { useSubmitPersonalInfo } from '@/app/_hooks/vendor';
@@ -70,34 +69,11 @@ export default function PersonalInfoPage() {
   };
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuUser size={20} color="var(--chakra-colors-primary-600)" />}
+      title="Personal Information"
+      description="Tell us a bit about yourself so we can verify your identity."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuUser size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          Personal Information
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Tell us a bit about yourself so we can verify your identity.
-        </Text>
-      </Stack>
-
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={6}>
           {/* Name row */}
@@ -209,6 +185,6 @@ export default function PersonalInfoPage() {
           </Button>
         </Stack>
       </form>
-    </Box>
+    </FormCard>
   );
 }

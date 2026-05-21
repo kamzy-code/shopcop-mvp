@@ -6,7 +6,6 @@ import {
   Button,
   Field,
   Flex,
-  Heading,
   Input,
   Stack,
   Text,
@@ -14,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
+import { FormCard, SectionLabel } from '@/components/shared/formCard';
 import {
   businessInfoSchema,
   BusinessInfoFormData,
@@ -26,21 +26,6 @@ import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { toaster } from '@/components/ui/toaster';
 import { useSubmitBusinessInfo } from '@/app/_hooks/vendor';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <Text
-      textStyle="xs"
-      fontWeight="semibold"
-      color="fg.muted"
-      textTransform="uppercase"
-      letterSpacing="wider"
-      pt={2}
-    >
-      {children}
-    </Text>
-  );
-}
 
 export default function BusinessInfoPage() {
   const router = useRouter();
@@ -98,34 +83,11 @@ export default function BusinessInfoPage() {
   };
 
   return (
-    <Box
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="2xl"
-      p={{ base: 6, sm: 8 }}
-      shadow="lg"
+    <FormCard
+      icon={<LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />}
+      title="Business Information"
+      description="Tell us about your business so buyers can find and trust you."
     >
-      <Stack gap={1} mb={8}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="xl"
-          bg="primary.subtle"
-          align="center"
-          justify="center"
-          mb={2}
-        >
-          <LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />
-        </Flex>
-        <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">
-          Business Information
-        </Heading>
-        <Text color="fg.muted" textStyle="sm">
-          Tell us about your business so buyers can find and trust you.
-        </Text>
-      </Stack>
-
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={6}>
           {/* ── Business Details ── */}
@@ -368,6 +330,6 @@ export default function BusinessInfoPage() {
           </Button>
         </Stack>
       </form>
-    </Box>
+    </FormCard>
   );
 }
