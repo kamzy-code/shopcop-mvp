@@ -70,8 +70,10 @@ export default function BusinessInfoPage() {
 
     try {
       await submitMutation.mutateAsync(payload);
-    } catch {
-      // API not ready yet — proceed with local state
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save business info';
+      toaster.create({ title: 'Error', description: message, type: 'error' });
+      return;
     }
 
     setBusinessInfo({
@@ -81,7 +83,7 @@ export default function BusinessInfoPage() {
       description: payload.description || '',
     });
 
-    router.push('/onboarding/bvn');
+    router.push('/onboarding/nin');
   };
 
   return (
@@ -224,7 +226,7 @@ export default function BusinessInfoPage() {
             loading={isSubmitting || submitMutation.isPending}
             disabled={isSubmitting}
           >
-            Continue to BVN Verification
+            Continue to NIN Verification
             <LuArrowRight />
           </Button>
         </Stack>

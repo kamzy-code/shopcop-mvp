@@ -41,6 +41,44 @@ export const businessInfoSchema = z.object({
   description: z.string().max(500, 'Description must be at most 500 characters').optional(),
 });
 
+const NAME_REGEX = /^[a-zA-Z\s'-]+$/;
+
+export const personalInfoSchema = z.object({
+  first_name: z
+    .string()
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name must be at most 50 characters')
+    .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only'),
+  middle_name: z
+    .string()
+    .max(50, 'Middle name must be at most 50 characters')
+    .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only')
+    .optional(),
+  last_name: z
+    .string()
+    .min(2, 'Last name must be at least 2 characters')
+    .max(50, 'Last name must be at most 50 characters')
+    .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only'),
+  gender: z.enum(['MALE', 'FEMALE', 'PREFER_NOT_TO_SAY'], {
+    error: 'Please select a gender',
+  }),
+  date_of_birth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine((val) => {
+      const dob = new Date(val);
+      const today = new Date();
+      const age =
+        today.getFullYear() -
+        dob.getFullYear() -
+        (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0);
+      return age >= 16;
+    }, 'You must be at least 16 years old'),
+  phone_number: z
+    .string()
+    .regex(/^(\+234|0)[789]\d{9}$/, 'Enter a valid Nigerian number (e.g. 08012345678)'),
+});
+
 export const ninSchema = z.object({
   nin_full_name: z.string().min(2, 'Full legal name is required'),
   nin_number: z.string().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
@@ -58,5 +96,6 @@ export const productSchema = z.object({
 });
 
 export type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
+export type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 export type NinFormData = z.infer<typeof ninSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;

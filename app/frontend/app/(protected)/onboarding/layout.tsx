@@ -6,8 +6,8 @@ import { LuStore } from 'react-icons/lu';
 import { ColorModeButton } from '@/components/ui/color-mode';
 
 const STEPS = [
+  { label: 'Personal Info', path: '/onboarding/personal-info' },
   { label: 'Business Info', path: '/onboarding/business-info' },
-  { label: 'BVN Verify', path: '/onboarding/bvn' },
   { label: 'NIN Verify', path: '/onboarding/nin' },
   { label: 'Complete', path: '/onboarding/complete' },
 ];

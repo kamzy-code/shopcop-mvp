@@ -14,6 +14,22 @@ export const useVendorProfile = () =>
     staleTime: 5 * 60 * 1000,
   });
 
+export const useSubmitPersonalInfo = () =>
+  useMutation({
+    mutationFn: (data: {
+      first_name: string;
+      last_name: string;
+      gender: 'MALE' | 'FEMALE' | 'PREFER_NOT_TO_SAY';
+      date_of_birth: string;
+      phone_number: string;
+      middle_name?: string;
+    }) =>
+      apiFetch('/vendors/personal-info', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  });
+
 export const useSubmitBusinessInfo = () =>
   useMutation({
     mutationFn: (data: {
