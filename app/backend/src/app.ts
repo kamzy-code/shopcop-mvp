@@ -10,7 +10,7 @@ import cookieParser from 'cookie-parser';
 import fileUploadRouter from '@routes/fileUplaodRoute.js';
 import vendorRouter from '@routes/vendorRoute.js';
 import verificationRouter from '@routes/verificationRoute.js';
-import adminVerificationRouter from '@routes/adminVerificationRoute.js';
+import adminVerificationRouter from '@routes/admin/adminVerificationRoute.js';
 
 dotenv.config();
 
