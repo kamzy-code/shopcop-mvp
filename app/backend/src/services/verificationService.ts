@@ -16,7 +16,16 @@ import {
 
 export class VerificationService {
   /**
-   * Submit NIN verification
+   * Submit NIN verification for identity verification.
+   * Requires personal info to be completed first.
+   * Prevents duplicate PENDING or APPROVED submissions.
+   *
+   * @param vendorId - Vendor profile ID
+   * @param data - NIN verification input including NIN number, full name, and document URLs/public_ids
+   * @returns The created VendorVerification record
+   * @throws {AppError} 400 — Personal info not complete
+   * @throws {AppError} 404 — Vendor profile not found
+   * @throws {AppError} 409 — NIN verification already pending or approved
    */
   static async submitNINVerification(vendorId: string, data: NINVerificationInput) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -75,7 +84,16 @@ export class VerificationService {
   }
 
   /**
-   * Submit CAC verification
+   * Submit CAC business registration verification.
+   * Requires business info to be completed first.
+   * Prevents duplicate PENDING or APPROVED submissions.
+   *
+   * @param vendorId - Vendor profile ID
+   * @param data - CAC verification input including RC number, company type, and certificate document
+   * @returns The created VendorVerification record
+   * @throws {AppError} 400 — Business info not complete
+   * @throws {AppError} 404 — Vendor profile not found
+   * @throws {AppError} 409 — CAC verification already pending or approved
    */
   static async submitCACVerification(vendorId: string, data: CACVerificationInput) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -134,7 +152,16 @@ export class VerificationService {
   }
 
   /**
-   * Submit SMEDAN verification
+   * Submit SMEDAN registration verification.
+   * Requires business info to be completed first.
+   * Prevents duplicate PENDING or APPROVED submissions.
+   *
+   * @param vendorId - Vendor profile ID
+   * @param data - SMEDAN verification input including SUIN, business type, and certificate document
+   * @returns The created VendorVerification record
+   * @throws {AppError} 400 — Business info not complete
+   * @throws {AppError} 404 — Vendor profile not found
+   * @throws {AppError} 409 — SMEDAN verification already pending or approved
    */
   static async submitSMEDANVerification(vendorId: string, data: SMEDANVerificationInput) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -193,7 +220,16 @@ export class VerificationService {
   }
 
   /**
-   * Submit address verification
+   * Submit proof-of-address document for address verification.
+   * Requires business info with street address to be completed first.
+   * Prevents duplicate PENDING or APPROVED submissions.
+   *
+   * @param vendorId - Vendor profile ID
+   * @param data - Address verification input including document URL and public_id
+   * @returns The created VendorVerification record
+   * @throws {AppError} 400 — Business address info not complete
+   * @throws {AppError} 404 — Vendor profile not found
+   * @throws {AppError} 409 — Address verification already pending or approved
    */
   static async submitAddressVerification(vendorId: string, data: AddressVerificationInput) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -252,7 +288,10 @@ export class VerificationService {
   }
 
   /**
-   * Get all verifications for a vendor
+   * Get all verifications for a vendor, ordered by submission date (newest first).
+   *
+   * @param vendorId - Vendor profile ID
+   * @returns Array of VendorVerification records
    */
   static async getVendorVerifications(vendorId: string) {
     return prisma.vendorVerification.findMany({
@@ -262,7 +301,10 @@ export class VerificationService {
   }
 
   /**
-   * Get verification by ID
+   * Get a single verification by its ID, including vendor and user email.
+   *
+   * @param verificationId - Verification record ID
+   * @returns VendorVerification with included vendor and user relations, or null if not found
    */
   static async getVerificationById(verificationId: string) {
     return prisma.vendorVerification.findUnique({
@@ -282,7 +324,16 @@ export class VerificationService {
   }
 
   /**
-   * Resubmit rejected verification
+   * Resubmit a rejected verification with updated data.
+   * Only verifications in REJECTED status can be resubmitted.
+   * Resets status to PENDING and clears rejection-related fields.
+   *
+   * @param verificationId - Verification record ID to resubmit
+   * @param vendorId - Vendor profile ID (ownership verification)
+   * @param updateData - Partial verification data matching the verification type
+   * @returns The updated VendorVerification record
+   * @throws {AppError} 400 — Verification is not in REJECTED status
+   * @throws {AppError} 404 — Verification not found
    */
   static async resubmitVerification(
     verificationId: string,

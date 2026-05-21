@@ -10,6 +10,19 @@ import { env } from '@config/env.js';
 // AUTH MIDDLEWARE
 // ============================================
 
+/**
+ * Enforces authentication by reading the `auth_token` httpOnly cookie.
+ * Verifies the JWT, confirms the user still exists, is active, and has a verified
+ * email, then attaches `{ userId, email, role }` to `req.user`.
+ *
+ * @param req - Express request object (reads auth_token cookie, attaches req.user on success)
+ * @param res - Express response object
+ * @param next - Express next function
+ * @throws {AppError} 401 — Missing, invalid, or expired token
+ * @throws {AppError} 401 — User no longer exists in the database
+ * @throws {AppError} 403 — Account has been deactivated
+ * @throws {AppError} 403 — Email address not yet verified
+ */
 export const authenticate = async (
   req: Request,
   res: Response,
@@ -101,6 +114,22 @@ export const authenticate = async (
 // OPTIONAL AUTH (allows both authenticated and unauthenticated)
 // ============================================
 
+/**
+ * Attempts to authenticate from the `auth_token` cookie but does NOT block the
+ * request on a valid token being absent or invalid. If a valid token is found and
+ * the user is active and verified, `req.user` is populated; otherwise the request
+ * continues unauthenticated.
+ *
+ * @param req - Express request object (reads auth_token cookie, optionally attaches req.user)
+ * @param res - Express response object
+ * @param next - Express next function
+ * @remarks
+ * Current behaviour diverges from typical optional-auth semantics: when no token
+ * cookie is present at all, this middleware throws a 401 instead of continuing
+ * anonymously. This is an existing behaviour, not intentional design.
+ *
+ * @throws {AppError} 401 — Only when the `auth_token` cookie is entirely absent
+ */
 export const optionalAuth = async (
   req: Request,
   res: Response,

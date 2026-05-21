@@ -6,6 +6,7 @@ import { env } from '@config/env.js';
 
 const { combine, json, timestamp, prettyPrint, splat, errors } = format;
 
+/** Winston logger for general application-level events. */
 const logger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -19,6 +20,7 @@ const logger = createLogger({
   ],
 });
 
+/** Winston logger scoped to email sending operations. */
 const emailLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -34,6 +36,7 @@ const emailLogger = createLogger({
   defaultMeta: { service: 'emailService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to authentication flows (signup, OTP, magic link). */
 const authLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -49,6 +52,7 @@ const authLogger = createLogger({
   defaultMeta: { service: 'authService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to user profile operations. */
 const userLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -64,6 +68,7 @@ const userLogger = createLogger({
   defaultMeta: { service: 'userService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to file upload and Cloudinary operations. */
 const fileUplaodLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -80,6 +85,7 @@ const fileUplaodLogger = createLogger({
 });
 
 
+/** Winston logger scoped to vendor profile and onboarding operations. */
 const vendorLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
@@ -96,6 +102,7 @@ const vendorLogger = createLogger({
 });
 
 
+/** Winston logger scoped to admin panel and tier calculation operations. */
 const adminLogger = createLogger({
   level: 'info',
   format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),

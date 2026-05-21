@@ -8,7 +8,18 @@ import { parseZodErrors } from '@utils/parseZodErros.js';
 export class VendorProfileController {
   /**
    * POST /api/v1/profile/personal-info
-   * Update personal information (Step 1)
+   * Update personal information (Step 1 of vendor onboarding).
+   * Validates input against personalInfoSchema and recalculates profile completeness.
+   *
+   * @param req.body.first_name - Vendor's first name
+   * @param req.body.last_name - Vendor's last name
+   * @param req.body.gender - Gender (Male, Female, Other)
+   * @param req.body.date_of_birth - Date of birth (must be 16+)
+   * @param req.body.phone_number - Nigerian phone number (e.g. +2348012345678)
+   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: vendorProfile, message }`
+   * @throws {AppError} 400 — Validation failure or age under 16
+   * @throws {AppError} 401 — No authenticated user on the request
    */
   static async updatePersonalInfo(req: Request, res: Response, next: NextFunction) {
     const action = 'updatePersonalInfo';
@@ -46,7 +57,24 @@ export class VendorProfileController {
 
   /**
    * POST /api/v1/profile/business-info
-   * Update business information (Step 2)
+   * Update business information (Step 2 of vendor onboarding).
+   * Requires personal info to be completed first. Generates a unique slug from business name.
+   *
+   * @param req.body.business_name - Registered business name
+   * @param req.body.business_description - Description of the business
+   * @param req.body.state - Operating state
+   * @param req.body.city - Operating city
+   * @param req.body.street_address - Street address
+   * @param req.body.primary_category - Primary business category ID
+   * @param req.body.subcategories - Array of subcategory IDs
+   * @param req.body.bank_name - Bank name for payouts
+   * @param req.body.account_number - Bank account number
+   * @param req.body.account_name - Bank account holder name
+   * @param req.body.payment_models - Array of accepted payment models
+   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: vendorProfile, message }`
+   * @throws {AppError} 400 — Personal info not completed first or validation failure
+   * @throws {AppError} 401 — No authenticated user on the request
    */
   static async updateBusinessInfo(req: Request, res: Response, next: NextFunction) {
     const action = 'updateBusinessInfo';
@@ -84,7 +112,12 @@ export class VendorProfileController {
 
   /**
    * GET /api/v1/profile
-   * Get vendor profile
+   * Get the authenticated vendor's full profile including verifications.
+   *
+   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: vendorProfile }`
+   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 404 — Vendor profile not found
    */
   static async getVendorProfile(req: Request, res: Response, next: NextFunction) {
     const action = 'getVendorProfile';
@@ -112,7 +145,11 @@ export class VendorProfileController {
 
   /**
    * GET /api/v1/profile/completeness
-   * Get profile completeness breakdown
+   * Get the authenticated vendor's profile completeness breakdown by section.
+   *
+   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: { total_completeness, sections } }`
+   * @throws {AppError} 401 — No authenticated user on the request
    */
   static async getProfileCompleteness(req: Request, res: Response, next: NextFunction) {
     const action = 'getProfileCompleteness';

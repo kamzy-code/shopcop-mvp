@@ -1,5 +1,6 @@
 import { BusinessType } from '../generated/prisma/client.js';
 
+/** Input for submitting NIN identity verification. */
 export interface NINVerificationInput {
   nin_number: string;
   nin_full_name: string;
@@ -9,6 +10,7 @@ export interface NINVerificationInput {
   govt_id_back_public_id?: string;
 }
 
+/** Input for submitting CAC business registration verification. */
 export interface CACVerificationInput {
   cac_rc_number: string;
   cac_company_type: BusinessType;
@@ -16,6 +18,7 @@ export interface CACVerificationInput {
   cac_certificate_public_id: string;
 }
 
+/** Input for submitting SMEDAN registration verification. */
 export interface SMEDANVerificationInput {
   smedan_suin: string;
   smedan_business_type: BusinessType;
@@ -23,34 +26,36 @@ export interface SMEDANVerificationInput {
   smedan_certificate_public_id: string;
 }
 
+/** Input for submitting proof-of-address document verification. */
 export interface AddressVerificationInput {
   address_document_url: string;
   address_document_public_id: string;
 }
 
+/** Weight of each profile section in the overall completeness calculation (0-100). */
 export const sectionWeights = {
-  PERSONAL_INFO: 20, // 20% of profile
-  BUSINESS_INFO: 20, // 20% of profile
-  NIN_VERIFICATION: 20, // 20% of profile
-  ADDRESS_VERIFICATION: 15, // 15% of profile
-  BUSINESS_VERIFICATION: 25, // 25% of profile (CAC or SMEDAN)
+  PERSONAL_INFO: 20,
+  BUSINESS_INFO: 20,
+  NIN_VERIFICATION: 20,
+  ADDRESS_VERIFICATION: 15,
+  BUSINESS_VERIFICATION: 25,
 } as const;
 
-// Verification Points System
+/** Points awarded per completed verification type for tier calculation. */
 export const verificationPoints = {
-  PERSONAL_INFO: 0,      // Prerequisite, no points
-  BUSINESS_INFO: 0,      // Prerequisite, no points
-  NIN_VERIFIED: 10,      // Identity verification
-  ADDRESS_VERIFIED: 5,   // Location confirmation
-  CAC_VERIFIED: 15,      // Formal business registration
-  SMEDAN_VERIFIED: 8,    // SME registration
+  PERSONAL_INFO: 0,
+  BUSINESS_INFO: 0,
+  NIN_VERIFIED: 10,
+  ADDRESS_VERIFIED: 5,
+  CAC_VERIFIED: 15,
+  SMEDAN_VERIFIED: 8,
 } as const;
 
-// Tier Thresholds
+/** Minimum points thresholds for each vendor tier. */
 export const tierThresholds = {
-  TIER_0: 0,       // 0 points   - Unverified
-  TIER_1: 8,       // 8-14 points - Basic verified
-  TIER_2: 15,      // 15-19 points - Business verified
-  TIER_3: 20,      // 20-29 points - Highly verified
-  TIER_4: 30,      // 30+ points  - Elite verified
+  TIER_0: 0,
+  TIER_1: 8,
+  TIER_2: 15,
+  TIER_3: 20,
+  TIER_4: 30,
 } as const;

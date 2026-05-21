@@ -10,6 +10,15 @@ import {
 } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 
+/**
+ * Seeds the database with initial data required for development and testing.
+ * Creates 8 business categories, an admin user, and two test vendor accounts
+ * (one at TIER_0 with an incomplete profile, one at TIER_3 with full verifications).
+ *
+ * Run via: `npm run seed`
+ *
+ * @throws Exits the process with code 1 if seeding fails
+ */
 async function main() {
   console.log('🌱 Seeding database...');
 

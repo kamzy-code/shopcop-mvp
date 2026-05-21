@@ -12,7 +12,13 @@ import { sectionWeights } from '../types/vendorVerificationTypes.js';
 
 export class VendorProfileService {
   /**
-   * Update personal information (Step 1)
+   * Update personal information (Step 1 of vendor onboarding).
+   * Validates minimum age (16+), upserts the vendor profile, and recalculates completeness.
+   *
+   * @param userId - Authenticated user's ID
+   * @param data - Personal info input: first_name, last_name, gender, date_of_birth, phone_number
+   * @returns Updated vendor profile with profile_completeness
+   * @throws {AppError} 400 — Age is under 16
    */
   static async updatePersonalInfo(userId: string, data: PersonalInfoInput) {
     // Validate age (must be 18+)
@@ -59,7 +65,14 @@ export class VendorProfileService {
   }
 
   /**
-   * Update business information (Step 2)
+   * Update business information (Step 2 of vendor onboarding).
+   * Requires personal info to be completed first. Generates a unique slug from business name
+   * and recalculates profile completeness.
+   *
+   * @param userId - Authenticated user's ID
+   * @param data - Business info input: name, description, location, category, bank, payment models, social handles, etc.
+   * @returns Updated vendor profile with profile_completeness
+   * @throws {AppError} 400 — Personal info not completed first
    */
   static async updateBusinessInfo(userId: string, data: BusinessInfoInput) {
     // Get vendor profile
@@ -110,14 +123,21 @@ export class VendorProfileService {
   }
 
    /**
-   * Get vendor profile
-   */
+    * Get a vendor profile by user ID. Returns null if not found.
+    *
+    * @param userId - Authenticated user's ID
+    * @returns VendorProfile or null
+    */
   static async getVendorProfile(userId: string) {
     return prisma.vendorProfile.findUnique({ where: { user_id: userId } });
   }
 
   /**
-   * Get vendor profile with verifications
+   * Get vendor profile including all verifications (ordered newest-first) and user details.
+   * Calculates and returns current profile completeness.
+   *
+   * @param userId - Authenticated user's ID
+   * @returns Vendor profile with verifications, user info, and profile_completeness, or null if not found
    */
   static async getVendorProfileWithVerifications(userId: string) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -150,7 +170,11 @@ export class VendorProfileService {
   }
 
   /**
-   * Get profile completeness breakdown
+   * Get a detailed profile completeness breakdown by section.
+   * Returns zero values for all sections if the vendor profile does not exist.
+   *
+   * @param userId - Authenticated user's ID
+   * @returns Breakdown object with total_completeness and per-section status/weight/percentage
    */
   static async getProfileCompletenessBreakdown(userId: string) {
     const vendorProfile = await prisma.vendorProfile.findUnique({
@@ -234,7 +258,10 @@ export class VendorProfileService {
   // ============================================
 
   /**
-   * Calculate age from date of birth
+   * Calculate age from a date of birth.
+   *
+   * @param dateOfBirth - Date of birth
+   * @returns Age in years
    */
   private static calculateAge(dateOfBirth: Date): number {
     const today = new Date();
@@ -250,7 +277,14 @@ export class VendorProfileService {
   }
 
   /**
-   * Generate unique slug from business name
+   * Generate a unique URL-safe slug from a business name.
+   * Appends a random 4-digit suffix if the base slug already exists.
+   * Throws if a unique slug cannot be generated after 10 attempts.
+   *
+   * @param businessName - The business name to convert to a slug
+   * @param currentProfileId - Current profile ID to exclude from duplicate check (optional)
+   * @returns A unique slug string
+   * @throws {AppError} — Failed to generate unique slug after 10 attempts
    */
   private static async generateUniqueSlug(
     businessName: string,

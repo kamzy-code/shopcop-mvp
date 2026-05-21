@@ -9,28 +9,16 @@ const vendorRouter = Router();
 vendorRouter.use(authenticate);
 vendorRouter.use(requireVendor);
 
-/**
- * // Update personal info (Step 1)
- * api/v1/vendors/personal-info
- */
+/** POST /api/v1/vendors/personal-info — Update personal info (Step 1). */
 vendorRouter.post('/personal-info', VendorProfileController.updatePersonalInfo);
 
-/**
- * Update business info (Step 2)
- * api/v1/vendors/business-info
- * */
+/** POST /api/v1/vendors/business-info — Update business info (Step 2). */
 vendorRouter.post('/business-info', VendorProfileController.updateBusinessInfo);
 
-/**
- * Get profile
- * api/v1/vendors/
- */
+/** GET /api/v1/vendors — Get vendor profile with verifications. */
 vendorRouter.get('/', VendorProfileController.getVendorProfile);
 
-/**
- *  Get profile completeness breakdown
- * api/vendors/completeness
- */
+/** GET /api/v1/vendors/completeness — Get profile completeness breakdown. */
 vendorRouter.get('/completeness', VendorProfileController.getProfileCompleteness);
 
 export default vendorRouter;

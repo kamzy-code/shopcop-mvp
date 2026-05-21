@@ -26,6 +26,14 @@ interface VendorProfileWithVerifications {
 // ============================================
 
 export class ProfileCompletenessService {
+  /**
+   * Calculates a weighted partial credit score for a profile section based on
+   * how many of its fields are truthy.
+   *
+   * @param fields - Array of field values to evaluate for completion
+   * @param weight - Maximum point contribution of this section (e.g. 20 for personal info)
+   * @returns A number between 0 and `weight` proportional to completed fields
+   */
   private static calculatePartialCredit(
     fields: (string | null | undefined | boolean | Date)[],
     weight: number
@@ -35,7 +43,13 @@ export class ProfileCompletenessService {
   }
 
   /**
-   * Calculate profile completeness percentage
+   * Calculate profile completeness percentage based on weighted sections.
+   * Personal info and business info each contribute 20% (with partial credit for incomplete sections).
+   * NIN verification and address verification contribute 20% and 15% (all-or-nothing).
+   * Business verification (CAC or SMEDAN) contributes 25% (all-or-nothing).
+   *
+   * @param vendorProfile - Vendor profile object with field values and verifications array
+   * @returns Completeness percentage (0-100)
    */
   static calculateCompleteness(vendorProfile: VendorProfileWithVerifications): number {
     let totalWeight = 0;
@@ -116,7 +130,11 @@ export class ProfileCompletenessService {
   }
 
   /**
-   * Check if personal info is complete
+   * Check if all required personal info fields are filled.
+   * Required: first_name, last_name, gender, date_of_birth, phone_number.
+   *
+   * @param data - Partial personal info input object
+   * @returns True if all required fields are truthy
    */
   static isPersonalInfoComplete(data: Partial<PersonalInfoInput>): boolean {
     return !!(
@@ -129,7 +147,11 @@ export class ProfileCompletenessService {
   }
 
   /**
-   * Check if business info is complete
+   * Check if all required business info fields are filled.
+   * Includes business details, location, category, subcategories, bank info, and payment models.
+   *
+   * @param data - Partial business info input object
+   * @returns True if all required fields are truthy and arrays are non-empty
    */
   static isBusinessInfoComplete(data: Partial<BusinessInfoInput>): boolean {
     return !!(

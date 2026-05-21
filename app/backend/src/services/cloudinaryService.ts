@@ -9,6 +9,13 @@ cloudinary.config({
 });
 
 export class CloudinaryService {
+  /**
+   * Generates a signed upload signature for authenticated client-side uploads to Cloudinary.
+   * Returns the params needed for the client to upload directly without exposing the API secret.
+   *
+   * @param folder - Cloudinary folder path where the asset will be stored
+   * @returns Object containing timestamp, upload_preset, folder, type, signature, and apiKey
+   */
   static async generateUplaodSignature(folder: string) {
     const timestamp = Math.round(Date.now() / 1000);
 
@@ -33,6 +40,12 @@ export class CloudinaryService {
     };
   }
 
+  /**
+   * Permanently deletes a Cloudinary asset by its public ID.
+   *
+   * @param publicId - Cloudinary public ID of the asset to remove
+   * @returns Cloudinary deletion result object
+   */
   static async deleteMedia(publicId: string) {
     return cloudinary.uploader.destroy(publicId);
   }
@@ -40,6 +53,11 @@ export class CloudinaryService {
   /**
    * Generate a signed URL for an authenticated (private) Cloudinary asset.
    * Signed URLs are time-bound and require the API secret to generate.
+   *
+   * @param publicId - Cloudinary public ID of the asset
+   * @param options.expiresIn - Seconds from now until URL expiry (default: 3600)
+   * @param options.resourceType - Cloudinary resource type: 'image', 'raw', 'video', or 'auto' (default: 'image')
+   * @returns Signed Cloudinary URL string with expiration
    */
   static getSignedUrl(
     publicId: string,

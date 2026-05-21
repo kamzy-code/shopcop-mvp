@@ -5,13 +5,13 @@ import { requireAdmin } from '@middleware/rbac.js';
 
 const userRouter = Router();
 
-// GET /api/v1/user/me
+/** GET /api/v1/users/me — Get authenticated user's profile. */
 userRouter.get('/me', authenticate, UserController.getCurrentUser);
 
-// PUT /api/v1/user/profile
+/** PUT /api/v1/users/profile — Update display name and/or avatar. */
 userRouter.put('/profile', authenticate, UserController.updateProfile);
 
-// Example of an admin-only route (if needed in the future)
+/** GET /api/v1/users/admin-only — List all users (admin only). */
 userRouter.get('/admin-only', authenticate, requireAdmin, UserController.listUsers);
 
 export default userRouter;

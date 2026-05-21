@@ -14,7 +14,18 @@ import { VerificationStatus, VerificationType } from '../../generated/prisma/cli
 export class AdminVerificationController {
   /**
    * GET /api/v1/admin/verifications
-   * Get all verifications with filters
+   * Get all verifications with optional filtering, pagination, and sorting.
+   * Restricted to ADMIN role.
+   *
+   * @param req.query.status - Filter by verification status (PENDING, APPROVED, REJECTED)
+   * @param req.query.type - Filter by verification type (NIN, CAC, SMEDAN, ADDRESS)
+   * @param req.query.vendorId - Filter by vendor ID
+   * @param req.query.page - Page number for pagination (default: 1)
+   * @param req.query.limit - Results per page (default: 20)
+   * @param req.query.sortBy - Sort field (submitted_at, reviewed_at)
+   * @param req.query.sortOrder - Sort direction (asc, desc)
+   * @returns 200 `{ success, data: verifications[], pagination }`
+   * @throws {AppError} 500 — Database query failure
    */
   static async getAllVerifications(req: Request, res: Response, next: NextFunction) {
     const action = 'getAllVerifications';
@@ -51,7 +62,12 @@ export class AdminVerificationController {
 
   /**
    * GET /api/v1/admin/verifications/:id
-   * Get verification details
+   * Get full verification details for admin review.
+   * Includes vendor profile, user info, and approved verifications.
+   *
+   * @param req.params.id - Verification ID
+   * @returns 200 `{ success, data: verification }`
+   * @throws {AppError} 404 — Verification not found
    */
   static async getVerificationDetails(req: Request, res: Response, next: NextFunction) {
     const action = 'getVerificationDetails';
@@ -78,7 +94,15 @@ export class AdminVerificationController {
 
   /**
    * PATCH /api/v1/admin/verifications/:id/approve
-   * Approve verification
+   * Approve a pending verification. Updates vendor tier based on accumulated points.
+   *
+   * @param req.params.id - Verification ID to approve
+   * @param req.body.admin_notes - Internal admin notes (optional, max 500 chars)
+   * @param req.user.userId - Admin user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: { verification, new_tier }, message }`
+   * @throws {AppError} 400 — Verification not in PENDING status or validation failure
+   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 404 — Verification not found
    */
   static async approveVerification(req: Request, res: Response, next: NextFunction) {
     const action = 'approveVerification';
@@ -129,7 +153,16 @@ export class AdminVerificationController {
 
   /**
    * PATCH /api/v1/admin/verifications/:id/reject
-   * Reject verification
+   * Reject a pending verification with a required reason.
+   *
+   * @param req.params.id - Verification ID to reject
+   * @param req.body.rejection_reason - Reason for rejection (10-500 chars)
+   * @param req.body.admin_notes - Internal admin notes (optional, max 500 chars)
+   * @param req.user.userId - Admin user's ID (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: verification, message }`
+   * @throws {AppError} 400 — Verification not in PENDING status or validation failure
+   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 404 — Verification not found
    */
   static async rejectVerification(req: Request, res: Response, next: NextFunction) {
     const action = 'rejectVerification';
@@ -179,7 +212,10 @@ export class AdminVerificationController {
 
   /**
    * GET /api/v1/admin/verifications/stats
-   * Get verification statistics
+   * Get verification dashboard statistics (counts by status, pending by type, recent approvals).
+   *
+   * @returns 200 `{ success, data: { summary, pending_by_type, recent_approvals } }`
+   * @throws {AppError} 500 — Database query failure
    */
   static async getVerificationStats(req: Request, res: Response, next: NextFunction) {
     const action = 'getVerificationStats';
@@ -204,7 +240,14 @@ export class AdminVerificationController {
 
   /**
    * GET /api/v1/admin/verifications/:id/signed-url
-   * Get signed URLs for private verification documents
+   * Get time-bound signed URLs for private Cloudinary verification documents.
+   * For NIN: returns both front_url and back_url (back_url is null if not available).
+   * For CAC/SMEDAN/ADDRESS: returns a single url.
+   *
+   * @param req.params.id - Verification ID
+   * @returns 200 `{ success, data: { front_url, back_url } }` for NIN
+   * @returns 200 `{ success, data: { url } }` for other types
+   * @throws {AppError} 404 — Verification or document not found
    */
   static async getSignedUrl(req: Request, res: Response, next: NextFunction) {
     const action = 'getSignedUrl';
@@ -282,7 +325,12 @@ export class AdminVerificationController {
 
   /**
    * GET /api/v1/admin/vendors/:vendorId/tier-breakdown
-   * Get vendor tier breakdown (for admin review)
+   * Get a vendor's complete tier breakdown for admin review.
+   * Includes current tier, total points, next tier info, verification history, and tier benefits.
+   *
+   * @param req.params.vendorId - Vendor profile ID
+   * @returns 200 `{ success, data: { current_tier, total_points, next_tier, points_to_next_tier, verifications, tier_benefits } }`
+   * @throws {AppError} 404 — Vendor profile not found
    */
   static async getVendorTierBreakdown(req: Request, res: Response, next: NextFunction) {
     const action = 'getVendorTierBreakdown';

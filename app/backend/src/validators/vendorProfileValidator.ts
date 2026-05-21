@@ -9,15 +9,24 @@ import {
 const NAME_REGEX = /^[a-zA-Z\s'-]+$/;
 const NAME_REGEX_MSG = 'Can only contain letters, spaces, hyphens, and apostrophes';
 
+/** Normalises a Nigerian phone number to the +234 international format. */
 function normalizePhone(val: string) {
   if (val.startsWith('0')) return '+234' + val.slice(1);
   return val;
 }
 
+/**
+ * Returns a Zod field for optional, non-empty URL strings.
+ * Accepts a valid URL, an empty string, or undefined.
+ */
 function optionalUrl() {
   return z.url().optional().or(z.literal(''));
 }
 
+/**
+ * Returns a Zod field for optional social media handles (with or without leading @).
+ * Accepts alphanumeric characters, underscores, dots, or empty string.
+ */
 function optionalSocialHandle() {
   return z.string().regex(/^@?[\w.]+$/, 'Invalid handle').optional().or(z.literal(''));
 }
@@ -26,6 +35,7 @@ function optionalSocialHandle() {
 // PERSONAL INFO VALIDATION
 // ============================================
 
+/** Validates Step 1 of vendor onboarding: personal details including age (≥16) and Nigerian phone number. */
 export const personalInfoSchema = z.object({
   first_name: z
     .string()
@@ -64,6 +74,7 @@ export const personalInfoSchema = z.object({
 // BUSINESS INFO VALIDATION
 // ============================================
 
+/** Validates Step 2 of vendor onboarding: business profile, location, payment models, social handles, and refund policy. */
 export const businessInfoSchema = z.object({
   business_name: z
     .string()

@@ -9,26 +9,17 @@ const __dirname = path.dirname(__filename);
 dotenv.config({
   path: path.join(__dirname, "../../.env"),
 });
+/** All typed environment variables consumed by the application. */
 interface EnvConfig {
   NODE_ENV: string;
   PORT: number;
-  
-  // Database
   DATABASE_URL: string;
-
-  // Fontend
   FRONTEND_URL: string;
-  
-  // Redis
   REDIS_HOST: string;
   REDIS_PORT: number;
   REDIS_PASSWORD?: string;
-  
-  // JWT
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
-  
-  // External APIs
   SMS_API_KEY?: string;
   SMS_SENDER_ID: string;
   RESEND_API_KEY?: string;
@@ -41,6 +32,14 @@ interface EnvConfig {
   GOOGLE_MAPS_API_KEY?: string;
 }
 
+/**
+ * Reads an environment variable by key, returning a default value if provided.
+ *
+ * @param key - Name of the environment variable
+ * @param defaultValue - Fallback value if the variable is not set
+ * @returns The resolved string value
+ * @throws {Error} When the variable is absent and no default is supplied
+ */
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;
   if (!value) {
@@ -49,6 +48,10 @@ const getEnv = (key: string, defaultValue?: string): string => {
   return value;
 };
 
+/**
+ * Typed, validated snapshot of all required environment variables.
+ * Populated at module load time; throws immediately if a required variable is missing.
+ */
 export const env: EnvConfig = {
   NODE_ENV: getEnv('NODE_ENV', 'development'),
   PORT: parseInt(getEnv('PORT', '5001')),

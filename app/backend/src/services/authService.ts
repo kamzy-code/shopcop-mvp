@@ -14,7 +14,19 @@ import { env } from '@config/env.js';
 import { AppError } from '@middleware/errorHandler.js';
 
 export class AuthService {
-  // SIGNUP: Send OTP to email
+  /**
+   * Initiates email signup by generating a 6-digit OTP and sending it to the user.
+   * Upserts the user record if a previous unverified attempt exists.
+   * Rate-limited to 3 OTP requests per 15 minutes per email address.
+   * On email delivery failure, the user record and OTP are rolled back.
+   *
+   * @param email - Email address to register
+   * @param role - Desired account role (defaults to BUYER)
+   * @returns Object with a confirmation message and the registered email
+   * @throws {AppError} 400 — Email already registered and verified
+   * @throws {AppError} 429 — Rate limit exceeded (3 OTPs per 15 minutes)
+   * @throws {AppError} 500 — Email delivery failure
+   */
   static async signupWithEmail({ email, role = UserRole.BUYER }: SignupWithEmailParams) {
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -76,6 +88,21 @@ export class AuthService {
     };
   }
 
+  /**
+   * Verifies the OTP submitted during signup and activates the user account.
+   * Enforces a 5-attempt lockout on the OTP record to prevent brute-force.
+   * On first VENDOR login, an empty VendorProfile is created in the same transaction.
+   * Sets the JWT as an httpOnly cookie via the calling controller.
+   *
+   * @param email - Email address of the user to verify
+   * @param otp_code - 6-digit OTP submitted by the user
+   * @returns JWT token and sanitised user object
+   * @throws {AppError} 404 — No account found for the email
+   * @throws {AppError} 400 — Email already verified
+   * @throws {AppError} 400 — No valid (non-expired) OTP found
+   * @throws {AppError} 400 — Too many failed attempts (≥5)
+   * @throws {AppError} 400 — Incorrect OTP code
+   */
   // VERIFY OTP: Verify OTP and create account
   static async verifyOTP({ email, otp_code }: VerifyOTPParams) {
     const user = await prisma.user.findUnique({
@@ -191,6 +218,18 @@ export class AuthService {
     };
   }
 
+  /**
+   * Sends a one-time magic link to a registered, verified email address.
+   * Deletes any existing unexpired magic links before creating a new one.
+   * Rate-limited to 5 requests per 60 minutes per email address.
+   *
+   * @param email - Email address of the account to log in
+   * @returns Object with a confirmation message and the email address
+   * @throws {AppError} 404 — No account found for the email
+   * @throws {AppError} 400 — Email not yet verified
+   * @throws {AppError} 429 — Rate limit exceeded (5 requests per hour)
+   * @throws {AppError} 500 — Email delivery failure
+   */
   // LOGIN: Send magic link to email
   static async sendMagicLink({ email }: SendMagicLinkParams) {
     const user = await prisma.user.findUnique({
@@ -257,6 +296,16 @@ export class AuthService {
     };
   }
 
+  /**
+   * Validates a magic link token and logs the user in.
+   * Marks the token as used (`used_at`) and updates `last_login_at` in a single transaction.
+   *
+   * @param token - UUID magic link token from the login URL
+   * @returns JWT token and sanitised user object
+   * @throws {AppError} 400 — Token not found or invalid
+   * @throws {AppError} 400 — Token already used
+   * @throws {AppError} 400 — Token has expired (15-minute TTL)
+   */
   // VERIFY MAGIC LINK: Verify token and log in user
   static async verifyMagicLink({ token }: VerifyMagicLinkParams) {
     const magicLink = await prisma.magicLink.findUnique({
@@ -328,6 +377,18 @@ export class AuthService {
     };
   }
 
+  /**
+   * Resends an OTP to an unverified email address.
+   * Shares the same rate-limit bucket as `signupWithEmail` (3 per 15 minutes, key: "otp_send").
+   * Replaces any existing OTP record for the user before sending.
+   *
+   * @param email - Email address to resend the OTP to
+   * @returns Object with a confirmation message and the email address
+   * @throws {AppError} 404 — No account found for the email
+   * @throws {AppError} 400 — Email already verified
+   * @throws {AppError} 429 — Rate limit exceeded
+   * @throws {AppError} 500 — Email delivery failure
+   */
   // RESEND OTP (if user didn't receive it)
   static async resendOTP(email: string) {
     const user = await prisma.user.findUnique({

@@ -4,6 +4,16 @@ import { fileUplaodLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 
 export class FileUploadController {
+  /**
+   * GET /api/v1/uploads/signature
+   * Returns a Cloudinary signed upload signature for authenticated client-side uploads.
+   * The client uses this signature to upload sensitive documents directly to Cloudinary
+   * without exposing the API secret.
+   *
+   * @param req.user - Authenticated user (auto-populated by auth middleware)
+   * @returns 200 `{ success, data: { timestamp, upload_preset, folder, type, signature, apiKey } }`
+   * @throws {AppError} 401 — No authenticated user on the request
+   */
   static async getUploadSignature(req: Request, res: Response, next: NextFunction) {
     const action = 'getUploadSignature';
     const user = req.user;
@@ -37,6 +47,16 @@ export class FileUploadController {
     }
   }
 
+  /**
+   * POST /api/v1/uploads/confirm
+   * Confirms that a client-side upload completed and persists the asset metadata.
+   *
+   * @param req.body.publicId - Cloudinary public ID of the uploaded asset (optional, stub)
+   * @param req.body.url - Cloudinary URL of the uploaded asset (optional, stub)
+   * @param req.body.docType - Document type identifier (optional, stub)
+   * @remarks Stub implementation — full persistence logic is not yet implemented.
+   * @returns 200 `{ success: true }`
+   */
   static async confirmUpload(req: Request, res: Response) {
     // Called after client uploads sensitive doc
     // Backend stores the public_id / URL in database

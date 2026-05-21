@@ -8,19 +8,38 @@ import { env } from '@config/env.js';
 // HELPER FUNCTIONS
 // ============================================
 
-// Generate 6-digit OTP
+/**
+ * Generates a cryptographically random 6-digit OTP string.
+ *
+ * @returns A zero-padded 6-digit numeric string (e.g. "047823")
+ */
 export const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Generate JWT token
+/**
+ * Signs a JWT access token with the application secret.
+ *
+ * @param payload - Data to embed: userId, email, and role
+ * @returns Signed JWT string, expiring per `JWT_EXPIRES_IN` env var (default 30d)
+ */
 export const generateJWT = (payload: JWTPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN || '30d',
   } as jwt.SignOptions);
 };
 
-// Check rate limit
+/**
+ * Checks and enforces a sliding-window rate limit stored in the database.
+ * Creates a new record on the first request within a window, increments the
+ * counter on subsequent requests, and returns `false` once the limit is reached.
+ *
+ * @param key - Identifier for the rate-limited entity (e.g. user email)
+ * @param action - Distinguishes multiple limits per key (e.g. "otp_send")
+ * @param limit - Maximum number of allowed requests within the window
+ * @param windowMinutes - Duration of the rate-limit window in minutes
+ * @returns `true` if the request is allowed, `false` if the limit is exceeded
+ */
 export const checkRateLimit = async (
   key: string,
   action: string,

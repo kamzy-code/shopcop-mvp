@@ -5,6 +5,7 @@ import { BusinessType } from '../generated/prisma/client.js';
 // NIN VERIFICATION VALIDATION
 // ============================================
 
+/** Validates NIN submission: 11-digit NIN, full name, and front government ID Cloudinary asset. */
 export const ninVerificationSchema = z.object({
   nin_number: z
     .string()
@@ -30,6 +31,7 @@ export const ninVerificationSchema = z.object({
 // CAC VERIFICATION VALIDATION
 // ============================================
 
+/** Validates CAC registration submission: RC number, company type, and certificate Cloudinary asset. */
 export const cacVerificationSchema = z.object({
   cac_rc_number: z
     .string()
@@ -47,6 +49,7 @@ export const cacVerificationSchema = z.object({
 // SMEDAN VERIFICATION VALIDATION
 // ============================================
 
+/** Validates SMEDAN registration submission: SUIN, business type, and certificate Cloudinary asset. */
 export const smedanVerificationSchema = z.object({
   smedan_suin: z
     .string()
@@ -64,6 +67,7 @@ export const smedanVerificationSchema = z.object({
 // ADDRESS VERIFICATION VALIDATION
 // ============================================
 
+/** Validates proof-of-address document submission. */
 export const addressVerificationSchema = z.object({
   address_document_url: z.url('Invalid address document URL'),
   address_document_public_id: z.string().min(1, 'Address document public_id is required'),
@@ -73,6 +77,10 @@ export const addressVerificationSchema = z.object({
 // RESUBMIT VERIFICATION VALIDATION
 // ============================================
 
+/**
+ * Validates a partial resubmission of any rejected verification.
+ * All fields are optional but at least one must be provided.
+ */
 export const resubmitVerificationSchema = ninVerificationSchema
   .merge(cacVerificationSchema)
   .merge(smedanVerificationSchema)

@@ -8,10 +8,12 @@ import { TierCalculationService } from '../tierCalculationService.js';
 // TYPES
 // ============================================
 
+/** Input for approving a verification: optional admin notes. */
 interface ApproveVerificationInput {
   admin_notes?: string;
 }
 
+/** Input for rejecting a verification: required rejection reason and optional admin notes. */
 interface RejectVerificationInput {
   rejection_reason: string;
   admin_notes?: string;
@@ -23,7 +25,17 @@ interface RejectVerificationInput {
 
 export class AdminVerificationService {
   /**
-   * Get all verifications with filters
+   * Get all verifications with optional filtering by status/type/vendor, pagination, and sorting.
+   * Includes vendor user email. Pending verifications are sorted oldest-first by default.
+   *
+   * @param filters.status - Filter by verification status
+   * @param filters.type - Filter by verification type
+   * @param filters.vendorId - Filter by vendor profile ID
+   * @param filters.page - Page number (default: 1)
+   * @param filters.limit - Results per page (default: 20)
+   * @param filters.sortBy - Sort field: submitted_at or reviewed_at
+   * @param filters.sortOrder - Sort direction: asc or desc
+   * @returns Object with verifications array and pagination info
    */
   static async getAllVerifications(filters: {
     status?: VerificationStatus;
@@ -95,7 +107,12 @@ export class AdminVerificationService {
   }
 
   /**
-   * Get verification details by ID (for admin review)
+   * Get full verification details for admin review.
+   * Includes vendor profile, user info, and all approved verifications.
+   *
+   * @param verificationId - Verification record ID
+   * @returns Verification with included vendor, user, and approved verifications
+   * @throws {AppError} 404 — Verification not found
    */
   static async getVerificationDetails(verificationId: string) {
     const action = 'getVerificationDetails';
@@ -127,7 +144,15 @@ export class AdminVerificationService {
   }
 
   /**
-   * Approve verification
+   * Approve a pending verification. Updates the vendor's tier based on accumulated points
+   * and logs the admin action for audit trail.
+   *
+   * @param verificationId - Verification record ID to approve
+   * @param adminId - Admin user's ID
+   * @param data - ApproveVerificationInput with optional admin_notes
+   * @returns Object with the approved verification and the new vendor tier
+   * @throws {AppError} 400 — Verification is not in PENDING status
+   * @throws {AppError} 404 — Verification not found
    */
   static async approveVerification(
     verificationId: string,
@@ -206,7 +231,15 @@ export class AdminVerificationService {
   }
 
   /**
-   * Reject verification
+   * Reject a pending verification with a required reason.
+   * Logs the admin action for audit trail.
+   *
+   * @param verificationId - Verification record ID to reject
+   * @param adminId - Admin user's ID
+   * @param data - RejectVerificationInput with required rejection_reason and optional admin_notes
+   * @returns The rejected verification record
+   * @throws {AppError} 400 — Verification is not in PENDING status
+   * @throws {AppError} 404 — Verification not found
    */
   static async rejectVerification(
     verificationId: string,
@@ -281,7 +314,9 @@ export class AdminVerificationService {
   }
 
   /**
-   * Get verification statistics (admin dashboard)
+   * Get verification dashboard statistics: counts by status, pending by type, and recent approvals.
+   *
+   * @returns Object with summary (total_pending/approved/rejected), pending_by_type array, and recent_approvals array
    */
   static async getVerificationStats() {
     const action = 'getVerificationStats';
@@ -333,7 +368,13 @@ export class AdminVerificationService {
   }
 
   /**
-   * Log admin action for audit trail
+   * Log an admin action to the audit trail.
+   * Failures are logged but not thrown to avoid disrupting the main operation.
+   *
+   * @param adminId - Admin user's ID
+   * @param actionType - Action type identifier (e.g. verification_approved)
+   * @param targetId - Target record ID
+   * @param metadata - Additional context data for the audit log
    */
   private static async logAdminAction(
     adminId: string,

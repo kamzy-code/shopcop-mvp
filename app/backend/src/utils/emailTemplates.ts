@@ -1,6 +1,14 @@
 // OTP Email Template
 import { sendEmail } from "./resend.js";
 
+/**
+ * Sends an OTP verification email to the user during signup.
+ *
+ * @param email - Recipient email address
+ * @param otp - 6-digit one-time password to embed in the email
+ * @param name - Optional display name to personalise the greeting
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
 export const sendOTPEmail = async (email: string, otp: string, name?: string): Promise<boolean> => {
   const html = `
     <!DOCTYPE html>
@@ -44,7 +52,14 @@ export const sendOTPEmail = async (email: string, otp: string, name?: string): P
   });
 };
 
-// Magic Link Email Template
+/**
+ * Sends a magic link login email to the user.
+ *
+ * @param email - Recipient email address
+ * @param magicLink - Fully qualified URL containing the one-time login token
+ * @param name - Optional display name to personalise the greeting
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
 export const sendMagicLinkEmail = async (
   email: string,
   magicLink: string,

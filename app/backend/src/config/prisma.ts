@@ -5,6 +5,10 @@ import { env } from './env.js';
 import logger from '@utils/logger.js';
 import { timeStamp } from 'node:console';
 
+/**
+ * Singleton PrismaClient connected to PostgreSQL via the pg adapter.
+ * Emits query logs in development and forwards warn/error events to the application logger.
+ */
 const connectionString = `${env.DATABASE_URL}`;
 
 const adapter = new PrismaPg({ connectionString });

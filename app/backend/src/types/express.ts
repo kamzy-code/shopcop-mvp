@@ -1,6 +1,9 @@
 import { UserRole } from "generated/prisma/enums.js";
 
-// Extend Express Request type to include user
+/**
+ * Extend the Express Request type to include the authenticated user.
+ * Populated by the `authenticate` middleware after JWT verification.
+ */
 declare module 'express-serve-static-core' {
   interface Request {
     user?: {

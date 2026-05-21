@@ -4,6 +4,7 @@ import { z } from 'zod';
 // APPROVE VERIFICATION VALIDATION
 // ============================================
 
+/** Validates admin approval payload: an optional internal note (max 500 chars). */
 export const approveVerificationSchema = z.object({
   admin_notes: z
     .string()
@@ -15,6 +16,7 @@ export const approveVerificationSchema = z.object({
 // REJECT VERIFICATION VALIDATION
 // ============================================
 
+/** Validates admin rejection payload: a required reason (10–500 chars) and an optional internal note. */
 export const rejectVerificationSchema = z.object({
   rejection_reason: z
     .string()

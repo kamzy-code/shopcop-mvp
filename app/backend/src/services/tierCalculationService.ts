@@ -9,7 +9,13 @@ import { VendorTier, VerificationStatus } from '../generated/prisma/client.js';
 
 export class TierCalculationService {
   /**
-   * Calculate and update vendor tier based on verification points
+   * Calculate and update vendor tier based on approved verification points.
+   * Aggregates all approved verifications' point values, determines the tier,
+   * and persists the updated tier and total points to the vendor profile.
+   *
+   * @param vendorId - Vendor profile ID
+   * @returns The newly assigned VendorTier
+   * @throws Database error on update failure
    */
   static async calculateAndUpdateTier(vendorId: string): Promise<VendorTier> {
     const action = 'calculateAndUpdateTier';
@@ -56,7 +62,11 @@ export class TierCalculationService {
   }
 
   /**
-   * Calculate tier from points
+   * Map a total points score to a VendorTier.
+   * TIER_4 (30+), TIER_3 (20-29), TIER_2 (15-19), TIER_1 (8-14), TIER_0 (0-7).
+   *
+   * @param points - Total accumulated verification points
+   * @returns The corresponding VendorTier value
    */
   private static calculateTier(points: number): VendorTier {
     if (points >= 30) return VendorTier.TIER_4; // Premium verified
@@ -67,7 +77,12 @@ export class TierCalculationService {
   }
 
   /**
-   * Get tier breakdown for a vendor
+   * Get a complete tier breakdown for a vendor, including current tier, total points,
+   * next tier info, verification history, and tier benefits.
+   *
+   * @param vendorId - Vendor profile ID
+   * @returns Breakdown object with current_tier, total_points, next_tier, points_to_next_tier, verifications, tier_benefits
+   * @throws {AppError} 404 — Vendor profile not found
    */
   static async getTierBreakdown(vendorId: string) {
     const action = 'getTierBreakdown';
@@ -114,7 +129,10 @@ export class TierCalculationService {
   }
 
   /**
-   * Get next tier
+   * Get the next tier above the current one, or null if already at maximum (TIER_4).
+   *
+   * @param currentTier - Current vendor tier
+   * @returns The next VendorTier, or null if already at max
    */
   private static getNextTier(currentTier: VendorTier): VendorTier | null {
     const tiers: VendorTier[] = [
@@ -130,7 +148,11 @@ export class TierCalculationService {
   }
 
   /**
-   * Get points needed to reach next tier
+   * Calculate the points required to reach the next tier.
+   * Returns null if already at the maximum tier (TIER_4, 30+ points).
+   *
+   * @param currentPoints - Total accumulated verification points
+   * @returns Points needed for next tier, or null at max
    */
   private static getPointsToNextTier(currentPoints: number): number | null {
     if (currentPoints >= 30) return null; // Already at max tier
@@ -141,7 +163,11 @@ export class TierCalculationService {
   }
 
   /**
-   * Get tier benefits
+   * Get the feature benefits associated with a given tier.
+   * Includes badge, max products, video posting, search visibility, transaction limit, and support priority.
+   *
+   * @param tier - The vendor tier to look up
+   * @returns Benefits object with badge, max_products, can_post_videos, featured_in_search, transaction_limit, support_priority
    */
   private static getTierBenefits(tier: VendorTier) {
     const benefits: Record<
