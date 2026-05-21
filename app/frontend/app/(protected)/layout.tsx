@@ -1,19 +1,40 @@
 'use client';
 import { useAuthStore } from '@/app/_store/authStore';
+import { UserRole } from '@/app/_types';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+
+const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
+  { prefix: '/onboarding', roles: ['VENDOR'] },
+  { prefix: '/dashboard', roles: ['VENDOR'] },
+  { prefix: '/products', roles: ['VENDOR'] },
+];
+
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-const isSessionReady = useAuthStore((s) => s.isSessionReady);
+  const isSessionReady = useAuthStore((s) => s.isSessionReady);
+  const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
-    if (isSessionReady && !isAuthenticated) {
+    if (!isSessionReady) return;
+    if (!isAuthenticated) {
       router.push('/auth/login');
+      return;
     }
-  }, [isAuthenticated, isSessionReady]);
+    const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
+    if (requirement && user && !requirement.roles.includes(user.role)) {
+      router.push('/');
+    }
+  }, [isAuthenticated, isSessionReady, pathname, user]);
 
   if (!isSessionReady) return <FullPageSpinner />;
   if (!isAuthenticated) return null;
+
+  const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
+  if (requirement && user && !requirement.roles.includes(user.role)) return null;
+
   return <>{children}</>;
 }

@@ -1,6 +1,16 @@
 export type UserRole = 'ADMIN' | 'VENDOR' | 'BUYER';
-export type ProfileStatus = 'INCOMPLETE' | 'ACTIVE' | 'SUSPENDED';
 export type StockStatus = 'IN_STOCK' | 'OUT_OF_STOCK';
+export type Gender = 'MALE' | 'FEMALE' | 'PREFER_NOT_TO_SAY';
+export type VendorTier = 'TIER_0' | 'TIER_1' | 'TIER_2' | 'TIER_3' | 'TIER_4';
+export type PaymentModel = 'FULL_PAYMENT' | 'PART_PAYMENT' | 'PAY_ON_DELIVERY' | 'INSTALLMENT';
+export type RefundPolicyType =
+  | 'NO_REFUNDS'
+  | 'FULL_REFUND'
+  | 'PARTIAL_REFUND'
+  | 'EXCHANGE_ONLY'
+  | 'STORE_CREDIT'
+  | 'CASE_BY_CASE';
+export type PrimaryContactMethod = 'WHATSAPP' | 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK' | 'PHONE_CALL';
 
 export interface User {
   id: string;
@@ -16,22 +26,79 @@ export interface User {
 
 export interface VendorProfile {
   id: string;
-  userId: string;
-  businessName: string;
-  categories: string[];
-  address: string;
-  city?: string;
-  state?: string;
-  description?: string;
-  profilePhotoUrl?: string;
-  bvnVerified: boolean;
-  ninVerified: boolean;
-  profileStatus: ProfileStatus;
-  deliveryAreas: string[];
-  paymentMethods: string[];
-  refundPolicy?: string;
-  slug?: string;
-  createdAt: string;
+  user_id: string;
+
+  // Personal info
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  gender: Gender | null;
+  date_of_birth: string | null;
+  phone_number: string | null;
+
+  // Business info
+  business_name: string | null;
+  business_description: string | null;
+  slug: string | null;
+  profile_photo_url: string | null;
+
+  // Location
+  country: string;
+  state: string | null;
+  city: string | null;
+  street_address: string | null;
+  landmark: string | null;
+  latitude: number | null;
+  longitude: number | null;
+
+  // Categorization
+  primary_category: string | null;
+  subcategories: string[];
+
+  // Payment
+  bank_name: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  payment_models: PaymentModel[];
+
+  // Refund policy
+  refund_policy_type: RefundPolicyType;
+  refund_duration_days: number | null;
+  refund_conditions: string[];
+  refund_custom_notes: string | null;
+
+  // Social media
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
+  facebook_url: string | null;
+  whatsapp_number: string | null;
+  primary_contact: PrimaryContactMethod | null;
+
+  // Tier & completeness
+  current_tier: VendorTier;
+  verification_points: number;
+  personal_info_complete: boolean;
+  business_info_complete: boolean;
+  profile_completeness: number;
+
+  // Metrics
+  total_transactions: number;
+  fulfillment_rate: number;
+  average_rating: number;
+
+  // Status & timestamps
+  profile_status: string;
+  created_at: string;
+  updated_at: string;
+  last_transaction_at: string | null;
+
+  // Included relations
+  verifications: VerificationRecord[];
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+  };
 }
 
 export interface Product {
