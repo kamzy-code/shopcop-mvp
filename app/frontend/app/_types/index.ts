@@ -1,6 +1,5 @@
 export type UserRole = 'ADMIN' | 'VENDOR' | 'BUYER';
 export type ProfileStatus = 'INCOMPLETE' | 'ACTIVE' | 'SUSPENDED';
-export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type StockStatus = 'IN_STOCK' | 'OUT_OF_STOCK';
 
 export interface User {
@@ -67,4 +66,19 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+}
+
+export type VerificationType = 'NIN' | 'CAC' | 'SMEDAN' | 'ADDRESS';
+export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface VerificationRecord {
+  id: string;
+  vendor_id: string;
+  type: VerificationType;
+  status: VerificationStatus;
+  points_value: number;
+  submitted_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  admin_notes: string | null;
 }

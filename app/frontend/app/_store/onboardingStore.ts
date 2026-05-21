@@ -8,27 +8,18 @@ interface BusinessInfo {
   description: string;
 }
 
-interface BvnData {
-  bvn: string;
-  verified: boolean;
-  status: 'PENDING' | 'VERIFIED' | 'FAILED';
-}
-
 interface NinData {
-  fullName: string;
-  nin: string;
-  governmentIdUrl?: string;
+  nin_full_name: string;
+  nin_number: string;
   verified: boolean;
-  status: 'PENDING' | 'VERIFIED' | 'FAILED';
+  status: 'PENDING' | 'APPROVED' | 'FAILED';
 }
 
 interface OnboardingState {
   currentStep: number;
   businessInfo: BusinessInfo | null;
-  bvnData: BvnData | null;
   ninData: NinData | null;
   setBusinessInfo: (data: BusinessInfo) => void;
-  setBvnData: (data: BvnData) => void;
   setNinData: (data: NinData) => void;
   goToStep: (step: number) => void;
   reset: () => void;
@@ -39,16 +30,14 @@ export const useOnboardingStore = create<OnboardingState>()(
     (set) => ({
       currentStep: 1,
       businessInfo: null,
-      bvnData: null,
       ninData: null,
 
       setBusinessInfo: (data) => set({ businessInfo: data, currentStep: 2 }),
-      setBvnData: (data) => set({ bvnData: data, currentStep: 3 }),
-      setNinData: (data) => set({ ninData: data, currentStep: 4 }),
+      setNinData: (data) => set({ ninData: data, currentStep: 3 }),
       goToStep: (step) => set({ currentStep: step }),
 
       reset: () =>
-        set({ currentStep: 1, businessInfo: null, bvnData: null, ninData: null }),
+        set({ currentStep: 1, businessInfo: null, ninData: null }),
     }),
     { name: 'onboarding-storage' }
   )

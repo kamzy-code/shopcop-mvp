@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import { Product, VendorProfile } from '../_types';
+import { Product, VendorProfile, VerificationRecord } from '../_types';
 import { ProductFormData } from '../validators/vendorSchema';
 
 export const useVendorProfile = () =>
@@ -28,28 +28,24 @@ export const useSubmitBusinessInfo = () =>
       }),
   });
 
-export const useVerifyBvn = () =>
+export const useSubmitNINVerification = () =>
   useMutation({
-    mutationFn: (data: { bvn: string }) =>
-      apiFetch('/vendors/verify-bvn', {
+    mutationFn: (data: {
+      nin_number: string;
+      nin_full_name: string;
+      govt_id_front_url: string;
+      govt_id_front_public_id: string;
+      govt_id_back_url?: string;
+      govt_id_back_public_id?: string;
+    }) =>
+      apiFetch<VerificationRecord>('/verifications/nin', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
   });
 
-export const useVerifyNin = () =>
-  useMutation({
-    mutationFn: (data: { fullName: string; nin: string; governmentIdUrl?: string }) =>
-      apiFetch('/vendors/verify-nin', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-  });
-
-export const useCompleteOnboarding = () =>
-  useMutation({
-    mutationFn: () => apiFetch('/vendors/complete-onboarding', { method: 'POST' }),
-  });
+/** @deprecated Use useSubmitNINVerification */
+export const useVerifyNin = useSubmitNINVerification;
 
 export const useProducts = () =>
   useQuery<Product[]>({

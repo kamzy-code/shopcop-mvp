@@ -41,13 +41,9 @@ export const businessInfoSchema = z.object({
   description: z.string().max(500, 'Description must be at most 500 characters').optional(),
 });
 
-export const bvnSchema = z.object({
-  bvn: z.string().regex(/^\d{11}$/, 'BVN must be exactly 11 digits'),
-});
-
 export const ninSchema = z.object({
-  fullName: z.string().min(2, 'Full legal name is required'),
-  nin: z.string().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
+  nin_full_name: z.string().min(2, 'Full legal name is required'),
+  nin_number: z.string().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
 });
 
 export const productSchema = z.object({
@@ -62,6 +58,5 @@ export const productSchema = z.object({
 });
 
 export type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
-export type BvnFormData = z.infer<typeof bvnSchema>;
 export type NinFormData = z.infer<typeof ninSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
