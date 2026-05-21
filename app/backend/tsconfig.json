@@ -24,7 +24,8 @@
       "@repositories/*": ["repositories/*"],
       "@routes/*": ["routes/*"],
       "@utils/*": ["utils/*"],
-      "@types/*": ["types/*"]
+      "@types/*": ["types/*"],
+      "@validators/*": ["validators/*"]
     }
   },
   "include": ["src/**/*", "src/config/seed.ts"],
