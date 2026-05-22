@@ -1,0 +1,16 @@
+# Ignore backend during frontend build
+../backend
+
+# Ignore node_modules (Vercel installs fresh)
+node_modules
+
+# Ignore local env files
+.env.local
+.env*.local
+.env
+
+# Ignore build artifacts
+.next
+out
+build
+dist
