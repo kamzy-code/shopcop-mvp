@@ -80,12 +80,14 @@ describe('personalInfoSchema', () => {
 
   it('requires first_name', () => {
     const { first_name, ...rest } = validPersonalInfo;
+    void first_name;
     const result = personalInfoSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
 
   it('requires last_name', () => {
     const { last_name, ...rest } = validPersonalInfo;
+    void last_name;
     const result = personalInfoSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
