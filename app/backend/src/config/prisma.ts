@@ -3,7 +3,6 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { env } from './env.js';
 import logger from '@utils/logger.js';
-import { timeStamp } from 'node:console';
 
 /**
  * Singleton PrismaClient connected to PostgreSQL via the pg adapter.

@@ -24,8 +24,7 @@ vi.mock('helpers/authHelper.js', () => ({
 import { AuthService } from '@services/authService.js';
 import { prisma } from '@config/prisma.js';
 import { sendOTPEmail, sendMagicLinkEmail } from '@utils/emailTemplates.js';
-import { checkRateLimit, generateOTP, generateJWT } from 'helpers/authHelper.js';
-import { AppError } from '@middleware/errorHandler.js';
+import { checkRateLimit,} from 'helpers/authHelper.js';
 
 const mockPrisma = prisma as any;
 const mockSendOTPEmail = sendOTPEmail as any;

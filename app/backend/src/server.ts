@@ -2,7 +2,6 @@ import { env } from '@config/env.js';
 import app from 'app.js';
 import logger from '@utils/logger.js';
 import { prisma } from '@config/prisma.js';
-import { sendOTPEmail } from '@utils/emailTemplates.js';
 
 const PORT = env.PORT;
 
