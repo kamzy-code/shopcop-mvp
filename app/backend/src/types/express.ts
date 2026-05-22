@@ -1,4 +1,4 @@
-import { UserRole } from "generated/prisma/enums.js";
+import { UserRole } from "../generated/prisma/enums.js";
 
 /**
  * Extend the Express Request type to include the authenticated user.

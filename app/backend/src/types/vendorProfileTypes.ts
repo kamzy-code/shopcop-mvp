@@ -1,4 +1,4 @@
-import { Gender, PaymentModel, PrimaryContactMethod, RefundPolicyType } from "generated/prisma/enums.js";
+import { Gender, PaymentModel, PrimaryContactMethod, RefundPolicyType } from "../generated/prisma/enums.js";
 
 /** Input for updating Step 1 vendor personal information. */
 export interface PersonalInfoInput {

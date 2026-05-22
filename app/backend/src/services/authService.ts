@@ -9,7 +9,7 @@ import {
 } from '../types/authTypes.js';
 import crypto from 'crypto';
 import { UserRole, AuthProvider, VendorTier } from '../generated/prisma/client.js';
-import { checkRateLimit, generateOTP, generateJWT } from 'helpers/authHelper.js';
+import { checkRateLimit, generateOTP, generateJWT } from '../helpers/authHelper.js';
 import { env } from '@config/env.js';
 import { AppError } from '@middleware/errorHandler.js';
 

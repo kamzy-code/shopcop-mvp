@@ -3,7 +3,7 @@ import { vendorLogger } from '@utils/logger.js';
 import { ProfileCompletenessService } from './profileCompletenessService.js';
 import { PersonalInfoInput, BusinessInfoInput } from '../types/vendorProfileTypes.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { VerificationStatus, VerificationType } from 'generated/prisma/enums.js';
+import { VerificationStatus, VerificationType } from '../generated/prisma/enums.js';
 import { sectionWeights } from '../types/vendorVerificationTypes.js';
 
 // ============================================

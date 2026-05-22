@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler.js';
-import { UserRole } from 'generated/prisma/enums.js';
+import { UserRole } from '../generated/prisma/enums.js';
 import logger from '@utils/logger.js';
 
 /**

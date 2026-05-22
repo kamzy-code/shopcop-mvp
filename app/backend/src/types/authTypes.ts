@@ -1,4 +1,4 @@
-import { UserRole } from 'generated/prisma/enums.js';
+import { UserRole } from '../generated/prisma/enums.js';
 
 /** Decoded JWT payload attached to req.user by the auth middleware. */
 export interface JWTPayload {
