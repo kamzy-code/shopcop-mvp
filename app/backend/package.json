@@ -8,9 +8,11 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc --project tsconfig.build.json && tsc-alias",
     "start": "node dist/server.js",
+    "prisma:generate": "prisma generate", 
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "seed": "tsx src/config/seed.ts",
+    "prisma:migrate": "prisma migrate dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
