@@ -22,8 +22,7 @@ app.use(
       process.env.NODE_ENV === 'production'
         ? [
             'http://localhost:3000',
-            'https://shopcop-mvp-frontend-mtwz.vercel.app/',
-            'https://vercel.com/kamtech-projects/shopcop-mvp-frontend-mtwz/DoJZtf9y4kj3V3qF7j4s5Af7udN4',
+            'https://shopcop-mvp-frontend-mtwz.vercel.app',
           ]
         : ['http://localhost:3000'],
     credentials: true,
