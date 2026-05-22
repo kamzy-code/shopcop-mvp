@@ -12,6 +12,13 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev --workspace=app/backend",
     "dev:frontend": "npm run dev --workspace=app/frontend",
+     "build:frontend": "npm run build --workspace=app/frontend",
+    "build:backend": "npm run build --workspace=app/backend",
+    "start:frontend": "npm run start --workspace=app/frontend",
+    "start:backend": "npm run start --workspace=app/backend",
+    "prisma:generate": "npm run prisma:generate --workspace=app/backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace=app/backend",
+    "seed": "npm run seed --workspace=apps/backend",
     "lint": "npm run lint --workspaces",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\""
   },
