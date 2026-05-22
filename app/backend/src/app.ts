@@ -19,7 +19,13 @@ const app = express();
 app.use(
   cors({
     origin:
-      process.env.NODE_ENV === 'production' ? ['http://localhost:3000'] : ['http://localhost:3000'],
+      process.env.NODE_ENV === 'production'
+        ? [
+            'http://localhost:3000',
+            'https://shopcop-mvp-frontend-mtwz.vercel.app/',
+            'https://vercel.com/kamtech-projects/shopcop-mvp-frontend-mtwz/DoJZtf9y4kj3V3qF7j4s5Af7udN4',
+          ]
+        : ['http://localhost:3000'],
     credentials: true,
   })
 );
