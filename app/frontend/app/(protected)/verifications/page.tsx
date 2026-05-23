@@ -195,7 +195,7 @@ export default function VerificationsPage() {
 
   return (
     <AppShell>
-      <Stack gap={6}>
+      <Stack gap={6} maxW="960px">
         {/* Header */}
         <Flex align="flex-start" justify="space-between" flexWrap="wrap" gap={3}>
           <Stack gap={1}>

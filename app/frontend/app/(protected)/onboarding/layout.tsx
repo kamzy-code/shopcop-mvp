@@ -90,7 +90,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       {/* Page content */}
       <Box flex={1} overflow="auto">
         <Center py={{ base: 6, md: 10 }} px={{ base: 4, sm: 6 }}>
-          <Stack w="full" maxW="560px" gap={0}>
+          <Stack w="full" maxW="640px" gap={0}>
             {children}
           </Stack>
         </Center>

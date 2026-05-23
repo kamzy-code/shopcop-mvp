@@ -296,7 +296,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <Box flex={1} overflow="auto" p={{ base: 4, md: 6, lg: 8 }}>
-          {children}
+          <Box maxW="1400px" mx="auto" w="full">
+            {children}
+          </Box>
         </Box>
       </Flex>
     </Flex>
