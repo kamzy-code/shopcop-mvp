@@ -1,14 +1,6 @@
 'use client';
 import { useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Flex,
-  Heading,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
+import { Alert, Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import {
   LuArrowRight,
@@ -97,14 +89,24 @@ function VerificationCard({
       <Flex align="flex-start" justify="space-between" mb={3} gap={3}>
         <Flex align="center" gap={3}>
           <Flex
-            w={10} h={10} borderRadius="lg" bg="primary.subtle"
-            align="center" justify="center" color="primary.fg" flexShrink={0}
+            w={10}
+            h={10}
+            borderRadius="lg"
+            bg="primary.subtle"
+            align="center"
+            justify="center"
+            color="primary.fg"
+            flexShrink={0}
           >
             <Icon size={18} />
           </Flex>
           <Box>
-            <Text fontWeight="semibold" color="fg" textStyle="sm">{title}</Text>
-            <Text textStyle="xs" color="fg.muted">{points}</Text>
+            <Text fontWeight="semibold" color="fg" textStyle="sm">
+              {title}
+            </Text>
+            <Text textStyle="xs" color="fg.muted">
+              {points}
+            </Text>
           </Box>
         </Flex>
         <Flex
@@ -118,20 +120,28 @@ function VerificationCard({
           flexShrink={0}
         >
           {statusIcon(record, locked)}
-          <Text textStyle="xs" fontWeight="medium">{label}</Text>
+          <Text textStyle="xs" fontWeight="medium">
+            {label}
+          </Text>
         </Flex>
       </Flex>
 
       {record?.status === 'REJECTED' && record.rejection_reason && (
         <Box p={3} mb={3} borderRadius="md" bg="red.subtle" borderWidth="1px" borderColor="red.200">
-          <Text textStyle="xs" color="red.600" fontWeight="medium">Rejection reason</Text>
-          <Text textStyle="xs" color="red.500" mt={0.5}>{record.rejection_reason}</Text>
+          <Text textStyle="xs" color="red.600" fontWeight="medium">
+            Rejection reason
+          </Text>
+          <Text textStyle="xs" color="red.500" mt={0.5}>
+            {record.rejection_reason}
+          </Text>
         </Box>
       )}
 
       {record?.status === 'PENDING' && (
         <Text textStyle="xs" color="fg.subtle" mb={3}>
-          Submitted {new Date(record.submitted_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })} — awaiting review
+          Submitted{' '}
+          {new Date(record.submitted_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })} —
+          awaiting review
         </Text>
       )}
 
@@ -139,7 +149,8 @@ function VerificationCard({
         <Flex align="center" gap={1.5} mb={3}>
           <LuCheck size={12} color="var(--chakra-colors-success-600)" />
           <Text textStyle="xs" color="success.fg">
-            Approved {record.reviewed_at
+            Approved{' '}
+            {record.reviewed_at
               ? new Date(record.reviewed_at).toLocaleDateString('en-NG', { dateStyle: 'medium' })
               : ''}
           </Text>
@@ -184,7 +195,9 @@ export default function VerificationsPage() {
           variant="outline"
           size="sm"
           w="full"
-          onClick={() => router.push(`/verifications/${type.toLowerCase()}/resubmit?id=${record.id}`)}
+          onClick={() =>
+            router.push(`/verifications/${type.toLowerCase()}/resubmit?id=${record.id}`)
+          }
         >
           Resubmit <LuArrowRight size={14} />
         </Button>
@@ -195,9 +208,9 @@ export default function VerificationsPage() {
 
   return (
     <AppShell>
-      <Stack gap={6} maxW="960px">
+      <Stack gap={6}>
         {/* Header */}
-        <Flex align="flex-start" justify="space-between" flexWrap="wrap" gap={3}>
+        <Flex align="flex-" justify="space-between" flexWrap="wrap" gap={3}>
           <Stack gap={1}>
             <Flex align="center" gap={3}>
               <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
@@ -209,9 +222,20 @@ export default function VerificationsPage() {
               Complete verifications to increase your tier and build buyer trust.
             </Text>
           </Stack>
-          <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" textAlign="right">
-            <Text textStyle="2xl" fontWeight="bold" color="fg">{points}</Text>
-            <Text textStyle="xs" color="fg.muted">verification points</Text>
+          <Box
+            p={4}
+            bg="bg.panel"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="xl"
+            textAlign="right"
+          >
+            <Text textStyle="2xl" fontWeight="bold" color="fg">
+              {points}
+            </Text>
+            <Text textStyle="xs" color="fg.muted">
+              verification points
+            </Text>
             {tier !== 'TIER_4' && (
               <Text textStyle="xs" color="primary.fg" mt={0.5}>
                 {nextPoints} more to next tier
@@ -253,8 +277,13 @@ export default function VerificationsPage() {
           locked={!businessInfoComplete}
         >
           {!ninRecord && businessInfoComplete && (
-            <Button colorPalette="primary" variant="outline" size="sm" w="full"
-              onClick={() => router.push('/onboarding/nin')}>
+            <Button
+              colorPalette="primary"
+              variant="outline"
+              size="sm"
+              w="full"
+              onClick={() => router.push('/onboarding/nin')}
+            >
               Start Verification <LuArrowRight size={14} />
             </Button>
           )}
@@ -270,8 +299,13 @@ export default function VerificationsPage() {
           locked={!businessInfoComplete}
         >
           {!addressRecord && businessInfoComplete && (
-            <Button colorPalette="primary" variant="outline" size="sm" w="full"
-              onClick={() => router.push('/verifications/address')}>
+            <Button
+              colorPalette="primary"
+              variant="outline"
+              size="sm"
+              w="full"
+              onClick={() => router.push('/verifications/address')}
+            >
               Start Verification <LuArrowRight size={14} />
             </Button>
           )}
