@@ -145,9 +145,32 @@ export interface VerificationRecord {
   status: VerificationStatus;
   points_value: number;
   submitted_at: string;
+  approved_at: string | null;
   reviewed_at: string | null;
   rejection_reason: string | null;
   admin_notes: string | null;
+
+  // NIN fields
+  nin_number?: string;
+  nin_full_name?: string;
+  govt_id_front_url?: string;
+  govt_id_front_public_id?: string;
+
+  // CAC fields
+  cac_rc_number?: string;
+  cac_company_type?: string;
+  cac_certificate_url?: string;
+  cac_certificate_public_id?: string;
+
+  // SMEDAN fields
+  smedan_suin?: string;
+  smedan_business_type?: string;
+  smedan_certificate_url?: string;
+  smedan_certificate_public_id?: string;
+
+  // Address fields
+  address_document_url?: string;
+  address_document_public_id?: string;
 }
 
 export interface ProfileCompletenessSection {

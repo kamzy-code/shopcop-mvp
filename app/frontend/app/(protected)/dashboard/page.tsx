@@ -1,6 +1,7 @@
 'use client';
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import {
   LuArrowRight,
   LuBuilding2,
@@ -15,8 +16,9 @@ import {
   LuTrendingUp,
 } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
+import { TierBadge } from '@/components/shared/tierBadge';
 import { useAuthStore } from '@/app/_store/authStore';
-import { useProducts, useProfileCompleteness } from '@/app/_hooks/vendor';
+import { useProducts, useProfileCompleteness, useGetVerifications, useVendorProfile } from '@/app/_hooks/vendor';
 
 function StatCard({
   icon: Icon,
@@ -86,43 +88,71 @@ export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
   const { data: products } = useProducts();
   const { data: completeness } = useProfileCompleteness();
+  const { data: verifications } = useGetVerifications();
+  const { data: profile } = useVendorProfile();
+
+  // Force personal info completion if not yet done
+  useEffect(() => {
+    if (completeness && !completeness.sections.personal_info.completed) {
+      router.replace('/onboarding');
+    }
+  }, [completeness, router]);
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
   const firstName = user?.name?.split(' ')[0] || 'Vendor';
-  const totalPct = completeness?.total_completeness ?? 0;
-  const isProfileComplete = totalPct >= 100;
+  const profileSetupPct = [
+    completeness?.sections.personal_info.completed,
+    completeness?.sections.business_info.completed,
+  ].filter(Boolean).length * 50;
+  const isProfileSetupComplete =
+    (completeness?.sections.personal_info.completed ?? false) &&
+    (completeness?.sections.business_info.completed ?? false);
+
+  const verifMap = Object.fromEntries(
+    (verifications ?? []).map((v) => [v.type, v])
+  );
 
   const verificationItems = [
     {
       label: 'Email Verified',
       done: user?.email_verified ?? false,
-      href: undefined,
+      status: undefined as string | undefined,
+      href: undefined as string | undefined,
     },
     {
       label: 'Personal Info',
       done: completeness?.sections.personal_info.completed ?? false,
+      status: undefined,
       href: '/onboarding/personal-info',
     },
     {
       label: 'Business Info',
       done: completeness?.sections.business_info.completed ?? false,
+      status: undefined,
       href: '/onboarding/business-info',
     },
     {
       label: 'NIN Verified',
       done: completeness?.sections.nin_verification.completed ?? false,
-      href: '/onboarding/nin',
+      status: verifMap['NIN']?.status,
+      href: verifMap['NIN']?.status === 'REJECTED'
+        ? `/verifications/nin/resubmit?id=${verifMap['NIN'].id}`
+        : '/onboarding/nin',
     },
     {
       label: 'Address Verified',
       done: completeness?.sections.address_verification.completed ?? false,
-      href: '/verifications/address',
+      status: verifMap['ADDRESS']?.status,
+      href: verifMap['ADDRESS']?.status === 'REJECTED'
+        ? `/verifications/address/resubmit?id=${verifMap['ADDRESS'].id}`
+        : '/verifications/address',
     },
     {
       label: 'Business Verified',
       done: completeness?.sections.business_verification.completed ?? false,
-      href: '/verifications/cac',
+      status: verifMap['CAC']?.status ?? verifMap['SMEDAN']?.status,
+      href: '/verifications',
     },
   ];
 
@@ -132,9 +162,12 @@ export default function Dashboard() {
         {/* Welcome header */}
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
           <Stack gap={1}>
-            <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-              Welcome back, {firstName} 👋
-            </Heading>
+            <Flex align="center" gap={3}>
+              <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
+                Welcome back, {firstName} 👋
+              </Heading>
+              {profile?.current_tier && <TierBadge tier={profile.current_tier} />}
+            </Flex>
             <Text color="fg.muted" textStyle="sm">
               Here is what is happening with your store today.
             </Text>
@@ -145,8 +178,8 @@ export default function Dashboard() {
           </Button>
         </Flex>
 
-        {/* Onboarding banner — only shown when profile is incomplete */}
-        {!isProfileComplete && (
+        {/* Onboarding banner — only shown when profile setup is incomplete */}
+        {!isProfileSetupComplete && (
           <Box p={5} bg="primary.subtle" borderWidth="1.5px" borderColor="primary.200" borderRadius="xl">
             <Flex align="center" gap={4} flexWrap="wrap">
               <Flex
@@ -168,14 +201,14 @@ export default function Dashboard() {
                   Verify your identity and business details to get a verified badge and build buyer trust.
                 </Text>
                 <Box mt={2}>
-                  <ProfileCompletenessBar pct={totalPct} />
+                  <ProfileCompletenessBar pct={profileSetupPct} />
                 </Box>
               </Box>
               <Button
                 colorPalette="primary"
                 size="sm"
                 flexShrink={0}
-                onClick={() => router.push('/onboarding/personal-info')}
+                onClick={() => router.push('/onboarding')}
               >
                 Complete Setup <LuArrowRight size={14} />
               </Button>
@@ -232,7 +265,7 @@ export default function Dashboard() {
 
         {/* Bottom grid */}
         <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          {/* Verification status — wired to real completeness data */}
+          {/* Verification status */}
           <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
             <Flex align="center" justify="space-between" mb={4}>
               <Flex align="center" gap={3}>
@@ -241,44 +274,45 @@ export default function Dashboard() {
                   Verification Status
                 </Text>
               </Flex>
-              <Text textStyle="xs" fontWeight="semibold" color="primary.fg">{totalPct}%</Text>
+              <Button variant="ghost" size="xs" color="primary.fg" px={2} h="auto" py={0.5}
+                onClick={() => router.push('/verifications')}>
+                View all
+              </Button>
             </Flex>
             <Stack gap={3}>
               {verificationItems.map((item) => (
                 <Flex key={item.label} align="center" gap={3}>
                   <Flex
-                    w={5}
-                    h={5}
-                    borderRadius="full"
-                    bg={item.done ? 'success.500' : 'bg.subtle'}
-                    borderWidth={item.done ? 0 : '2px'}
+                    w={5} h={5} borderRadius="full"
+                    bg={item.done ? 'success.500' : item.status === 'REJECTED' ? 'red.500' : item.status === 'PENDING' ? 'warning.400' : 'bg.subtle'}
+                    borderWidth={item.done || item.status ? 0 : '2px'}
                     borderColor="border"
-                    align="center"
-                    justify="center"
-                    flexShrink={0}
+                    align="center" justify="center" flexShrink={0}
                   >
                     {item.done && <LuShieldCheck size={10} color="white" />}
+                    {!item.done && item.status === 'PENDING' && <LuShieldAlert size={10} color="white" />}
+                    {!item.done && item.status === 'REJECTED' && <LuShieldAlert size={10} color="white" />}
                   </Flex>
-                  <Text textStyle="sm" color={item.done ? 'fg' : 'fg.muted'}>
+                  <Text textStyle="sm" color={item.done ? 'fg' : 'fg.muted'} flex={1}>
                     {item.label}
                   </Text>
-                  <Box ml="auto">
+                  <Box>
                     {item.done ? (
                       <Text textStyle="xs" fontWeight="medium" color="success.fg">Done</Text>
+                    ) : item.status === 'PENDING' ? (
+                      <Text textStyle="xs" fontWeight="medium" color="warning.fg">Pending</Text>
+                    ) : item.status === 'REJECTED' ? (
+                      <Button variant="ghost" size="xs" color="red.600" px={2} h="auto" py={0.5}
+                        onClick={() => item.href && router.push(item.href)}>
+                        Resubmit
+                      </Button>
                     ) : item.href ? (
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        color="primary.fg"
-                        px={2}
-                        h="auto"
-                        py={0.5}
-                        onClick={() => router.push(item.href!)}
-                      >
+                      <Button variant="ghost" size="xs" color="primary.fg" px={2} h="auto" py={0.5}
+                        onClick={() => router.push(item.href!)}>
                         Start
                       </Button>
                     ) : (
-                      <Text textStyle="xs" fontWeight="medium" color="fg.subtle">Pending</Text>
+                      <Text textStyle="xs" fontWeight="medium" color="fg.subtle">—</Text>
                     )}
                   </Box>
                 </Flex>

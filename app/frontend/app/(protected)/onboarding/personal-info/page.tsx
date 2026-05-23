@@ -10,10 +10,10 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowRight, LuUser } from 'react-icons/lu';
 import { FormCard } from '@/components/shared/formCard';
 import { personalInfoSchema, PersonalInfoFormData } from '@/app/validators/vendorSchema';
-import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { useSubmitPersonalInfo } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
@@ -26,8 +26,7 @@ const GENDER_OPTIONS = [
 
 export default function PersonalInfoPage() {
   const router = useRouter();
-  const setPersonalInfo = useOnboardingStore((s) => s.setPersonalInfo);
-  const savedInfo = useOnboardingStore((s) => s.personalInfo);
+  const queryClient = useQueryClient();
   const submitMutation = useSubmitPersonalInfo();
 
   const {
@@ -39,12 +38,12 @@ export default function PersonalInfoPage() {
   } = useForm<PersonalInfoFormData>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
-      first_name: savedInfo?.first_name || '',
-      middle_name: savedInfo?.middle_name || '',
-      last_name: savedInfo?.last_name || '',
-      gender: savedInfo?.gender,
-      date_of_birth: savedInfo?.date_of_birth || '',
-      phone_number: savedInfo?.phone_number || '',
+      first_name: '',
+      middle_name: '',
+      last_name: '',
+      gender: undefined,
+      date_of_birth: '',
+      phone_number: '',
     },
   });
 
@@ -64,8 +63,8 @@ export default function PersonalInfoPage() {
       return;
     }
 
-    setPersonalInfo(payload);
-    router.push('/onboarding/business-info');
+    await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+    router.push('/onboarding');
   };
 
   return (
@@ -180,7 +179,7 @@ export default function PersonalInfoPage() {
             loading={isSubmitting || submitMutation.isPending}
             disabled={isSubmitting || submitMutation.isPending}
           >
-            Continue to Business Info
+            Save & Continue
             <LuArrowRight />
           </Button>
         </Stack>

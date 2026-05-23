@@ -9,11 +9,11 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowLeft, LuArrowRight, LuIdCard } from 'react-icons/lu';
 import { FormCard } from '@/components/shared/formCard';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
-import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { useSubmitNINVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
@@ -24,14 +24,11 @@ type VerifyState = 'idle' | 'verifying' | 'success' | 'failed';
 
 export default function NinPage() {
   const router = useRouter();
-  const setNinData = useOnboardingStore((s) => s.setNinData);
-  const savedNin = useOnboardingStore((s) => s.ninData);
+  const queryClient = useQueryClient();
   const verifyMutation = useSubmitNINVerification();
   const uploadMutation = useUploadSensitiveDocument();
 
-  const [verifyState, setVerifyState] = useState<VerifyState>(
-    savedNin?.verified ? 'success' : 'idle'
-  );
+  const [verifyState, setVerifyState] = useState<VerifyState>('idle');
   const [govIdFile, setGovIdFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -44,8 +41,8 @@ export default function NinPage() {
   } = useForm<NinFormData>({
     resolver: zodResolver(ninSchema),
     defaultValues: {
-      nin_full_name: savedNin?.nin_full_name || '',
-      nin_number: savedNin?.nin_number || '',
+      nin_full_name: '',
+      nin_number: '',
     },
   });
 
@@ -75,12 +72,7 @@ export default function NinPage() {
       });
 
       setVerifyState('success');
-      setNinData({
-        nin_full_name: data.nin_full_name,
-        nin_number: data.nin_number,
-        verified: true,
-        status: 'PENDING',
-      });
+      await queryClient.invalidateQueries({ queryKey: ['verifications'] });
     } catch (error) {
       setVerifyState('failed');
       const message = error instanceof Error ? error.message : 'Verification submission failed';
@@ -89,7 +81,7 @@ export default function NinPage() {
   };
 
   const handleContinue = () => {
-    router.push('/onboarding/complete');
+    router.push('/verifications');
   };
 
   return (
@@ -101,8 +93,8 @@ export default function NinPage() {
       {verifyState === 'success' ? (
         <VerificationSuccessCard
           title="Identity Verified"
-          description="Your NIN has been successfully verified. You are all set!"
-          actionLabel="Complete Setup"
+          description="Your NIN has been submitted for review. We will notify you once approved."
+          actionLabel="Back to Verifications"
           onAction={handleContinue}
         />
       ) : (
@@ -186,10 +178,10 @@ export default function NinPage() {
               variant="ghost"
               size="sm"
               color="fg.muted"
-              onClick={() => router.push('/onboarding/business-info')}
+              onClick={() => router.push('/verifications')}
             >
               <LuArrowLeft size={14} />
-              Back to Business Info
+              Back to Verifications
             </Button>
           </Stack>
         </form>

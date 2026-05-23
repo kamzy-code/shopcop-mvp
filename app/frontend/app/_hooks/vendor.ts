@@ -143,6 +143,35 @@ export const useCreateProduct = () =>
       }),
   });
 
+export const useGetVerifications = () =>
+  useQuery<VerificationRecord[]>({
+    queryKey: ['verifications'],
+    queryFn: async () => {
+      const res = await apiFetch<VerificationRecord[]>('/verifications/');
+      return res.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+export const useGetVerification = (id: string) =>
+  useQuery<VerificationRecord>({
+    queryKey: ['verification', id],
+    queryFn: async () => {
+      const res = await apiFetch<VerificationRecord>(`/verifications/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+
+export const useResubmitVerification = () =>
+  useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      apiFetch<VerificationRecord>(`/verifications/${id}/resubmit`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+  });
+
 export const useDeleteProduct = () =>
   useMutation({
     mutationFn: (productId: string) => apiFetch(`/products/${productId}`, { method: 'DELETE' }),

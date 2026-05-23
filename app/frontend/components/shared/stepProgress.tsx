@@ -1,55 +1,76 @@
 'use client';
 import { Box, Flex, Text } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import { LuCheck } from 'react-icons/lu';
 
 interface Step {
   label: string;
+  path?: string;
 }
 
 interface StepProgressProps {
   steps: Step[];
   currentStep: number; // 1-indexed
+  isStepCompleted?: (stepNum: number) => boolean;
 }
 
-export function StepProgress({ steps, currentStep }: StepProgressProps) {
+export function StepProgress({ steps, currentStep, isStepCompleted }: StepProgressProps) {
   return (
     <Flex align="flex-start" w="full">
       {steps.map((step, index) => {
         const stepNum = index + 1;
-        const isCompleted = stepNum < currentStep;
+        const isCompleted = isStepCompleted ? isStepCompleted(stepNum) : stepNum < currentStep;
         const isActive = stepNum === currentStep;
         const isLast = index === steps.length - 1;
 
+        const circle = (
+          <Flex
+            w={8}
+            h={8}
+            borderRadius="full"
+            align="center"
+            justify="center"
+            bg={isCompleted || isActive ? 'primary.500' : 'bg.subtle'}
+            borderWidth={isCompleted || isActive ? 0 : '2px'}
+            borderColor="border"
+            color={isCompleted || isActive ? 'white' : 'fg.muted'}
+            fontWeight="bold"
+            textStyle="sm"
+            flexShrink={0}
+            transition="all 0.2s"
+          >
+            {isCompleted ? <LuCheck size={14} /> : stepNum}
+          </Flex>
+        );
+
+        const label = (
+          <Text
+            textStyle="xs"
+            fontWeight={isActive ? 'semibold' : 'normal'}
+            color={isActive ? 'primary.fg' : isCompleted ? 'fg.muted' : 'fg.subtle'}
+            whiteSpace="nowrap"
+            textAlign="center"
+          >
+            {step.label}
+          </Text>
+        );
+
+        const stepNode = (
+          <Flex direction="column" align="center" gap={1.5} flexShrink={0}>
+            {circle}
+            {label}
+          </Flex>
+        );
+
         return (
           <Flex key={index} align="flex-start" flex={isLast ? undefined : 1}>
-            <Flex direction="column" align="center" gap={1.5} flexShrink={0}>
-              <Flex
-                w={8}
-                h={8}
-                borderRadius="full"
-                align="center"
-                justify="center"
-                bg={isCompleted || isActive ? 'primary.500' : 'bg.subtle'}
-                borderWidth={isCompleted || isActive ? 0 : '2px'}
-                borderColor="border"
-                color={isCompleted || isActive ? 'white' : 'fg.muted'}
-                fontWeight="bold"
-                textStyle="sm"
-                flexShrink={0}
-                transition="all 0.2s"
-              >
-                {isCompleted ? <LuCheck size={14} /> : stepNum}
-              </Flex>
-              <Text
-                textStyle="xs"
-                fontWeight={isActive ? 'semibold' : 'normal'}
-                color={isActive ? 'primary.fg' : isCompleted ? 'fg.muted' : 'fg.subtle'}
-                whiteSpace="nowrap"
-                textAlign="center"
-              >
-                {step.label}
-              </Text>
-            </Flex>
+            {step.path ? (
+              <NextLink href={step.path} style={{ textDecoration: 'none' }}>
+                {stepNode}
+              </NextLink>
+            ) : (
+              stepNode
+            )}
 
             {!isLast && (
               <Box

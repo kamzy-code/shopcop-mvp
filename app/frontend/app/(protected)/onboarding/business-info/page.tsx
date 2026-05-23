@@ -12,6 +12,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
 import { FormCard, SectionLabel } from '@/components/shared/formCard';
 import {
@@ -22,15 +23,13 @@ import {
   PAYMENT_MODEL_OPTIONS,
   REFUND_POLICY_OPTIONS,
 } from '@/app/validators/vendorSchema';
-import { useOnboardingStore } from '@/app/_store/onboardingStore';
 import { toaster } from '@/components/ui/toaster';
 import { useSubmitBusinessInfo } from '@/app/_hooks/vendor';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 
 export default function BusinessInfoPage() {
   const router = useRouter();
-  const setBusinessInfo = useOnboardingStore((s) => s.setBusinessInfo);
-  const savedInfo = useOnboardingStore((s) => s.businessInfo);
+  const queryClient = useQueryClient();
   const submitMutation = useSubmitBusinessInfo();
 
   const {
@@ -42,20 +41,20 @@ export default function BusinessInfoPage() {
   } = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
     defaultValues: {
-      business_name: savedInfo?.business_name || '',
-      business_description: savedInfo?.business_description || '',
-      state: savedInfo?.state || '',
-      city: savedInfo?.city || '',
-      street_address: savedInfo?.street_address || '',
-      landmark: savedInfo?.landmark || '',
-      primary_category: savedInfo?.primary_category || '',
-      subcategories: savedInfo?.subcategories || [],
-      bank_name: savedInfo?.bank_name || '',
-      account_number: savedInfo?.account_number || '',
-      account_name: savedInfo?.account_name || '',
-      payment_models: (savedInfo?.payment_models as BusinessInfoFormData['payment_models']) || [],
-      refund_policy_type: (savedInfo?.refund_policy_type as BusinessInfoFormData['refund_policy_type']) || 'NO_REFUNDS',
-      refund_duration_days: savedInfo?.refund_duration_days,
+      business_name: '',
+      business_description: '',
+      state: '',
+      city: '',
+      street_address: '',
+      landmark: '',
+      primary_category: '',
+      subcategories: [],
+      bank_name: '',
+      account_number: '',
+      account_name: '',
+      payment_models: [],
+      refund_policy_type: 'NO_REFUNDS',
+      refund_duration_days: undefined,
     },
   });
 
@@ -74,12 +73,8 @@ export default function BusinessInfoPage() {
       return;
     }
 
-    setBusinessInfo({
-      ...data,
-      landmark: data.landmark || undefined,
-      refund_duration_days: data.refund_duration_days,
-    });
-    router.push('/onboarding/nin');
+    await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+    router.push('/onboarding');
   };
 
   return (
@@ -315,7 +310,7 @@ export default function BusinessInfoPage() {
             loading={isSubmitting || submitMutation.isPending}
             disabled={isSubmitting || submitMutation.isPending}
           >
-            Continue to NIN Verification
+            Save & Continue
             <LuArrowRight />
           </Button>
 
@@ -323,10 +318,10 @@ export default function BusinessInfoPage() {
             variant="ghost"
             size="sm"
             color="fg.muted"
-            onClick={() => router.push('/onboarding/personal-info')}
+            onClick={() => router.push('/onboarding')}
           >
             <LuArrowLeft size={14} />
-            Back to Personal Info
+            Back to Setup
           </Button>
         </Stack>
       </form>

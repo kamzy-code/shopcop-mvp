@@ -29,7 +29,7 @@ export default function VerifyLoginPage() {
       .then((result) => {
         if (cancelled) return;
         setUser(result.data.user)
-        // router.push(`/dashboard`);
+        router.push('/dashboard');
       })
       .catch((error) => {
         if (cancelled) return;

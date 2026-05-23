@@ -10,6 +10,7 @@ import {
   LuMenu,
   LuPackage,
   LuSettings,
+  LuShieldCheck,
   LuShoppingCart,
   LuStar,
   LuStore,
@@ -30,6 +31,7 @@ interface NavItemConfig {
 const NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/dashboard' },
   { label: 'Products', icon: LuPackage, href: '/products' },
+  { label: 'Verifications', icon: LuShieldCheck, href: '/verifications' },
   { label: 'Orders', icon: LuShoppingCart, href: '/orders', disabled: true },
   { label: 'Reviews', icon: LuStar, href: '/reviews', disabled: true },
   { label: 'Settings', icon: LuSettings, href: '/settings', disabled: true },
