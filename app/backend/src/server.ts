@@ -70,5 +70,4 @@ process.on('unhandledRejection', (reason, promise) => {
   shutdown('UnhandledRejection');
 });
 
-// Start the Server
 startServer();
