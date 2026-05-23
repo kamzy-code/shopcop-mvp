@@ -32,6 +32,7 @@ app/frontend/CLAUDE.md
 app/frontend/AGENTS.md
 app/frontend/requirements.md
 app/frontend/plan
+app/frontend/tsconfig.tsbuildinfo
 
 # Backend ignores
 app/backend/node_modules/

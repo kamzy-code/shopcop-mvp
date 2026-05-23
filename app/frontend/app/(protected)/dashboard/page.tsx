@@ -1,5 +1,5 @@
 'use client';
-import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Center, Flex, Grid, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
@@ -91,12 +91,19 @@ export default function Dashboard() {
   const { data: verifications } = useGetVerifications();
   const { data: profile } = useVendorProfile();
 
-  // Force personal info completion if not yet done
-  useEffect(() => {
-    if (completeness && !completeness.sections.personal_info.completed) {
-      router.replace('/onboarding');
-    }
-  }, [completeness, router]);
+  // Hold rendering until completeness is fetched, then redirect if setup is incomplete
+  if (!completeness) {
+    return (
+      <Center h="60vh">
+        <Spinner color="primary.500" size="lg" />
+      </Center>
+    );
+  }
+
+  if (!completeness.sections.personal_info.completed) {
+    router.replace('/onboarding');
+    return null;
+  }
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
