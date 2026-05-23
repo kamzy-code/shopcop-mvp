@@ -23,6 +23,7 @@ app.use(
         ? [
             'http://localhost:3000',
             'https://shopcop-mvp-frontend-mtwz.vercel.app',
+            'https://getshopcop.com/'
           ]
         : ['http://localhost:3000'],
     credentials: true,
