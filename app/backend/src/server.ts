@@ -8,7 +8,7 @@ const PORT = env.PORT;
 const shutdown = async (signal: string) => {
   logger.info(`${signal} received. Shutting down gracefully...`, {
     service: 'server',
-    action: 'SHUTDOWN',
+    action: 'shutdown',
     timestamp: new Date().toISOString(),
   });
 
@@ -18,7 +18,7 @@ const shutdown = async (signal: string) => {
   await prisma.$disconnect();
   logger.info('Database connection closed', {
     service: 'server',
-    action: 'DB_DISCONNECT',
+    action: 'disconnectDB',
     timestamp: new Date().toISOString(),
   });
 
@@ -31,7 +31,7 @@ async function startServer() {
     await prisma.$connect();
     logger.info('Database connected successfully', {
       service: 'server',
-      action: 'DB_CONNECT',
+      action: 'connectDB',
       timestamp: new Date().toISOString(),
     });
 
@@ -39,7 +39,7 @@ async function startServer() {
     app.listen(PORT, () => {
       logger.info(`Server is running on port ${PORT}`, {
         service: 'server',
-        action: 'START_SERVER',
+        action: 'startServer',
         timestamp: new Date().toISOString(),
       });
     });
@@ -47,7 +47,7 @@ async function startServer() {
   } catch (error) {
     logger.error('Failed to start server:', {
       service: 'server',
-      action: 'START_SERVER_ERROR',
+      action: 'startServer',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : String(error),
     });
@@ -62,7 +62,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', {
     service: 'server',
-    action: 'UNHANDLED_REJECTION',
+    action: 'unhandledRejection',
     timestamp: new Date().toISOString(),
     promise,
     reason,
