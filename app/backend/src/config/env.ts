@@ -23,6 +23,7 @@ interface EnvConfig {
   SMS_API_KEY?: string;
   SMS_SENDER_ID: string;
   RESEND_API_KEY?: string;
+  FROM_EMAIL?: string;
   CLOUDINARY_CLOUD_NAME?: string;
   CLOUDINARY_API_KEY?: string;
   CLOUDINARY_API_SECRET?: string;
@@ -68,6 +69,7 @@ export const env: EnvConfig = {
   SMS_API_KEY: process.env.SMS_API_KEY,
   SMS_SENDER_ID: getEnv('SMS_SENDER_ID', 'NOVA'),
   RESEND_API_KEY: process.env.RESEND_API_KEY,
+  FROM_EMAIL: process.env.FROM_EMAIL,
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,

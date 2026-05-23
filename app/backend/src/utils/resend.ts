@@ -23,7 +23,7 @@ interface SendEmailParams {
 export const sendEmail = async ({ to, subject, html }: SendEmailParams): Promise<boolean> => {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: env.FROM_EMAIL || 'noreply@getshopcop.com',
       to: to,
       subject: subject,
       html: html,
