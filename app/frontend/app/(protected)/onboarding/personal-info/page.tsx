@@ -64,7 +64,7 @@ export default function PersonalInfoPage() {
     }
 
     await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
-    router.push('/onboarding');
+    router.push('/dashboard');
   };
 
   return (
