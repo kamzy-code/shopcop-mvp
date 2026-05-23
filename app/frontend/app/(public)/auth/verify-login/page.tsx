@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 import { LuArrowLeft, LuCircleAlert, LuMailCheck } from 'react-icons/lu';
 import { useAuthStore } from '@/app/_store/authStore';
 
+// TODO: Add resend email
+
 export default function VerifyLoginPage() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
