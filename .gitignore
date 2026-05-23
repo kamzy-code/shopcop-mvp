@@ -1,6 +1,5 @@
 # Root-level ignores
 node_modules/
-package-lock.json
 .DS_Store
 .env
 .env.local
@@ -23,7 +22,6 @@ app/frontend/.next/
 app/frontend/.env
 app/frontend/.env.local
 app/frontend/*.local
-app/frontend/package-lock.json
 app/frontend/.turbo/
 app/frontend/dist/
 app/frontend/out/
@@ -40,7 +38,6 @@ app/backend/node_modules/
 app/backend/dist/
 app/backend/.env
 app/backend/.env.local
-app/backend/package-lock.json
 app/backend/*.local
 app/backend/prisma/migrations/
 app/backend/generated/prisma/
