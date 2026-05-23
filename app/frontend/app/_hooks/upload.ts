@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { apiFetch } from '../_lib/fetchWrapper';
+import { resizeImageIfNeeded } from '../_lib/resizeImage';
 
 export function useDeleteMedia() {
   return useMutation({
@@ -43,8 +44,10 @@ export function useUploadPublicMedia() {
     }): Promise<UploadResult> => {
       if (!cloudName || !uploadPreset) throw new Error('Cloudinary configuration is missing');
 
+      const resizedFile = await resizeImageIfNeeded(file);
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', resizedFile);
       formData.append('upload_preset', uploadPreset);
 
       const res = await axios.post(
