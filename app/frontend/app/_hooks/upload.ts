@@ -2,6 +2,17 @@ import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { apiFetch } from '../_lib/fetchWrapper';
 
+export function useDeleteMedia() {
+  return useMutation({
+    mutationFn: async (publicId: string) => {
+      await apiFetch('/uploads/delete', {
+        method: 'POST',
+        body: JSON.stringify({ publicId }),
+      });
+    },
+  });
+}
+
 interface UploadSignature {
   apiKey: string;
   timestamp: number;

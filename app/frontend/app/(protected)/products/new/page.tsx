@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
   Textarea,
+  Spinner,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
@@ -20,35 +21,41 @@ import { productSchema, ProductFormData, PRODUCT_CATEGORIES } from '@/app/valida
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { useCreateProduct } from '@/app/_hooks/vendor';
-import { UploadResult, useUploadPublicMedia } from '@/app/_hooks/upload';
+import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
 
 function ImageSlot({
   index,
   file,
+  localUrl,
+  isUploading,
   onAdd,
   onRemove,
   isPrimary,
-  uploadProgress,
+  canDelete,
 }: {
   index: number;
   file: UploadResult | null;
+  localUrl?: string;
+  isUploading?: boolean;
   onAdd: (index: number, file: File) => void;
   onRemove: (index: number) => void;
   isPrimary: boolean;
-  uploadProgress: number;
+  canDelete: boolean;
 }) {
-  const preview = file ? file.url : null;
+  const preview = localUrl || file?.url || null;
+  const hasContent = !!preview;
 
   const handleClick = () => {
+    if (isUploading) return;
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png,video/mp4,video/quicktime,video/webm';
+    input.accept = 'image/jpeg,image/jpg,image/png,video/mp4,video/quicktime,video/webm';
     input.onchange = (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
       if (!f) return;
       if (f.size > 10 * 1024 * 1024) {
-        toaster.create({ title: 'Image must be under 2MB', type: 'error' });
+        toaster.create({ title: 'Image must be under 10MB', type: 'error' });
         return;
       }
       onAdd(index, f);
@@ -57,89 +64,96 @@ function ImageSlot({
   };
 
   return (
-    <Stack>
-      <Box
-        w="full"
-        aspectRatio={1}
-        borderRadius="xl"
-        borderWidth="2px"
-        borderStyle={file ? 'solid' : 'dashed'}
-        borderColor={file ? 'primary.300' : 'border'}
-        bg={file ? 'transparent' : 'bg.subtle'}
-        position="relative"
-        overflow="hidden"
-        cursor={file ? 'default' : 'pointer'}
-        transition="all 0.15s"
-        onClick={file ? undefined : handleClick}
-        _hover={file ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
-      >
-        {preview ? (
-          <>
-            {file?.resourceType === 'video' ? (
-              <video
-                src={preview}
-                controls
-                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-              />
-            ) : (
-              <img
-                src={preview}
-                alt={`Product image ${index + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            )}
-            {isPrimary && (
-              <Box
-                position="absolute"
-                bottom={1}
-                left={1}
-                px={1.5}
-                py={0.5}
-                borderRadius="md"
-                bg="primary.500"
-              >
-                <Text textStyle="2xs" color="white" fontWeight="bold">
-                  Primary
-                </Text>
-              </Box>
-            )}
-            <Button
+    <Box
+      w="full"
+      aspectRatio={1}
+      borderRadius="xl"
+      borderWidth="2px"
+      borderStyle={hasContent ? 'solid' : 'dashed'}
+      borderColor={hasContent ? 'primary.300' : 'border'}
+      bg={hasContent ? 'transparent' : 'bg.subtle'}
+      position="relative"
+      overflow="hidden"
+      cursor={isUploading ? 'default' : hasContent ? 'default' : 'pointer'}
+      transition="all 0.15s"
+      onClick={isUploading ? undefined : hasContent ? undefined : handleClick}
+      _hover={isUploading ? {} : hasContent ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
+    >
+      {preview ? (
+        <>
+          {file?.resourceType === 'video' ? (
+            <video
+              src={preview}
+              controls
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+            />
+          ) : (
+            <img
+              src={preview}
+              alt={`Product image ${index + 1}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          )}
+          {isPrimary && (
+            <Box
               position="absolute"
-              top={1}
-              right={1}
-              size="xs"
-              colorPalette="red"
-              borderRadius="full"
-              w={5}
-              h={5}
-              minW={5}
-              p={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(index);
-              }}
-              aria-label="Remove image"
+              bottom={1}
+              left={1}
+              px={1.5}
+              py={0.5}
+              borderRadius="md"
+              bg="primary.500"
             >
-              <LuX size={10} />
-            </Button>
-          </>
-        ) : (
-          <Flex direction="column" align="center" justify="center" h="full" gap={1} p={3}>
-            <LuImage size={20} color="var(--chakra-colors-fg-subtle)" />
-            {index === 0 && (
-              <Text textStyle="2xs" color="fg.muted" textAlign="center">
+              <Text textStyle="2xs" color="white" fontWeight="bold">
                 Primary
               </Text>
-            )}
-          </Flex>
-        )}
-      </Box>
-      {uploadProgress > 0 && uploadProgress < 100 && (
-        <div className="progress-bar">
-          <div style={{ width: `${uploadProgress}%` }}>{uploadProgress}%</div>
-        </div>
+            </Box>
+          )}
+          <Button
+            position="absolute"
+            top={1}
+            right={1}
+            size="xs"
+            colorPalette="red"
+            borderRadius="full"
+            w={5}
+            h={5}
+            minW={5}
+            p={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(index);
+            }}
+            aria-label="Remove image"
+          >
+            <LuX size={10} />
+          </Button>
+        </>
+      ) : (
+        <Flex direction="column" align="center" justify="center" h="full" gap={1} p={3}>
+          <LuImage size={20} color="var(--chakra-colors-fg-subtle)" />
+          {index === 0 && (
+            <Text textStyle="2xs" color="fg.muted" textAlign="center">
+              Primary
+            </Text>
+          )}
+        </Flex>
       )}
-    </Stack>
+      {isUploading && (
+        <Box
+          position="absolute"
+          inset={0}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          bg="blackAlpha.400"
+          borderRadius="xl"
+          zIndex={1}
+        >
+          <Spinner size="lg" color="white" />
+        </Box>
+      )}
+    </Box>
   );
 }
 
@@ -147,6 +161,7 @@ export default function NewProductPage() {
   const router = useRouter();
   const createMutation = useCreateProduct();
   const uploadMutation = useUploadPublicMedia();
+  const deleteMutation = useDeleteMedia();
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [mediaFiles, setMediaFiles] = useState<(UploadResult | null)[]>([
     null,
@@ -155,6 +170,8 @@ export default function NewProductPage() {
     null,
     null,
   ]);
+  const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
+  const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
 
   const {
     register,
@@ -172,6 +189,11 @@ export default function NewProductPage() {
   const selectedStock = watch('stockStatus');
 
   const handleAddImage = async (index: number, file: File) => {
+    const localUrl = URL.createObjectURL(file);
+    setLocalPreviews((prev) => ({ ...prev, [index]: localUrl }));
+    setUploadingSlots((prev) => ({ ...prev, [index]: true }));
+    setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+
     try {
       const uploadResult = await uploadMutation.mutateAsync({
         file,
@@ -180,21 +202,55 @@ export default function NewProductPage() {
         },
       });
 
+      URL.revokeObjectURL(localUrl);
+      setLocalPreviews((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
       setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+      setUploadingSlots((prev) => ({ ...prev, [index]: false }));
       setMediaFiles((prev) => {
         const next = [...prev];
         next[index] = uploadResult;
         return next;
       });
     } catch (error) {
+      URL.revokeObjectURL(localUrl);
+      setLocalPreviews((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+      setUploadingSlots((prev) => ({ ...prev, [index]: false }));
       toaster.create({
         title: 'Failed to upload file',
+        description: error instanceof Error ? error.message : 'An error occurred, please try again.',
         type: 'error',
       });
     }
   };
 
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = async (index: number) => {
+    const file = mediaFiles[index];
+    if (file?.publicId) {
+      try {
+        await deleteMutation.mutateAsync(file.publicId);
+      } catch {
+        // Log but proceed with local removal
+      }
+    }
+    if (localPreviews[index]) {
+      URL.revokeObjectURL(localPreviews[index]);
+    }
+    setLocalPreviews((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+    setUploadingSlots((prev) => ({ ...prev, [index]: false }));
     setMediaFiles((prev) => {
       const next = [...prev];
       next[index] = null;
@@ -269,10 +325,12 @@ export default function NewProductPage() {
                     <ImageSlot
                       index={index}
                       file={file}
+                      localUrl={localPreviews[index]}
+                      isUploading={uploadingSlots[index]}
                       onAdd={handleAddImage}
                       onRemove={handleRemoveImage}
                       isPrimary={index === 0 && !!file}
-                      uploadProgress={uploadProgress[index] || 0}
+                      canDelete={!uploadingSlots[index]}
                     />
                   </Box>
                 ))}

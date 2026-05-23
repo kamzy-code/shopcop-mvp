@@ -64,4 +64,41 @@ export class FileUploadController {
     // Save to VendorDocument table
     res.json({ success: true });
   }
+
+  /**
+   * POST /api/v1/uploads/delete
+   * Permanently deletes a Cloudinary asset by its public ID.
+   *
+   * @param req.body.publicId - Cloudinary public ID of the asset to delete
+   * @returns 200 `{ success: true }`
+   * @throws {AppError} 401 — Not authenticated
+   * @throws {AppError} 400 — Missing publicId
+   */
+  static async deleteMedia(req: Request, res: Response, next: NextFunction) {
+    const action = 'deleteMedia';
+    const user = req.user;
+    if (!user) {
+      fileUplaodLogger.warn('Authentication required to delete media', { action });
+      throw new AppError('Authentication required', 401);
+    }
+
+    const { publicId } = req.body;
+    if (!publicId) {
+      fileUplaodLogger.warn('Delete media attempt without publicId', { action });
+      throw new AppError('publicId is required', 400);
+    }
+
+    try {
+      await CloudinaryService.deleteMedia(publicId);
+      fileUplaodLogger.info('Media deleted successfully', { publicId, action });
+      res.json({ success: true, message: 'Media deleted successfully' });
+    } catch (error) {
+      fileUplaodLogger.error('Error deleting media', {
+        publicId,
+        action,
+        error: error instanceof Error ? error.message : error,
+      });
+      next(error);
+    }
+  }
 }
