@@ -1,5 +1,5 @@
 'use client';
-import { Box, Center, Flex, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import {
   LuArrowRight,
@@ -10,16 +10,13 @@ import {
   LuUser,
 } from 'react-icons/lu';
 import { useProfileCompleteness } from '@/app/_hooks/vendor';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 export default function OnboardingHubPage() {
   const { data: completeness } = useProfileCompleteness();
 
   if (!completeness) {
-    return (
-      <Center py={20}>
-        <Spinner color="primary.500" size="lg" />
-      </Center>
-    );
+    return <FullPageSpinner />;
   }
 
   const personalDone = completeness.sections.personal_info.completed;
@@ -154,10 +151,17 @@ export default function OnboardingHubPage() {
                   </Flex>
                 ) : (
                   <Flex align="center" gap={0.5} color="fg.subtle" flexShrink={0}>
-                    <Text textStyle="xs" color={isNext ? 'primary.fg' : 'fg.subtle'} fontWeight={isNext ? 'medium' : 'normal'}>
+                    <Text
+                      textStyle="xs"
+                      color={isNext ? 'primary.fg' : 'fg.subtle'}
+                      fontWeight={isNext ? 'medium' : 'normal'}
+                    >
                       {isNext ? 'Start' : 'Edit'}
                     </Text>
-                    <LuChevronRight size={15} color={isNext ? 'var(--chakra-colors-primary-600)' : undefined} />
+                    <LuChevronRight
+                      size={15}
+                      color={isNext ? 'var(--chakra-colors-primary-600)' : undefined}
+                    />
                   </Flex>
                 )}
               </Flex>
@@ -192,7 +196,8 @@ export default function OnboardingHubPage() {
                 Profile complete — get verified
               </Text>
               <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                Submit your NIN, address proof, and business registration to increase your tier and build buyer trust.
+                Submit your NIN, address proof, and business registration to increase your tier and
+                build buyer trust.
               </Text>
             </Box>
             <NextLink href="/verifications" style={{ flexShrink: 0 }}>

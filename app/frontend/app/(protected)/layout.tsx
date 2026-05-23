@@ -5,6 +5,7 @@ import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { ErrorBoundary } from '@/components/shared/errorBoundary';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useProfileCompleteness } from '@/app/_hooks/vendor';
 
 const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/onboarding', roles: ['VENDOR'] },
@@ -19,6 +20,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const pathname = usePathname();
+  const { data: completeness } = useProfileCompleteness();
 
   useEffect(() => {
     if (!isSessionReady) return;
@@ -37,6 +39,16 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
   if (requirement && user && !requirement.roles.includes(user.role)) return null;
+
+  // For non-onboarding routes: wait for completeness, then redirect if profile not started
+  const isOnboarding = pathname.startsWith('/onboarding');
+  if (!isOnboarding) {
+    if (!completeness) return <FullPageSpinner />;
+    if (!completeness.sections.personal_info.completed) {
+      router.replace('/onboarding');
+      return null;
+    }
+  }
 
   return <ErrorBoundary>{children}</ErrorBoundary>;
 }

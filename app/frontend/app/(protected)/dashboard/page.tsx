@@ -1,7 +1,6 @@
 'use client';
-import { Box, Button, Center, Flex, Grid, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import {
   LuArrowRight,
   LuBuilding2,
@@ -24,7 +23,6 @@ import {
   useGetVerifications,
   useVendorProfile,
 } from '@/app/_hooks/vendor';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 function StatCard({
   icon: Icon,
@@ -117,16 +115,6 @@ export default function Dashboard() {
   const { data: completeness } = useProfileCompleteness();
   const { data: verifications } = useGetVerifications();
   const { data: profile } = useVendorProfile();
-
-  // Hold rendering until completeness is fetched, then redirect if setup is incomplete
-  if (!completeness) {
-    return <FullPageSpinner />;
-  }
-
-  if (!completeness.sections.personal_info.completed) {
-    router.replace('/onboarding');
-    return null;
-  }
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
