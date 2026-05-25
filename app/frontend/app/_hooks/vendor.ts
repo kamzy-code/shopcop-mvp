@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
 import { Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
 import { ProductFormData } from '../validators/vendorSchema';
@@ -12,6 +12,7 @@ export const useVendorProfile = () =>
     },
     retry: false,
     staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
 export const useSubmitPersonalInfo = () =>
@@ -121,6 +122,7 @@ export const useProfileCompleteness = () =>
       return res.data;
     },
     staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
 export const useProducts = () =>
@@ -131,6 +133,7 @@ export const useProducts = () =>
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
 export const useCreateProduct = () =>
@@ -151,6 +154,7 @@ export const useGetVerifications = () =>
       return res.data;
     },
     staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
 export const useGetVerification = (id: string) =>
@@ -161,6 +165,7 @@ export const useGetVerification = (id: string) =>
       return res.data;
     },
     enabled: !!id,
+    staleTime: 2 * 60 * 1000,
   });
 
 export const useResubmitVerification = () =>

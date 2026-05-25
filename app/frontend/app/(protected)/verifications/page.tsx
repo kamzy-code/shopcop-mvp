@@ -109,6 +109,7 @@ function VerificationCard({
             </Text>
           </Box>
         </Flex>
+        
         <Flex
           align="center"
           gap={1.5}

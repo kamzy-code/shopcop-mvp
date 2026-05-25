@@ -2,10 +2,12 @@
 import { Box, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import {
+  LuArrowLeft,
   LuArrowRight,
   LuBuilding2,
   LuCheck,
   LuChevronRight,
+  LuLock,
   LuShieldCheck,
   LuUser,
 } from 'react-icons/lu';
@@ -49,6 +51,20 @@ export default function OnboardingHubPage() {
 
   return (
     <Stack w="full" gap={8} py={2}>
+      {/* Back button */}
+      <NextLink href="/dashboard" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
+        <Flex
+          align="center"
+          gap={1.5}
+          color="fg.muted"
+          _hover={{ color: 'fg' }}
+          transition="color 0.15s"
+        >
+          <LuArrowLeft size={15} />
+          <Text textStyle="sm">Back to Dashboard</Text>
+        </Flex>
+      </NextLink>
+
       {/* Heading */}
       <Stack gap={1}>
         <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
@@ -92,79 +108,96 @@ export default function OnboardingHubPage() {
       <Stack gap={3}>
         {SETUP_STEPS.map((step) => {
           const isNext = step.key === nextStepKey;
-          return (
-            <NextLink key={step.key} href={step.href} style={{ textDecoration: 'none' }}>
+
+          const cardContent = (
+            <Flex
+              p={5}
+              bg="bg.panel"
+              borderWidth="1.5px"
+              borderColor={step.isCompleted ? 'success.200' : isNext ? 'primary.200' : 'border'}
+              borderRadius="xl"
+              align="center"
+              gap={4}
+              cursor={step.isCompleted ? 'default' : 'pointer'}
+              transition="all 0.15s"
+              opacity={step.isCompleted ? 0.85 : 1}
+              _hover={
+                step.isCompleted
+                  ? {}
+                  : { borderColor: 'primary.300', shadow: 'sm' }
+              }
+            >
+              {/* Icon */}
               <Flex
-                p={5}
-                bg="bg.panel"
-                borderWidth="1.5px"
-                borderColor={step.isCompleted ? 'success.200' : isNext ? 'primary.200' : 'border'}
-                borderRadius="xl"
+                w={11}
+                h={11}
+                borderRadius="lg"
+                flexShrink={0}
+                bg={step.isCompleted ? 'success.subtle' : 'primary.subtle'}
                 align="center"
-                gap={4}
-                cursor="pointer"
-                transition="all 0.15s"
-                _hover={{
-                  borderColor: step.isCompleted ? 'success.300' : 'primary.300',
-                  shadow: 'sm',
-                }}
+                justify="center"
+                color={step.isCompleted ? 'success.fg' : 'primary.fg'}
               >
-                {/* Icon */}
-                <Flex
-                  w={11}
-                  h={11}
-                  borderRadius="lg"
-                  flexShrink={0}
-                  bg={step.isCompleted ? 'success.subtle' : 'primary.subtle'}
-                  align="center"
-                  justify="center"
-                  color={step.isCompleted ? 'success.fg' : 'primary.fg'}
-                >
-                  <step.icon size={20} />
-                </Flex>
+                <step.icon size={20} />
+              </Flex>
 
-                {/* Text */}
-                <Box flex={1}>
-                  <Text fontWeight="semibold" color="fg" textStyle="sm">
-                    {step.label}
-                  </Text>
-                  <Text color="fg.muted" textStyle="xs" mt={0.5}>
-                    {step.description}
-                  </Text>
-                </Box>
-
-                {/* Status */}
-                {step.isCompleted ? (
-                  <Flex
-                    align="center"
-                    gap={1.5}
-                    px={2.5}
-                    py={1}
-                    borderRadius="full"
-                    bg="success.subtle"
-                    flexShrink={0}
-                  >
-                    <LuCheck size={12} color="var(--chakra-colors-success-600)" />
-                    <Text textStyle="xs" fontWeight="medium" color="success.fg">
-                      Done
+              {/* Text */}
+              <Box flex={1}>
+                <Text fontWeight="semibold" color="fg" textStyle="sm">
+                  {step.label}
+                </Text>
+                <Text color="fg.muted" textStyle="xs" mt={0.5}>
+                  {step.description}
+                </Text>
+                {step.isCompleted && (
+                  <Flex align="center" gap={1} mt={1}>
+                    <LuLock size={10} color="var(--chakra-colors-fg-muted)" />
+                    <Text textStyle="xs" color="fg.subtle">
+                      To update, go to Settings
                     </Text>
-                  </Flex>
-                ) : (
-                  <Flex align="center" gap={0.5} color="fg.subtle" flexShrink={0}>
-                    <Text
-                      textStyle="xs"
-                      color={isNext ? 'primary.fg' : 'fg.subtle'}
-                      fontWeight={isNext ? 'medium' : 'normal'}
-                    >
-                      {isNext ? 'Start' : 'Edit'}
-                    </Text>
-                    <LuChevronRight
-                      size={15}
-                      color={isNext ? 'var(--chakra-colors-primary-600)' : undefined}
-                    />
                   </Flex>
                 )}
-              </Flex>
+              </Box>
+
+              {/* Status */}
+              {step.isCompleted ? (
+                <Flex
+                  align="center"
+                  gap={1.5}
+                  px={2.5}
+                  py={1}
+                  borderRadius="full"
+                  bg="success.subtle"
+                  flexShrink={0}
+                >
+                  <LuCheck size={12} color="var(--chakra-colors-success-600)" />
+                  <Text textStyle="xs" fontWeight="medium" color="success.fg">
+                    Done
+                  </Text>
+                </Flex>
+              ) : (
+                <Flex align="center" gap={0.5} color="fg.subtle" flexShrink={0}>
+                  <Text
+                    textStyle="xs"
+                    color={isNext ? 'primary.fg' : 'fg.subtle'}
+                    fontWeight={isNext ? 'medium' : 'normal'}
+                  >
+                    {isNext ? 'Start' : 'Edit'}
+                  </Text>
+                  <LuChevronRight
+                    size={15}
+                    color={isNext ? 'var(--chakra-colors-primary-600)' : undefined}
+                  />
+                </Flex>
+              )}
+            </Flex>
+          );
+
+          return step.isCompleted ? (
+            <Box key={step.key}>{cardContent}</Box>
+          ) : (
+            <NextLink key={step.key} href={step.href} style={{ textDecoration: 'none' }}>
+              {cardContent}
             </NextLink>
           );
         })}

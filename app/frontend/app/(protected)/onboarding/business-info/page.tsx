@@ -1,16 +1,8 @@
 'use client';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Box,
-  Button,
-  Field,
-  Flex,
-  Input,
-  Stack,
-  Text,
-  Textarea,
-} from '@chakra-ui/react';
+import { Box, Button, Field, Flex, Input, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
@@ -24,13 +16,15 @@ import {
   REFUND_POLICY_OPTIONS,
 } from '@/app/validators/vendorSchema';
 import { toaster } from '@/components/ui/toaster';
-import { useSubmitBusinessInfo } from '@/app/_hooks/vendor';
+import { useSubmitBusinessInfo, useProfileCompleteness } from '@/app/_hooks/vendor';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 export default function BusinessInfoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const submitMutation = useSubmitBusinessInfo();
+  const { data: completeness } = useProfileCompleteness();
 
   const {
     register,
@@ -76,6 +70,17 @@ export default function BusinessInfoPage() {
     await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
     router.push('/onboarding');
   };
+
+  // Route guard — redirect if business info has already been filled.
+  // This section can only be updated via the Settings page once submitted.
+  useEffect(() => {
+    if (completeness?.sections.business_info.completed) {
+      router.replace('/onboarding');
+    }
+  }, [completeness, router]);
+
+  if (!completeness) return <FullPageSpinner />;
+  if (completeness.sections.business_info.completed) return null;
 
   return (
     <FormCard
@@ -134,11 +139,17 @@ export default function BusinessInfoPage() {
                 bg="bg"
                 color="fg"
                 fontSize="md"
-                _focus={{ outline: 'none', borderColor: 'primary.500', boxShadow: '0 0 0 1px var(--chakra-colors-primary-500)' }}
+                _focus={{
+                  outline: 'none',
+                  borderColor: 'primary.500',
+                  boxShadow: '0 0 0 1px var(--chakra-colors-primary-500)',
+                }}
               >
                 <option value="">Select state</option>
                 {NIGERIAN_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </Box>
               <Field.ErrorText>{errors.state?.message}</Field.ErrorText>
@@ -170,7 +181,9 @@ export default function BusinessInfoPage() {
           <Field.Root invalid={!!errors.landmark}>
             <Field.Label color="fg">
               Landmark{' '}
-              <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text>
+              <Text as="span" color="fg.muted" fontWeight="normal">
+                (optional)
+              </Text>
             </Field.Label>
             <Input
               {...register('landmark')}
@@ -197,7 +210,9 @@ export default function BusinessInfoPage() {
           <Field.Root invalid={!!errors.subcategories} required>
             <Field.Label color="fg">
               Subcategories{' '}
-              <Text as="span" color="fg.muted" fontWeight="normal">(select up to 3)</Text>
+              <Text as="span" color="fg.muted" fontWeight="normal">
+                (select up to 3)
+              </Text>
             </Field.Label>
             <MultiChipSelect
               options={PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))}
@@ -284,7 +299,9 @@ export default function BusinessInfoPage() {
             <Field.Root invalid={!!errors.refund_duration_days}>
               <Field.Label color="fg">
                 Refund Window{' '}
-                <Text as="span" color="fg.muted" fontWeight="normal">(optional, in days)</Text>
+                <Text as="span" color="fg.muted" fontWeight="normal">
+                  (optional, in days)
+                </Text>
               </Field.Label>
               <Input
                 {...register('refund_duration_days', { valueAsNumber: true })}
@@ -314,14 +331,9 @@ export default function BusinessInfoPage() {
             <LuArrowRight />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            color="fg.muted"
-            onClick={() => router.push('/onboarding')}
-          >
+          <Button variant="ghost" size="sm" color="fg.muted" onClick={() => router.back()}>
             <LuArrowLeft size={14} />
-            Back to Setup
+            Back
           </Button>
         </Stack>
       </form>

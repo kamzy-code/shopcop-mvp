@@ -1,22 +1,17 @@
 'use client';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Button,
-  Field,
-  Flex,
-  Input,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
+import { Button, Field, Flex, Input, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowRight, LuUser } from 'react-icons/lu';
 import { FormCard } from '@/components/shared/formCard';
 import { personalInfoSchema, PersonalInfoFormData } from '@/app/validators/vendorSchema';
-import { useSubmitPersonalInfo } from '@/app/_hooks/vendor';
+import { useSubmitPersonalInfo, useProfileCompleteness } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 const GENDER_OPTIONS = [
   { value: 'MALE', label: 'Male' },
@@ -28,6 +23,7 @@ export default function PersonalInfoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const submitMutation = useSubmitPersonalInfo();
+  const { data: completeness } = useProfileCompleteness();
 
   const {
     register,
@@ -66,6 +62,17 @@ export default function PersonalInfoPage() {
     await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
     router.push('/dashboard');
   };
+
+  // Route guard — redirect if personal info has already been filled.
+  // This section can only be updated via the Settings page once submitted.
+  useEffect(() => {
+    if (completeness?.sections.personal_info.completed) {
+      router.replace('/onboarding');
+    }
+  }, [completeness, router]);
+
+  if (!completeness) return <FullPageSpinner />;
+  if (completeness.sections.personal_info.completed) return null;
 
   return (
     <FormCard
@@ -143,9 +150,11 @@ export default function PersonalInfoPage() {
               type="date"
               size="lg"
               colorPalette="primary"
-              max={new Date(new Date().setFullYear(new Date().getFullYear() - 16))
-                .toISOString()
-                .split('T')[0]}
+              max={
+                new Date(new Date().setFullYear(new Date().getFullYear() - 16))
+                  .toISOString()
+                  .split('T')[0]
+              }
             />
             <Field.HelperText color="fg.subtle" textStyle="xs">
               You must be at least 16 years old.

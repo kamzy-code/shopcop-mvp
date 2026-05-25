@@ -23,6 +23,7 @@ import {
   useGetVerifications,
   useVendorProfile,
 } from '@/app/_hooks/vendor';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 function StatCard({
   icon: Icon,
@@ -118,7 +119,7 @@ export default function Dashboard() {
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
-  const firstName = user?.name?.split(' ')[0] || 'Vendor';
+  const firstName = user?.name?.split(' ')[0] || profile?.first_name || 'Vendor';
   const profileSetupPct =
     [
       completeness?.sections.personal_info.completed,
@@ -174,6 +175,8 @@ export default function Dashboard() {
       href: '/verifications',
     },
   ];
+
+  if (!profile) return <FullPageSpinner />;
 
   return (
     <AppShell>
