@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiFetch } from '../_lib/fetchWrapper';
 import {
   AdminDashboardStats,
+  AdminProfile,
   AdminUserDetail,
   AdminUsersResponse,
   AdminVerificationsResponse,
@@ -198,6 +199,34 @@ export const useAdminRejectVerification = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin-verification', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+    },
+  });
+};
+
+// ============================================================
+// ADMIN PROFILE
+// ============================================================
+
+export const useAdminProfile = () =>
+  useQuery<AdminProfile | null>({
+    queryKey: ['admin-profile'],
+    queryFn: async () => {
+      const res = await apiFetch<AdminProfile | null>('/admin/profile');
+      return res.data ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useUpdateAdminProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<AdminProfile>) =>
+      apiFetch<AdminProfile>('/admin/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-profile'] });
     },
   });
 };

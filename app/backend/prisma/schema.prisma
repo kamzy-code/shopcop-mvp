@@ -150,6 +150,7 @@ model User {
   magic_links    MagicLink[]
   vendor_profile VendorProfile[]
   buyer_profile  BuyerProfile[]
+  admin_profile  AdminProfile[]
   admin_actions  AdminActivityLog[]
 
   @@index([email])
@@ -609,6 +610,42 @@ model Review {
   @@index([moderation_status])
   @@index([created_at])
   @@map("reviews")
+}
+
+// ============================================
+// ADMIN PROFILE
+// ============================================
+
+model AdminProfile {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Personal information
+  first_name    String?
+  middle_name   String?
+  last_name     String?
+  gender        Gender?
+  date_of_birth DateTime?
+  phone_number  String?
+
+  // Admin-specific metadata
+  department String? // e.g. "Verification Team", "User Management"
+  role_title String? // e.g. "Senior Admin", "Support Admin"
+
+  // Profile photo
+  profile_photo_url       String?
+  profile_photo_public_id String?
+
+  // Completeness flag — true when first_name, last_name, and phone_number are all set
+  profile_complete Boolean @default(false)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@map("admin_profiles")
 }
 
 // ============================================

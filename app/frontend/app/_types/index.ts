@@ -238,6 +238,30 @@ export interface AdminVerificationsResponse {
   pagination: { total: number; page: number; limit: number; totalPages: number };
 }
 
+export interface AdminProfile {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  gender: Gender | null;
+  date_of_birth: string | null;
+  phone_number: string | null;
+  department: string | null;
+  role_title: string | null;
+  profile_photo_url: string | null;
+  profile_photo_public_id: string | null;
+  profile_complete: boolean;
+  created_at: string;
+  updated_at: string;
+  user: {
+    email: string;
+    name: string | null;
+    avatar_url: string | null;
+    role: UserRole;
+  } | null;
+}
+
 // ============================================================
 
 export interface BusinessCategory {

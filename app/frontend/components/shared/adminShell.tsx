@@ -10,6 +10,7 @@ import {
   LuMenu,
   LuShieldCheck,
   LuStore,
+  LuUser,
   LuUsers,
   LuX,
 } from 'react-icons/lu';
@@ -28,6 +29,7 @@ const ADMIN_NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/admin' },
   { label: 'Verifications', icon: LuShieldCheck, href: '/admin/verifications' },
   { label: 'Users', icon: LuUsers, href: '/admin/users' },
+  { label: 'Profile', icon: LuUser, href: '/admin/profile' },
 ];
 
 function UserAvatar({ name, email }: { name?: string; email?: string }) {
