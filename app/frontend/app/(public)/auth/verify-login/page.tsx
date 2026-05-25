@@ -1,14 +1,12 @@
 'use client';
 
-import { useVerifyLoginLink } from '@/app/_hooks/auth';
+import { useLoginWithMagicLink, useVerifyLoginLink } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
 import { Button, Center, Flex, Heading, Link, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LuArrowLeft, LuCircleAlert, LuMailCheck } from 'react-icons/lu';
 import { useAuthStore } from '@/app/_store/authStore';
-
-// TODO: Add resend email
 
 export default function VerifyLoginPage() {
   const searchParams = useSearchParams();
@@ -18,6 +16,32 @@ export default function VerifyLoginPage() {
   const setUser = useAuthStore(s => s.setUser)
 
   const verifyLoginMutation = useVerifyLoginLink();
+  const resendMutation = useLoginWithMagicLink();
+  const [linkResent, setLinkResent] = useState(false);
+  const resendTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Clean up resend timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(resendTimerRef.current);
+  }, []);
+
+  const handleResend = async () => {
+    if (!email) return;
+    try {
+      await resendMutation.mutateAsync({ email });
+      toaster.create({
+        title: 'Magic link resent',
+        description: 'Check your email for a new sign-in link.',
+        type: 'success',
+      });
+      setLinkResent(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resend link';
+      toaster.create({ title: 'Failed to resend', description: message, type: 'error' });
+    } finally {
+      resendTimerRef.current = setTimeout(() => setLinkResent(false), 30 * 1000);
+    }
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -181,10 +205,18 @@ export default function VerifyLoginPage() {
           </Button>
 
           <Text textStyle="sm" color="fg.muted">
-            {"Didn't receive the email?"}
-            <Link color="primary.fg" fontWeight="medium">
-              Resend
-            </Link>
+            {"Didn't receive the email?"}{'  '}
+            <Button
+              variant="ghost"
+              color="primary.fg"
+              fontWeight="medium"
+              size="sm"
+              onClick={handleResend}
+              disabled={linkResent || resendMutation.isPending}
+              px={1}
+            >
+              {resendMutation.isPending ? 'Resending…' : linkResent ? 'Link sent!' : 'Resend'}
+            </Button>
           </Text>
         </Stack>
 
