@@ -173,6 +173,19 @@ export interface VerificationRecord {
   address_document_public_id?: string;
 }
 
+export interface BusinessCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon_url: string | null;
+  subcategories: string[];
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ProfileCompletenessSection {
   completed: boolean;
   weight: number;

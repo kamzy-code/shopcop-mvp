@@ -1,7 +1,19 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import { Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
+import { BusinessCategory, Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
 import { ProductFormData } from '../validators/vendorSchema';
+
+export const useGetCategories = () =>
+  useQuery<BusinessCategory[]>({
+    queryKey: ['business-categories'],
+    queryFn: async () => {
+      const res = await apiFetch<BusinessCategory[]>('/categories');
+      return res.data;
+    },
+    staleTime: 30 * 60 * 1000,  // categories rarely change — 30 minutes
+    gcTime: 60 * 60 * 1000,     // keep in cache 1 hour
+    placeholderData: keepPreviousData,
+  });
 
 export const useVendorProfile = () =>
   useQuery<VendorProfile>({

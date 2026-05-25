@@ -1,16 +1,5 @@
 import { z } from 'zod';
 
-export const PRODUCT_CATEGORIES = [
-  'Fashion',
-  'Electronics',
-  'Food & Groceries',
-  'Health & Beauty',
-  'Home & Garden',
-  'Automobiles',
-  'Services',
-  'Other',
-] as const;
-
 export const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
   'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT (Abuja)', 'Gombe',

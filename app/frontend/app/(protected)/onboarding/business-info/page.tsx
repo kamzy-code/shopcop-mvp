@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Field, Flex, Input, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, Field, Flex, Input, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { LuArrowLeft, LuArrowRight, LuBuilding2 } from 'react-icons/lu';
@@ -10,13 +10,12 @@ import { FormCard, SectionLabel } from '@/components/shared/formCard';
 import {
   businessInfoSchema,
   BusinessInfoFormData,
-  PRODUCT_CATEGORIES,
   NIGERIAN_STATES,
   PAYMENT_MODEL_OPTIONS,
   REFUND_POLICY_OPTIONS,
 } from '@/app/validators/vendorSchema';
 import { toaster } from '@/components/ui/toaster';
-import { useSubmitBusinessInfo, useProfileCompleteness } from '@/app/_hooks/vendor';
+import { useSubmitBusinessInfo, useProfileCompleteness, useGetCategories } from '@/app/_hooks/vendor';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
@@ -25,6 +24,7 @@ export default function BusinessInfoPage() {
   const queryClient = useQueryClient();
   const submitMutation = useSubmitBusinessInfo();
   const { data: completeness } = useProfileCompleteness();
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
 
   const {
     register,
@@ -54,6 +54,10 @@ export default function BusinessInfoPage() {
 
   const selectedPrimaryCategory = watch('primary_category');
   const selectedSubcategories = watch('subcategories') || [];
+
+  // Derive subcategory options from the selected primary category
+  const selectedCategoryData = categories.find((c) => c.name === selectedPrimaryCategory);
+  const subcategoryOptions = selectedCategoryData?.subcategories.map((s) => ({ value: s, label: s })) ?? [];
   const selectedPaymentModels = watch('payment_models') || [];
   const selectedRefundPolicy = watch('refund_policy_type');
   const descriptionValue = watch('business_description') || '';
@@ -199,11 +203,22 @@ export default function BusinessInfoPage() {
 
           <Field.Root invalid={!!errors.primary_category} required>
             <Field.Label color="fg">Primary Category</Field.Label>
-            <SingleChipSelect
-              options={PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))}
-              value={selectedPrimaryCategory}
-              onChange={(v) => setValue('primary_category', v, { shouldValidate: true })}
-            />
+            {categoriesLoading && <Spinner size="sm" colorPalette="primary" />}
+            {categoriesError && (
+              <Text color="red.fg" textStyle="xs">
+                Failed to load categories. Please refresh the page.
+              </Text>
+            )}
+            {!categoriesLoading && !categoriesError && (
+              <SingleChipSelect
+                options={categories.map((c) => ({ value: c.name, label: c.name }))}
+                value={selectedPrimaryCategory}
+                onChange={(v) => {
+                  setValue('primary_category', v, { shouldValidate: true });
+                  setValue('subcategories', []); // clear stale subcategory selection
+                }}
+              />
+            )}
             <Field.ErrorText>{errors.primary_category?.message}</Field.ErrorText>
           </Field.Root>
 
@@ -214,12 +229,28 @@ export default function BusinessInfoPage() {
                 (select up to 3)
               </Text>
             </Field.Label>
-            <MultiChipSelect
-              options={PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))}
-              value={selectedSubcategories as string[]}
-              onChange={(v) => setValue('subcategories', v, { shouldValidate: true })}
-              max={3}
-            />
+            {categoriesLoading && <Spinner size="sm" colorPalette="primary" />}
+            {categoriesError && (
+              <Text color="red.fg" textStyle="xs">
+                Failed to load subcategories. Please refresh the page.
+              </Text>
+            )}
+            {!categoriesLoading && !categoriesError && (
+              <>
+                {!selectedPrimaryCategory ? (
+                  <Text color="fg.subtle" textStyle="xs">
+                    Select a primary category first to see subcategories.
+                  </Text>
+                ) : (
+                  <MultiChipSelect
+                    options={subcategoryOptions}
+                    value={selectedSubcategories as string[]}
+                    onChange={(v) => setValue('subcategories', v, { shouldValidate: true })}
+                    max={3}
+                  />
+                )}
+              </>
+            )}
             <Field.ErrorText>{errors.subcategories?.message}</Field.ErrorText>
           </Field.Root>
 

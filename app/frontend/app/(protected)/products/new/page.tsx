@@ -17,10 +17,10 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
-import { productSchema, ProductFormData, PRODUCT_CATEGORIES } from '@/app/validators/vendorSchema';
+import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
-import { useCreateProduct } from '@/app/_hooks/vendor';
+import { useCreateProduct, useGetCategories } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
 
@@ -160,6 +160,7 @@ function ImageSlot({
 export default function NewProductPage() {
   const router = useRouter();
   const createMutation = useCreateProduct();
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
   const uploadMutation = useUploadPublicMedia();
   const deleteMutation = useDeleteMedia();
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
@@ -409,40 +410,48 @@ export default function NewProductPage() {
                 {/* Category */}
                 <Field.Root invalid={!!errors.category} required>
                   <Field.Label color="fg">Category</Field.Label>
-                  <Flex gap={2} flexWrap="wrap" pt={1}>
-                    {PRODUCT_CATEGORIES.map((cat) => {
-                      const isSelected = selectedCategory === cat;
-                      return (
-                        <Flex
-                          key={cat}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            setValue('category', cat, { shouldValidate: true });
-                            clearErrors('category');
-                          }}
-                          onKeyDown={(e) =>
-                            e.key === 'Enter' && setValue('category', cat, { shouldValidate: true })
-                          }
-                          align="center"
-                          px={3}
-                          py={1.5}
-                          borderRadius="full"
-                          borderWidth="1.5px"
-                          borderColor={isSelected ? 'primary.500' : 'border'}
-                          bg={isSelected ? 'primary.subtle' : 'transparent'}
-                          color={isSelected ? 'primary.fg' : 'fg.muted'}
-                          cursor="pointer"
-                          fontWeight={isSelected ? 'medium' : 'normal'}
-                          transition="all 0.15s"
-                          userSelect="none"
-                          _hover={isSelected ? {} : { borderColor: 'primary.400', color: 'fg' }}
-                        >
-                          <Text textStyle="xs">{cat}</Text>
-                        </Flex>
-                      );
-                    })}
-                  </Flex>
+                  {categoriesLoading && <Spinner size="sm" colorPalette="primary" />}
+                  {categoriesError && (
+                    <Text color="red.fg" textStyle="xs">
+                      Failed to load categories. Please refresh the page.
+                    </Text>
+                  )}
+                  {!categoriesLoading && !categoriesError && (
+                    <Flex gap={2} flexWrap="wrap" pt={1}>
+                      {categories.map((cat) => {
+                        const isSelected = selectedCategory === cat.name;
+                        return (
+                          <Flex
+                            key={cat.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              setValue('category', cat.name, { shouldValidate: true });
+                              clearErrors('category');
+                            }}
+                            onKeyDown={(e) =>
+                              e.key === 'Enter' && setValue('category', cat.name, { shouldValidate: true })
+                            }
+                            align="center"
+                            px={3}
+                            py={1.5}
+                            borderRadius="full"
+                            borderWidth="1.5px"
+                            borderColor={isSelected ? 'primary.500' : 'border'}
+                            bg={isSelected ? 'primary.subtle' : 'transparent'}
+                            color={isSelected ? 'primary.fg' : 'fg.muted'}
+                            cursor="pointer"
+                            fontWeight={isSelected ? 'medium' : 'normal'}
+                            transition="all 0.15s"
+                            userSelect="none"
+                            _hover={isSelected ? {} : { borderColor: 'primary.400', color: 'fg' }}
+                          >
+                            <Text textStyle="xs">{cat.name}</Text>
+                          </Flex>
+                        );
+                      })}
+                    </Flex>
+                  )}
                   <Field.ErrorText>{errors.category?.message}</Field.ErrorText>
                 </Field.Root>
 
