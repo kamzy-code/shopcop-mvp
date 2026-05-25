@@ -1,8 +1,18 @@
 'use client';
-import { Box, Flex, Heading, Text } from '@chakra-ui/react';
-import { LuShoppingCart } from 'react-icons/lu';
+import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
+import { LuLogOut, LuShoppingCart } from 'react-icons/lu';
+import { useLogout } from '@/app/_hooks/auth';
+import { useAuthStore } from '@/app/_store/authStore';
 
 export default function BuyerHomePage() {
+  const logout = useAuthStore((s) => s.logout);
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    logout();
+  };
+
   return (
     <Flex minH="100dvh" align="center" justify="center" bg="bg" p={6}>
       <Box textAlign="center" maxW="sm">
@@ -22,9 +32,18 @@ export default function BuyerHomePage() {
         <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg" mb={2}>
           Buyer Home
         </Heading>
-        <Text color="fg.muted" textStyle="sm">
+        <Text color="fg.muted" textStyle="sm" mb={6}>
           Buyer features are coming soon. Stay tuned!
         </Text>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          loading={logoutMutation.isPending}
+        >
+          <LuLogOut />
+          Sign out
+        </Button>
       </Box>
     </Flex>
   );
