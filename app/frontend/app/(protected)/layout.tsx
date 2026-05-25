@@ -40,7 +40,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     // Redirect to onboarding if personal info is not yet completed (vendor routes only)
     const isOnboarding = pathname.startsWith('/onboarding');
     const isAdmin = pathname.startsWith('/admin');
-    if (!isOnboarding && !isAdmin && completeness && !completeness.sections.personal_info.completed) {
+    const isBuyer = pathname.startsWith('/buyer');
+    if (!isOnboarding && !isAdmin && !isBuyer && completeness && !completeness.sections.personal_info.completed) {
       router.replace('/onboarding');
     }
   }, [isAuthenticated, isSessionReady, pathname, user, completeness]);
@@ -51,13 +52,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
   if (requirement && user && !requirement.roles.includes(user.role)) return null;
 
-  // Admin routes skip the vendor completeness guard entirely
+  // Admin and buyer routes skip the vendor completeness guard entirely
   const isOnboarding = pathname.startsWith('/onboarding');
   const isAdmin = pathname.startsWith('/admin');
-  if (!isOnboarding && !isAdmin && !completeness) return <FullPageSpinner />;
+  const isBuyer = pathname.startsWith('/buyer');
+  if (!isOnboarding && !isAdmin && !isBuyer && !completeness) return <FullPageSpinner />;
 
   // Prevent flash of protected content while the useEffect redirect fires
-  if (!isOnboarding && !isAdmin && completeness && !completeness.sections.personal_info.completed) return null;
+  if (!isOnboarding && !isAdmin && !isBuyer && completeness && !completeness.sections.personal_info.completed) return null;
 
   return <ErrorBoundary>{children}</ErrorBoundary>;
 }
