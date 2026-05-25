@@ -11,6 +11,8 @@ import fileUploadRouter from '@routes/fileUplaodRoute.js';
 import vendorRouter from '@routes/vendorRoute.js';
 import verificationRouter from '@routes/verificationRoute.js';
 import adminVerificationRouter from '@routes/admin/adminVerificationRoute.js';
+import adminUserRouter from '@routes/admin/adminUserRoute.js';
+import adminDashboardRouter from '@routes/admin/adminDashboardRoute.js';
 import categoryRouter from '@routes/businessCategoryRoute.js';
 
 dotenv.config();
@@ -72,6 +74,8 @@ app.use('/api/v1/uploads', fileUploadRouter);
 app.use('/api/v1/vendors', vendorRouter);
 app.use('/api/v1/verifications', verificationRouter);
 app.use('/api/v1/admin/verifications', adminVerificationRouter);
+app.use('/api/v1/admin/users', adminUserRouter);
+app.use('/api/v1/admin/dashboard', adminDashboardRouter);
 app.use('/api/v1/categories', categoryRouter);
 
 // 404 handler

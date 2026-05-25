@@ -12,6 +12,7 @@ const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/dashboard', roles: ['VENDOR'] },
   { prefix: '/products', roles: ['VENDOR'] },
   { prefix: '/verifications', roles: ['VENDOR'] },
+  { prefix: '/admin', roles: ['ADMIN'] },
 ];
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -33,9 +34,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       router.push('/');
       return;
     }
-    // Redirect to onboarding if personal info is not yet completed (non-onboarding routes only)
+    // Redirect to onboarding if personal info is not yet completed (vendor routes only)
     const isOnboarding = pathname.startsWith('/onboarding');
-    if (!isOnboarding && completeness && !completeness.sections.personal_info.completed) {
+    const isAdmin = pathname.startsWith('/admin');
+    if (!isOnboarding && !isAdmin && completeness && !completeness.sections.personal_info.completed) {
       router.replace('/onboarding');
     }
   }, [isAuthenticated, isSessionReady, pathname, user, completeness]);
@@ -46,12 +48,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
   if (requirement && user && !requirement.roles.includes(user.role)) return null;
 
-  // Show spinner while completeness loads for non-onboarding routes
+  // Admin routes skip the vendor completeness guard entirely
   const isOnboarding = pathname.startsWith('/onboarding');
-  if (!isOnboarding && !completeness) return <FullPageSpinner />;
+  const isAdmin = pathname.startsWith('/admin');
+  if (!isOnboarding && !isAdmin && !completeness) return <FullPageSpinner />;
 
   // Prevent flash of protected content while the useEffect redirect fires
-  if (!isOnboarding && completeness && !completeness.sections.personal_info.completed) return null;
+  if (!isOnboarding && !isAdmin && completeness && !completeness.sections.personal_info.completed) return null;
 
   return <ErrorBoundary>{children}</ErrorBoundary>;
 }

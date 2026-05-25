@@ -173,6 +173,73 @@ export interface VerificationRecord {
   address_document_public_id?: string;
 }
 
+// ============================================================
+// ADMIN TYPES
+// ============================================================
+
+export interface AdminActivityLogEntry {
+  id: string;
+  admin_id: string;
+  admin?: { id: string; email: string; name: string | null };
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  notes: string | null;
+  before_data: unknown;
+  after_data: unknown;
+  created_at: string;
+}
+
+export interface AdminUserDetail extends User {
+  updated_at: string;
+  vendor_profile: {
+    id: string;
+    business_name: string | null;
+    current_tier: VendorTier;
+    verification_points: number;
+    profile_completeness: number;
+    personal_info_complete: boolean;
+    business_info_complete: boolean;
+    profile_status: string;
+    created_at: string;
+  } | null;
+}
+
+export interface AdminDashboardStats {
+  users: {
+    total: number;
+    by_role: Record<string, number>;
+    active: number;
+    inactive: number;
+    new_last_7_days: number;
+    new_last_30_days: number;
+  };
+  verifications: {
+    total_pending: number;
+    total_approved: number;
+    total_rejected: number;
+    pending_by_type: { type: string; count: number }[];
+  };
+  vendors: {
+    tier_distribution: { tier: VendorTier; count: number }[];
+    with_business_info: number;
+    with_personal_info: number;
+  };
+  recent_activity: AdminActivityLogEntry[];
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserDetail[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface AdminVerificationsResponse {
+  verifications: VerificationRecord[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
+// ============================================================
+
 export interface BusinessCategory {
   id: string;
   name: string;
