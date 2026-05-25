@@ -9,6 +9,7 @@ import { cacVerificationSchema, CacVerificationFormData, CAC_COMPANY_TYPES } fro
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
 import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
+import { toaster } from '@/components/ui/toaster';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
@@ -52,22 +53,27 @@ export default function CacResubmitPage() {
     let url = record?.cac_certificate_url ?? '';
     let publicId = record?.cac_certificate_public_id ?? '';
 
-    if (certFile) {
-      const uploaded = await uploadMutation.mutateAsync({ file: certFile, setUploadProgress });
-      url = uploaded.url;
-      publicId = uploaded.publicId;
-    }
+    try {
+      if (certFile) {
+        const uploaded = await uploadMutation.mutateAsync({ file: certFile, setUploadProgress });
+        url = uploaded.url;
+        publicId = uploaded.publicId;
+      }
 
-    await resubmitMutation.mutateAsync({
-      id,
-      data: {
-        cac_rc_number: data.cac_rc_number,
-        cac_company_type: data.cac_company_type,
-        cac_certificate_url: url,
-        cac_certificate_public_id: publicId,
-      },
-    });
-    setSuccess(true);
+      await resubmitMutation.mutateAsync({
+        id,
+        data: {
+          cac_rc_number: data.cac_rc_number,
+          cac_company_type: data.cac_company_type,
+          cac_certificate_url: url,
+          cac_certificate_public_id: publicId,
+        },
+      });
+      setSuccess(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
+      toaster.create({ title: 'Error', description: message, type: 'error' });
+    }
   };
 
   if (isLoading) return null;

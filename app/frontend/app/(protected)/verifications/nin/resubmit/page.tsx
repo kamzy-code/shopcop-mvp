@@ -9,6 +9,7 @@ import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
 import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
+import { toaster } from '@/components/ui/toaster';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
@@ -48,22 +49,27 @@ export default function NinResubmitPage() {
     let url = record?.govt_id_front_url ?? '';
     let publicId = record?.govt_id_front_public_id ?? '';
 
-    if (govIdFile) {
-      const uploaded = await uploadMutation.mutateAsync({ file: govIdFile, setUploadProgress });
-      url = uploaded.url;
-      publicId = uploaded.publicId;
-    }
+    try {
+      if (govIdFile) {
+        const uploaded = await uploadMutation.mutateAsync({ file: govIdFile, setUploadProgress });
+        url = uploaded.url;
+        publicId = uploaded.publicId;
+      }
 
-    await resubmitMutation.mutateAsync({
-      id,
-      data: {
-        nin_number: data.nin_number,
-        nin_full_name: data.nin_full_name,
-        govt_id_front_url: url,
-        govt_id_front_public_id: publicId,
-      },
-    });
-    setSuccess(true);
+      await resubmitMutation.mutateAsync({
+        id,
+        data: {
+          nin_number: data.nin_number,
+          nin_full_name: data.nin_full_name,
+          govt_id_front_url: url,
+          govt_id_front_public_id: publicId,
+        },
+      });
+      setSuccess(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
+      toaster.create({ title: 'Error', description: message, type: 'error' });
+    }
   };
 
   if (isLoading) return null;

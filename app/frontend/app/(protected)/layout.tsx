@@ -31,8 +31,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
     if (requirement && user && !requirement.roles.includes(user.role)) {
       router.push('/');
+      return;
     }
-  }, [isAuthenticated, isSessionReady, pathname, user]);
+    // Redirect to onboarding if personal info is not yet completed (non-onboarding routes only)
+    const isOnboarding = pathname.startsWith('/onboarding');
+    if (!isOnboarding && completeness && !completeness.sections.personal_info.completed) {
+      router.replace('/onboarding');
+    }
+  }, [isAuthenticated, isSessionReady, pathname, user, completeness]);
 
   if (!isSessionReady) return <FullPageSpinner />;
   if (!isAuthenticated) return null;
@@ -40,15 +46,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
   if (requirement && user && !requirement.roles.includes(user.role)) return null;
 
-  // For non-onboarding routes: wait for completeness, then redirect if profile not started
+  // Show spinner while completeness loads for non-onboarding routes
   const isOnboarding = pathname.startsWith('/onboarding');
-  if (!isOnboarding) {
-    if (!completeness) return <FullPageSpinner />;
-    if (!completeness.sections.personal_info.completed) {
-      router.replace('/onboarding');
-      return null;
-    }
-  }
+  if (!isOnboarding && !completeness) return <FullPageSpinner />;
+
+  // Prevent flash of protected content while the useEffect redirect fires
+  if (!isOnboarding && completeness && !completeness.sections.personal_info.completed) return null;
 
   return <ErrorBoundary>{children}</ErrorBoundary>;
 }

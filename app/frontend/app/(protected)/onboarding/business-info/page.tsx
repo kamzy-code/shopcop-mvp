@@ -71,7 +71,9 @@ export default function BusinessInfoPage() {
       return;
     }
 
-    await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+    // Fire invalidation without awaiting — navigating immediately prevents the
+    // route guard useEffect from seeing completed: true before unmount.
+    queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
     router.push('/onboarding');
   };
 
