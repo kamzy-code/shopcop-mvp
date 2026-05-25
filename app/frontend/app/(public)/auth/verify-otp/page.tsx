@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Center, Flex, Heading, Link, PinInput, Stack, Text } from '@chakra-ui/react';
 import { LuArrowLeft, LuCircleAlert, LuShield } from 'react-icons/lu';
-import { useResendOTP, useVerifyAccounViaOTP, VerifyOTPResponse } from '@/app/_hooks/auth';
+import { useResendOTP, useVerifyAccountViaOTP, VerifyOTPResponse } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
 import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/app/_store/authStore';
@@ -16,7 +16,7 @@ export default function VerifyOtpPage() {
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const [otpResent, setOtpResent] = useState(false);
   const resendTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const verifyAccountMutation = useVerifyAccounViaOTP();
+  const verifyAccountMutation = useVerifyAccountViaOTP();
   const resendOTPMutation = useResendOTP();
   const setUser = useAuthStore((s) => s.setUser);
 

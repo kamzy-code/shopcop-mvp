@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/shared/errorBoundary';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useProfileCompleteness } from '@/app/_hooks/vendor';
+import { getRoleHomePage } from '@/app/_lib/roleRedirect';
 
 const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/onboarding', roles: ['VENDOR'] },
@@ -13,6 +14,7 @@ const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/products', roles: ['VENDOR'] },
   { prefix: '/verifications', roles: ['VENDOR'] },
   { prefix: '/admin', roles: ['ADMIN'] },
+  { prefix: '/buyer', roles: ['BUYER'] },
 ];
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -31,7 +33,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     }
     const requirement = ROLE_REQUIREMENTS.find((r) => pathname.startsWith(r.prefix));
     if (requirement && user && !requirement.roles.includes(user.role)) {
-      router.push('/');
+      // Redirect to the user's own home instead of '/' to prevent potential loops
+      router.push(getRoleHomePage(user.role));
       return;
     }
     // Redirect to onboarding if personal info is not yet completed (vendor routes only)

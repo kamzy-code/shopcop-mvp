@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { LuArrowLeft, LuCircleAlert, LuMailCheck } from 'react-icons/lu';
 import { useAuthStore } from '@/app/_store/authStore';
+import { getRoleHomePage } from '@/app/_lib/roleRedirect';
 
 export default function VerifyLoginPage() {
   const searchParams = useSearchParams();
@@ -52,8 +53,8 @@ export default function VerifyLoginPage() {
       .mutateAsync({ token })
       .then((result) => {
         if (cancelled) return;
-        setUser(result.data.user)
-        router.push('/dashboard');
+        setUser(result.data.user);
+        router.push(getRoleHomePage(result.data.user.role));
       })
       .catch((error) => {
         if (cancelled) return;
