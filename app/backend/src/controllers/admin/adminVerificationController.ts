@@ -46,8 +46,8 @@ export class AdminVerificationController {
 
       res.status(200).json({
         success: true,
-        data: result.verifications,
-        pagination: result.pagination,
+        data: result,
+       message: 'Verifications fetched successfuly by admin'
       });
 
       adminLogger.info('Verifications fetched', { action, ...filters });

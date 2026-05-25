@@ -48,8 +48,8 @@ export class AdminUserController {
 
       res.status(200).json({
         success: true,
-        data: result.users,
-        pagination: result.pagination,
+        data: result,
+        message: 'Users fetched successfully by admin',
       });
 
       adminLogger.info('Admin fetched user list', { action, adminId, ...parsed.data });
