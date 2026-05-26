@@ -127,7 +127,10 @@ export const businessInfoSchema = z.object({
     .max(90, 'Refund duration cannot exceed 90 days')
     .optional(),
 
-  refund_conditions: z.array(z.string()).optional(),
+  refund_conditions: z
+    .array(z.string().max(200, 'Each condition must be 200 characters or fewer'))
+    .max(10, 'You can add up to 10 refund conditions')
+    .optional(),
 
   refund_custom_notes: z
     .string()

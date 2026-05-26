@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
 import { BusinessCategory, Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
-import { ProductFormData } from '../validators/vendorSchema';
+import { BusinessInfoFormData, ProductFormData } from '../validators/vendorSchema';
 
 export const useGetCategories = () =>
   useQuery<BusinessCategory[]>({
@@ -45,22 +45,7 @@ export const useSubmitPersonalInfo = () =>
 
 export const useSubmitBusinessInfo = () =>
   useMutation({
-    mutationFn: (data: {
-      business_name: string;
-      business_description: string;
-      state: string;
-      city: string;
-      street_address: string;
-      landmark?: string;
-      primary_category: string;
-      subcategories: string[];
-      bank_name: string;
-      account_number: string;
-      account_name: string;
-      payment_models: string[];
-      refund_policy_type: string;
-      refund_duration_days?: number;
-    }) =>
+    mutationFn: (data: BusinessInfoFormData) =>
       apiFetch('/vendors/business-info', {
         method: 'POST',
         body: JSON.stringify(data),

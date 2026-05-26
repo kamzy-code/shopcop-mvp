@@ -24,6 +24,24 @@ export const REFUND_POLICY_OPTIONS = [
   { value: 'CASE_BY_CASE', label: 'Case by Case' },
 ] as const;
 
+export const REFUND_DURATION_OPTIONS = [
+  { value: 7,  label: '7 days'  },
+  { value: 14, label: '14 days' },
+  { value: 30, label: '30 days' },
+  { value: 60, label: '60 days' },
+  { value: 90, label: '90 days' },
+] as const;
+
+export const COMMON_REFUND_CONDITIONS = [
+  'Item must be unused and in original packaging',
+  'Proof of purchase required',
+  'Return shipping paid by buyer',
+  'Items must be returned within the refund window',
+  'Digital products are non-refundable',
+  'Sale items are final sale',
+  'Custom or personalised items are non-refundable',
+] as const;
+
 export const businessInfoSchema = z.object({
   business_name: z
     .string()
@@ -58,6 +76,33 @@ export const businessInfoSchema = z.object({
     { error: 'Please select a refund policy' }
   ),
   refund_duration_days: z.number().int().min(1).max(90).optional(),
+  refund_conditions: z
+    .array(z.string().max(200, 'Each condition must be 200 characters or fewer'))
+    .max(10, 'You can add up to 10 conditions')
+    .optional(),
+  refund_custom_notes: z
+    .string()
+    .max(500, 'Notes must be less than 500 characters')
+    .optional(),
+  instagram_handle: z
+    .string()
+    .regex(/^@?[\w.]+$/, 'Invalid handle')
+    .optional()
+    .or(z.literal('')),
+  tiktok_handle: z
+    .string()
+    .regex(/^@?[\w.]+$/, 'Invalid handle')
+    .optional()
+    .or(z.literal('')),
+  facebook_url: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  whatsapp_number: z
+    .string()
+    .regex(/^(\+234|0)[789]\d{9}$/, 'Enter a valid Nigerian number')
+    .optional()
+    .or(z.literal('')),
+  primary_contact: z
+    .enum(['WHATSAPP', 'INSTAGRAM', 'TIKTOK', 'FACEBOOK', 'PHONE_CALL'])
+    .optional(),
 });
 
 const NAME_REGEX = /^[a-zA-Z\s'-]+$/;

@@ -7,19 +7,21 @@ import { parseZodErrors } from '@utils/parseZodErros.js';
 
 export class VendorProfileController {
   /**
-   * POST /api/v1/profile/personal-info
-   * Update personal information (Step 1 of vendor onboarding).
-   * Validates input against personalInfoSchema and recalculates profile completeness.
+   * Create or update personal info (step 1 of onboarding; also used for post-onboarding edits).
+   * Validates age (≥16), normalises phone to +234 format, and syncs User.name.
    *
+   * @route  POST /api/v1/vendors/personal-info
+   * @access Vendor (authenticated)
    * @param req.body.first_name - Vendor's first name
    * @param req.body.last_name - Vendor's last name
-   * @param req.body.gender - Gender (Male, Female, Other)
-   * @param req.body.date_of_birth - Date of birth (must be 16+)
-   * @param req.body.phone_number - Nigerian phone number (e.g. +2348012345678)
-   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @param req.body.middle_name - Middle name (optional)
+   * @param req.body.gender - MALE | FEMALE | PREFER_NOT_TO_SAY
+   * @param req.body.date_of_birth - Date of birth (must be ≥16)
+   * @param req.body.phone_number - Nigerian phone number (e.g. 08012345678 or +2348012345678)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
    * @returns 200 `{ success, data: vendorProfile, message }`
    * @throws {AppError} 400 — Validation failure or age under 16
-   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 401 — Unauthenticated request
    */
   static async updatePersonalInfo(req: Request, res: Response, next: NextFunction) {
     const action = 'updatePersonalInfo';
@@ -56,25 +58,30 @@ export class VendorProfileController {
   }
 
   /**
-   * POST /api/v1/profile/business-info
-   * Update business information (Step 2 of vendor onboarding).
-   * Requires personal info to be completed first. Generates a unique slug from business name.
+   * Create or update business info (step 2 of onboarding; also used for post-onboarding edits).
+   * Requires personal info to be completed first. Generates a unique URL slug from business_name.
    *
+   * @route  POST /api/v1/vendors/business-info
+   * @access Vendor (authenticated)
    * @param req.body.business_name - Registered business name
-   * @param req.body.business_description - Description of the business
-   * @param req.body.state - Operating state
-   * @param req.body.city - Operating city
-   * @param req.body.street_address - Street address
-   * @param req.body.primary_category - Primary business category ID
-   * @param req.body.subcategories - Array of subcategory IDs
+   * @param req.body.business_description - Description of the business (50–500 chars)
+   * @param req.body.state - Nigerian state of operation
+   * @param req.body.city - City of operation
+   * @param req.body.street_address - Street address (min 5 chars)
+   * @param req.body.primary_category - Primary business category
+   * @param req.body.subcategories - Array of subcategories (1–3)
    * @param req.body.bank_name - Bank name for payouts
-   * @param req.body.account_number - Bank account number
+   * @param req.body.account_number - 10-digit bank account number
    * @param req.body.account_name - Bank account holder name
-   * @param req.body.payment_models - Array of accepted payment models
-   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @param req.body.payment_models - Accepted payment models (FULL_PAYMENT | PAY_ON_DELIVERY | …)
+   * @param req.body.refund_policy_type - NO_REFUNDS | FULL_REFUND | PARTIAL_REFUND | EXCHANGE_ONLY | STORE_CREDIT | CASE_BY_CASE
+   * @param req.body.refund_duration_days - Optional refund window in days (1–90)
+   * @param req.body.refund_conditions - Optional array of conditions (max 10, each max 200 chars)
+   * @param req.body.refund_custom_notes - Optional free-text notes (max 500 chars)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
    * @returns 200 `{ success, data: vendorProfile, message }`
-   * @throws {AppError} 400 — Personal info not completed first or validation failure
-   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 400 — Personal info not completed first, or validation failure
+   * @throws {AppError} 401 — Unauthenticated request
    */
   static async updateBusinessInfo(req: Request, res: Response, next: NextFunction) {
     const action = 'updateBusinessInfo';
@@ -111,12 +118,13 @@ export class VendorProfileController {
   }
 
   /**
-   * GET /api/v1/profile
-   * Get the authenticated vendor's full profile including verifications.
+   * Get the authenticated vendor's full profile including verifications and completeness score.
    *
-   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
-   * @returns 200 `{ success, data: vendorProfile }`
-   * @throws {AppError} 401 — No authenticated user on the request
+   * @route  GET /api/v1/vendors
+   * @access Vendor (authenticated)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: vendorProfile }` | 404 `{ success: false, message }`
+   * @throws {AppError} 401 — Unauthenticated request
    * @throws {AppError} 404 — Vendor profile not found
    */
   static async getVendorProfile(req: Request, res: Response, next: NextFunction) {
@@ -144,12 +152,13 @@ export class VendorProfileController {
   }
 
   /**
-   * GET /api/v1/profile/completeness
-   * Get the authenticated vendor's profile completeness breakdown by section.
+   * Get a section-by-section breakdown of the authenticated vendor's profile completeness.
    *
-   * @param req.user.userId - Authenticated user's ID (auto-populated by auth middleware)
+   * @route  GET /api/v1/vendors/completeness
+   * @access Vendor (authenticated)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
    * @returns 200 `{ success, data: { total_completeness, sections } }`
-   * @throws {AppError} 401 — No authenticated user on the request
+   * @throws {AppError} 401 — Unauthenticated request
    */
   static async getProfileCompleteness(req: Request, res: Response, next: NextFunction) {
     const action = 'getProfileCompleteness';

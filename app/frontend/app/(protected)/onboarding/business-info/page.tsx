@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Field, Flex, Input, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
@@ -13,6 +13,8 @@ import {
   NIGERIAN_STATES,
   PAYMENT_MODEL_OPTIONS,
   REFUND_POLICY_OPTIONS,
+  REFUND_DURATION_OPTIONS,
+  COMMON_REFUND_CONDITIONS,
 } from '@/app/validators/vendorSchema';
 import { toaster } from '@/components/ui/toaster';
 import { useSubmitBusinessInfo, useProfileCompleteness, useGetCategories } from '@/app/_hooks/vendor';
@@ -50,8 +52,12 @@ export default function BusinessInfoPage() {
       payment_models: [],
       refund_policy_type: 'NO_REFUNDS',
       refund_duration_days: undefined,
+      refund_conditions: [],
+      refund_custom_notes: '',
     },
   });
+
+  const [customConditionInput, setCustomConditionInput] = useState('');
 
   const selectedPrimaryCategory = watch('primary_category');
   const selectedSubcategories = watch('subcategories') || [];
@@ -61,7 +67,9 @@ export default function BusinessInfoPage() {
   const subcategoryOptions = selectedCategoryData?.subcategories.map((s) => ({ value: s, label: s })) ?? [];
   const selectedPaymentModels = watch('payment_models') || [];
   const selectedRefundPolicy = watch('refund_policy_type');
+  const selectedConditions = watch('refund_conditions') || [];
   const descriptionValue = watch('business_description') || '';
+  const notesValue = watch('refund_custom_notes') || '';
 
   const onSubmit = async (data: BusinessInfoFormData) => {
     try {
@@ -328,27 +336,195 @@ export default function BusinessInfoPage() {
           </Field.Root>
 
           {selectedRefundPolicy && selectedRefundPolicy !== 'NO_REFUNDS' && (
-            <Field.Root invalid={!!errors.refund_duration_days}>
-              <Field.Label color="fg">
-                Refund Window{' '}
-                <Text as="span" color="fg.muted" fontWeight="normal">
-                  (optional, in days)
-                </Text>
-              </Field.Label>
-              <Input
-                {...register('refund_duration_days', { valueAsNumber: true })}
-                type="number"
-                placeholder="e.g. 7"
-                size="lg"
-                colorPalette="primary"
-                min={1}
-                max={90}
-              />
-              <Field.HelperText color="fg.subtle" textStyle="xs">
-                Number of days buyers have to request a refund (1–90).
-              </Field.HelperText>
-              <Field.ErrorText>{errors.refund_duration_days?.message}</Field.ErrorText>
-            </Field.Root>
+            <>
+              {/* Refund window */}
+              <Field.Root invalid={!!errors.refund_duration_days}>
+                <Field.Label color="fg">
+                  Refund Window{' '}
+                  <Text as="span" color="fg.muted" fontWeight="normal">
+                    (optional)
+                  </Text>
+                </Field.Label>
+                <Box
+                  as="select"
+                  {...register('refund_duration_days', {
+                    setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+                  })}
+                  h="48px"
+                  px={3}
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor={errors.refund_duration_days ? 'red.500' : 'border'}
+                  bg="bg"
+                  color="fg"
+                  fontSize="md"
+                  _focus={{
+                    outline: 'none',
+                    borderColor: 'primary.500',
+                    boxShadow: '0 0 0 1px var(--chakra-colors-primary-500)',
+                  }}
+                >
+                  <option value="">Select refund window</option>
+                  {REFUND_DURATION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Box>
+                <Field.ErrorText>{errors.refund_duration_days?.message}</Field.ErrorText>
+              </Field.Root>
+
+              {/* Refund conditions */}
+              <Field.Root invalid={!!errors.refund_conditions}>
+                <Field.Label color="fg">
+                  Refund Conditions{' '}
+                  <Text as="span" color="fg.muted" fontWeight="normal">
+                    (optional, up to 10)
+                  </Text>
+                </Field.Label>
+
+                {/* Preset conditions checkboxes */}
+                <Stack gap={2} mt={1}>
+                  {COMMON_REFUND_CONDITIONS.map((condition) => {
+                    const isChecked = selectedConditions.includes(condition);
+                    return (
+                      <Box
+                        key={condition}
+                        as="label"
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
+                        cursor="pointer"
+                        color="fg"
+                        fontSize="sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            const next = isChecked
+                              ? selectedConditions.filter((c) => c !== condition)
+                              : selectedConditions.length < 10
+                              ? [...selectedConditions, condition]
+                              : selectedConditions;
+                            setValue('refund_conditions', next, { shouldValidate: true });
+                          }}
+                          style={{
+                            accentColor: 'var(--chakra-colors-primary-500)',
+                            width: '1rem',
+                            height: '1rem',
+                            flexShrink: 0,
+                            cursor: 'pointer',
+                          }}
+                        />
+                        {condition}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+
+                {/* Custom conditions already added */}
+                {selectedConditions
+                  .filter((c) => !(COMMON_REFUND_CONDITIONS as readonly string[]).includes(c))
+                  .map((custom) => (
+                    <Flex
+                      key={custom}
+                      align="center"
+                      gap={2}
+                      mt={2}
+                      px={3}
+                      py={2}
+                      borderRadius="md"
+                      borderWidth="1px"
+                      borderColor="border"
+                      bg="bg.subtle"
+                    >
+                      <Text fontSize="sm" color="fg" flex={1}>
+                        {custom}
+                      </Text>
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        color="fg.muted"
+                        onClick={() =>
+                          setValue(
+                            'refund_conditions',
+                            selectedConditions.filter((c) => c !== custom),
+                            { shouldValidate: true }
+                          )
+                        }
+                        aria-label="Remove condition"
+                      >
+                        ×
+                      </Button>
+                    </Flex>
+                  ))}
+
+                {/* Custom condition input */}
+                {selectedConditions.length < 10 && (
+                  <Flex gap={2} mt={2}>
+                    <Input
+                      value={customConditionInput}
+                      onChange={(e) => setCustomConditionInput(e.target.value)}
+                      placeholder="Add a custom condition..."
+                      size="md"
+                      colorPalette="primary"
+                      maxLength={200}
+                    />
+                    <Button
+                      type="button"
+                      colorPalette="primary"
+                      variant="outline"
+                      size="md"
+                      flexShrink={0}
+                      disabled={!customConditionInput.trim()}
+                      onClick={() => {
+                        const trimmed = customConditionInput.trim();
+                        if (!trimmed || selectedConditions.length >= 10) return;
+                        setValue('refund_conditions', [...selectedConditions, trimmed], {
+                          shouldValidate: true,
+                        });
+                        setCustomConditionInput('');
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </Flex>
+                )}
+                {selectedConditions.length >= 10 && (
+                  <Text textStyle="xs" color="fg.subtle" mt={1}>
+                    Maximum of 10 conditions reached.
+                  </Text>
+                )}
+
+                <Field.ErrorText>{errors.refund_conditions?.message}</Field.ErrorText>
+              </Field.Root>
+
+              {/* Additional notes */}
+              <Field.Root invalid={!!errors.refund_custom_notes}>
+                <Field.Label color="fg">
+                  Additional Notes{' '}
+                  <Text as="span" color="fg.muted" fontWeight="normal">
+                    (optional)
+                  </Text>
+                </Field.Label>
+                <Textarea
+                  {...register('refund_custom_notes')}
+                  placeholder="Any additional details about your refund process..."
+                  size="lg"
+                  colorPalette="primary"
+                  rows={3}
+                  resize="none"
+                />
+                <Flex justify="space-between">
+                  <Field.ErrorText>{errors.refund_custom_notes?.message}</Field.ErrorText>
+                  <Text textStyle="xs" color="fg.subtle" ml="auto">
+                    {notesValue.length}/500
+                  </Text>
+                </Flex>
+              </Field.Root>
+            </>
           )}
 
           <Button

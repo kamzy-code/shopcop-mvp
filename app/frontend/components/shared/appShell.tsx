@@ -10,10 +10,10 @@ import {
   LuMenu,
   LuPackage,
   LuSettings,
-  LuShieldCheck,
   LuShoppingCart,
   LuStar,
   LuStore,
+  LuUser,
   LuX,
 } from 'react-icons/lu';
 import type { IconType } from 'react-icons';
@@ -31,7 +31,7 @@ interface NavItemConfig {
 const NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/dashboard' },
   { label: 'Products', icon: LuPackage, href: '/products' },
-  { label: 'Verifications', icon: LuShieldCheck, href: '/verifications' },
+  { label: 'Profile', icon: LuUser, href: '/vendor/profile' },
   { label: 'Orders', icon: LuShoppingCart, href: '/orders', disabled: true },
   { label: 'Reviews', icon: LuStar, href: '/reviews', disabled: true },
   { label: 'Settings', icon: LuSettings, href: '/settings', disabled: true },
