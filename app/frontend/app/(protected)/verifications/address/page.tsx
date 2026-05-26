@@ -15,8 +15,7 @@ import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'failed';
 
@@ -29,6 +28,7 @@ export default function AddressVerificationPage() {
   const [docFile, setDocFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const handleSubmit = async () => {
     if (!docFile) {
@@ -47,8 +47,8 @@ export default function AddressVerificationPage() {
       setSubmitState('success');
     } catch (error) {
       setSubmitState('failed');
-      const message = error instanceof Error ? error.message : 'Submission failed';
-      toaster.create({ title: 'Submission failed', description: message, type: 'error' });
+      const message = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      setErrorModal({ open: true, description: message });
     }
   };
 
@@ -65,8 +65,16 @@ export default function AddressVerificationPage() {
   }
 
   return (
-    <FormCard
-      icon={<LuMapPin size={20} color="var(--chakra-colors-primary-600)" />}
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Submission Failed"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
+        icon={<LuMapPin size={20} color="var(--chakra-colors-primary-600)" />}
       title="Address Verification"
       description="Upload a proof of address document to confirm your business location."
     >
@@ -108,10 +116,6 @@ export default function AddressVerificationPage() {
           {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
         </Field.Root>
 
-        {submitState === 'failed' && (
-          <MutationErrorAlert error={verifyMutation.error} />
-        )}
-
         <Button
           colorPalette="primary"
           size="lg"
@@ -136,5 +140,6 @@ export default function AddressVerificationPage() {
         </Button>
       </Stack>
     </FormCard>
+    </>
   );
 }

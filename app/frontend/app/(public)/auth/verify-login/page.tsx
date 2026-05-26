@@ -69,7 +69,7 @@ export default function VerifyLoginPage() {
 
   if ((!email && !token) || verifyLoginMutation.isError) {
     return (
-      <Center minH="100dvh" bg="bg">
+      <Center minH="100dvh" bg="bg" px={4}>
         <Flex
           direction="column"
           align="center"
@@ -123,7 +123,7 @@ export default function VerifyLoginPage() {
 
   if (token) {
     return (
-      <Center minH="100dvh" bg="bg">
+      <Center minH="100dvh" bg="bg" px={4}>
         <Flex
           direction="column"
           align="center"
@@ -160,7 +160,7 @@ export default function VerifyLoginPage() {
   }
 
   return (
-    <Center minH="100dvh" bg="bg">
+    <Center minH="100dvh" bg="bg" px={4}>
       <Flex
         direction="column"
         align="center"

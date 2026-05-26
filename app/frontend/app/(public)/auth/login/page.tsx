@@ -37,7 +37,7 @@ export default function LoginPage() {
     }
   };
   return (
-    <Center minH="100dvh" bg="bg">
+    <Center minH="100dvh" bg="bg" px={4}>
       <Flex
         direction="column"
         w="full"

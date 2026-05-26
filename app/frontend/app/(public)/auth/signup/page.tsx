@@ -53,7 +53,7 @@ export default function SignupPage() {
 
   if (step === 'email') {
     return (
-      <Center minH="100dvh" bg="bg">
+      <Center minH="100dvh" bg="bg" px={4}>
         <Flex
           direction="column"
           w="full"
@@ -139,7 +139,7 @@ export default function SignupPage() {
   }
 
   return (
-    <Center minH="100dvh" bg="bg">
+    <Center minH="100dvh" bg="bg" px={4}>
       <Flex
         direction="column"
         w="full"

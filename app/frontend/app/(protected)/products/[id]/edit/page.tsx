@@ -20,6 +20,7 @@ import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { useGetCategories, useProduct, useUpdateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
@@ -162,6 +163,9 @@ export default function EditProductPage() {
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
   const [initialised, setInitialised] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
+    open: false, title: '', description: '',
+  });
 
   const {
     register,
@@ -250,10 +254,10 @@ export default function EditProductPage() {
       toaster.create({ title: 'Product updated successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
-      toaster.create({
+      setErrorModal({
+        open: true,
         title: 'Failed to update product',
-        description: error instanceof Error ? error.message : 'Please try again',
-        type: 'error',
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
     }
   };
@@ -281,6 +285,13 @@ export default function EditProductPage() {
 
   return (
     <AppShell>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title={errorModal.title}
+        description={errorModal.description}
+        type="error"
+      />
       <Stack gap={6} maxW="720px" mx="auto">
         <Stack gap={0.5}>
           <Button variant="ghost" size="sm" color="fg.muted" alignSelf="flex-start" mb={2} onClick={() => router.push('/products')}>

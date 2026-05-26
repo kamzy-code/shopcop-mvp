@@ -19,7 +19,8 @@ import {
   useAdminUpdateUserRole,
 } from '@/app/_hooks/admin';
 import { toaster } from '@/components/ui/toaster';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { AlertModal } from '@/components/ui/alert-modal';
 
 function InfoRow({ label, value }: { label: string; value?: string | null | number | boolean }) {
   if (value === undefined || value === null || value === '') return null;
@@ -45,6 +46,11 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   const roleMutation = useAdminUpdateUserRole();
 
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
+    open: false, title: '', description: '',
+  });
 
   if (isLoading) {
     return (
@@ -66,14 +72,16 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     const newStatus = !user.is_active;
     try {
       await statusMutation.mutateAsync({ id, is_active: newStatus });
+      setStatusDialogOpen(false);
       toaster.create({
         title: newStatus ? 'User Activated' : 'User Banned',
         description: `User account has been ${newStatus ? 'activated' : 'deactivated'}.`,
         type: newStatus ? 'success' : 'info',
       });
     } catch (error) {
+      setStatusDialogOpen(false);
       const message = error instanceof Error ? error.message : 'Failed to update status.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, title: newStatus ? 'Activation Failed' : 'Ban Failed', description: message });
     }
   };
 
@@ -81,6 +89,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     if (!selectedRole || selectedRole === user.role) return;
     try {
       await roleMutation.mutateAsync({ id, role: selectedRole as 'VENDOR' | 'BUYER' | 'ADMIN' });
+      setRoleDialogOpen(false);
       toaster.create({
         title: 'Role Updated',
         description: `User role changed to ${selectedRole}.`,
@@ -88,8 +97,9 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       });
       setSelectedRole('');
     } catch (error) {
+      setRoleDialogOpen(false);
       const message = error instanceof Error ? error.message : 'Failed to update role.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, title: 'Role Change Failed', description: message });
     }
   };
 
@@ -97,6 +107,37 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <Stack gap={8}>
+      <ConfirmDialog
+        open={statusDialogOpen}
+        onClose={() => setStatusDialogOpen(false)}
+        onConfirm={handleToggleStatus}
+        title={user.is_active ? 'Ban User' : 'Activate User'}
+        description={
+          user.is_active
+            ? `Are you sure you want to ban ${user.name || user.email}? They will lose access to the platform.`
+            : `Are you sure you want to activate ${user.name || user.email}? They will regain access to the platform.`
+        }
+        confirmLabel={user.is_active ? 'Ban User' : 'Activate User'}
+        colorPalette={user.is_active ? 'red' : 'success'}
+        isLoading={statusMutation.isPending}
+      />
+      <ConfirmDialog
+        open={roleDialogOpen}
+        onClose={() => { setRoleDialogOpen(false); setSelectedRole(''); }}
+        onConfirm={handleRoleChange}
+        title="Change User Role"
+        description={`Change ${user.name || user.email}'s role from ${user.role} to ${selectedRole}?`}
+        confirmLabel="Update Role"
+        colorPalette="navy"
+        isLoading={roleMutation.isPending}
+      />
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title={errorModal.title}
+        description={errorModal.description}
+        type="error"
+      />
       {/* Back button */}
       <Button
         variant="ghost"
@@ -205,13 +246,10 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   variant={user.is_active ? 'outline' : 'solid'}
                   size="md"
                   w="full"
-                  onClick={handleToggleStatus}
-                  loading={statusMutation.isPending}
-                  loadingText={user.is_active ? 'Banning…' : 'Activating…'}
+                  onClick={() => setStatusDialogOpen(true)}
                 >
                   {user.is_active ? 'Ban User' : 'Activate User'}
                 </Button>
-                <MutationErrorAlert error={statusMutation.error} />
               </Box>
 
               {/* Role change */}
@@ -246,14 +284,11 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   colorPalette="primary"
                   size="md"
                   w="full"
-                  onClick={handleRoleChange}
-                  loading={roleMutation.isPending}
-                  loadingText="Updating…"
+                  onClick={() => selectedRole && selectedRole !== user.role && setRoleDialogOpen(true)}
                   disabled={!selectedRole || selectedRole === user.role}
                 >
                   Update Role
                 </Button>
-                <MutationErrorAlert error={roleMutation.error} />
               </Box>
             </Stack>
           </Box>

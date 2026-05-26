@@ -17,8 +17,7 @@ import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { useSubmitNINVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 
 type VerifyState = 'idle' | 'verifying' | 'success' | 'failed';
 
@@ -32,6 +31,7 @@ export default function NinPage() {
   const [govIdFile, setGovIdFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const {
     register,
@@ -75,8 +75,8 @@ export default function NinPage() {
       await queryClient.invalidateQueries({ queryKey: ['verifications'] });
     } catch (error) {
       setVerifyState('failed');
-      const message = error instanceof Error ? error.message : 'Verification submission failed';
-      toaster.create({ title: 'Submission failed', description: message, type: 'error' });
+      const message = error instanceof Error ? error.message : 'Verification submission failed. Please try again.';
+      setErrorModal({ open: true, description: message });
     }
   };
 
@@ -85,8 +85,16 @@ export default function NinPage() {
   };
 
   return (
-    <FormCard
-      icon={<LuIdCard size={20} color="var(--chakra-colors-primary-600)" />}
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Submission Failed"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
+        icon={<LuIdCard size={20} color="var(--chakra-colors-primary-600)" />}
       title="NIN Verification"
       description="Your National Identification Number verifies your identity as a registered vendor."
     >
@@ -156,10 +164,6 @@ export default function NinPage() {
               )}
             </Field.Root>
 
-            {verifyState === 'failed' && (
-              <MutationErrorAlert error={verifyMutation.error} />
-            )}
-
             <Button
               type="submit"
               colorPalette="primary"
@@ -187,5 +191,6 @@ export default function NinPage() {
         </form>
       )}
     </FormCard>
+    </>
   );
 }

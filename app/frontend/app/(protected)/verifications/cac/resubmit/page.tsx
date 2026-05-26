@@ -8,8 +8,7 @@ import { LuArrowRight, LuBuilding2 } from 'react-icons/lu';
 import { cacVerificationSchema, CacVerificationFormData, CAC_COMPANY_TYPES } from '@/app/validators/vendorSchema';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
@@ -26,6 +25,7 @@ export default function CacResubmitPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [success, setSuccess] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const {
     register,
@@ -72,14 +72,22 @@ export default function CacResubmitPage() {
       setSuccess(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, description: message });
     }
   };
 
   if (isLoading) return null;
 
   return (
-    <FormCard
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Submission Failed"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
       icon={<LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />}
       title="Resubmit CAC Verification"
       description="Correct the issues below and resubmit your CAC verification."
@@ -134,8 +142,6 @@ export default function CacResubmitPage() {
               {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
             </Field.Root>
 
-            <MutationErrorAlert error={resubmitMutation.error} />
-
             <Button
               type="submit"
               colorPalette="primary"
@@ -150,5 +156,6 @@ export default function CacResubmitPage() {
         </form>
       )}
     </FormCard>
+    </>
   );
 }

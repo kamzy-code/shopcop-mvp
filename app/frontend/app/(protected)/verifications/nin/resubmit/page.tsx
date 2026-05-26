@@ -8,8 +8,7 @@ import { LuArrowRight } from 'react-icons/lu';
 import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
@@ -26,6 +25,7 @@ export default function NinResubmitPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [success, setSuccess] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const {
     register,
@@ -68,15 +68,23 @@ export default function NinResubmitPage() {
       setSuccess(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, description: message });
     }
   };
 
   if (isLoading) return null;
 
   return (
-    <FormCard
-      icon={<LuIdCard size={20} color="var(--chakra-colors-primary-600)" />}
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Submission Failed"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
+        icon={<LuIdCard size={20} color="var(--chakra-colors-primary-600)" />}
       title="Resubmit NIN Verification"
       description="Correct the issues below and resubmit your NIN verification."
     >
@@ -124,8 +132,6 @@ export default function NinResubmitPage() {
               {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
             </Field.Root>
 
-            <MutationErrorAlert error={resubmitMutation.error} />
-
             <Button
               type="submit"
               colorPalette="primary"
@@ -140,5 +146,6 @@ export default function NinResubmitPage() {
         </form>
       )}
     </FormCard>
+    </>
   );
 }

@@ -45,6 +45,7 @@ import {
   COMMON_REFUND_CONDITIONS,
 } from '@/app/validators/vendorSchema';
 import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import {
   useVendorProfile,
   useSubmitPersonalInfo,
@@ -123,6 +124,7 @@ function ChipList({ items }: { items: string[] }) {
 
 function PersonalInfoTab() {
   const [isEditing, setIsEditing] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useVendorProfile();
   const submitMutation = useSubmitPersonalInfo();
@@ -170,7 +172,7 @@ function PersonalInfoTab() {
       await submitMutation.mutateAsync(payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save personal info';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, description: message });
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ['vendor-profile'] });
@@ -190,8 +192,12 @@ function PersonalInfoTab() {
 
     return (
       <Stack gap={0}>
-        <Flex justify="flex-end" mb={4}>
+        <Flex align="center" mb={4}>
+          <Heading as="h2" textStyle="lg" fontWeight="semibold" color="fg" hideFrom="sm">
+            Personal Information
+          </Heading>
           <Button
+            ml="auto"
             size="sm"
             variant="outline"
             colorPalette="primary"
@@ -212,7 +218,15 @@ function PersonalInfoTab() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Failed to Save"
+        description={errorModal.description}
+        type="error"
+      />
+      <form onSubmit={handleSubmit(onSubmit)}>
       <Stack gap={5}>
         <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
           <Field.Root invalid={!!errors.first_name} required flex={1}>
@@ -243,7 +257,6 @@ function PersonalInfoTab() {
             value={selectedGender}
             onChange={(v) => setValue('gender', v as PersonalInfoFormData['gender'], { shouldValidate: true })}
             showCheck={false}
-            stretch
           />
           <Field.ErrorText>{errors.gender?.message}</Field.ErrorText>
         </Field.Root>
@@ -298,6 +311,7 @@ function PersonalInfoTab() {
         </Flex>
       </Stack>
     </form>
+    </>
   );
 }
 
@@ -306,6 +320,7 @@ function PersonalInfoTab() {
 function BusinessInfoTab() {
   const [isEditing, setIsEditing] = useState(false);
   const [customConditionInput, setCustomConditionInput] = useState('');
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useVendorProfile();
   const { data: categories = [], isLoading: categoriesLoading } = useGetCategories();
@@ -384,7 +399,7 @@ function BusinessInfoTab() {
       await submitMutation.mutateAsync(data);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save business info';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, description: message });
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ['vendor-profile'] });
@@ -405,8 +420,12 @@ function BusinessInfoTab() {
 
     return (
       <Stack gap={0}>
-        <Flex justify="flex-end" mb={4}>
+        <Flex align="center" mb={4}>
+          <Heading as="h2" textStyle="lg" fontWeight="semibold" color="fg" hideFrom="sm">
+            Business Information
+          </Heading>
           <Button
+            ml="auto"
             size="sm"
             variant="outline"
             colorPalette="primary"
@@ -502,7 +521,15 @@ function BusinessInfoTab() {
 
   // ── Edit form ────────────────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Failed to Save"
+        description={errorModal.description}
+        type="error"
+      />
+      <form onSubmit={handleSubmit(onSubmit)}>
       <Stack gap={5}>
         {/* Business details */}
         <Field.Root invalid={!!errors.business_name} required>
@@ -799,6 +826,7 @@ function BusinessInfoTab() {
         </Flex>
       </Stack>
     </form>
+    </>
   );
 }
 
@@ -1024,21 +1052,25 @@ export default function VendorProfilePage() {
       <Stack gap={6} >
         {/* Profile header */}
         <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
-          <Flex align="center" gap={4} flexWrap="wrap">
+          <Flex
+            direction={{ base: 'column', sm: 'row' }}
+            align="center"
+            gap={{ base: 3, sm: 4 }}
+          >
             <Flex
               w={14} h={14} borderRadius="full" bg="primary.subtle"
               align="center" justify="center" flexShrink={0}
             >
               <Text fontWeight="bold" textStyle="xl" color="primary.fg">{initials}</Text>
             </Flex>
-            <Box flex={1} minW={0}>
-              <Flex align="center" gap={2} flexWrap="wrap">
+            <Box flex={1} minW={0} textAlign={{ base: 'center', sm: 'left' }}>
+              <Flex align="center" gap={2} flexWrap="wrap" justify={{ base: 'center', sm: 'flex-start' }}>
                 <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">{fullName}</Heading>
                 <TierBadge tier={profile?.current_tier ?? 'TIER_0'} size="md" />
               </Flex>
               <Text textStyle="sm" color="fg.muted" mt={0.5}>{profile?.user?.email}</Text>
             </Box>
-            <Box textAlign="right">
+            <Box textAlign={{ base: 'center', sm: 'right' }}>
               <Text textStyle="2xl" fontWeight="bold" color="fg">
                 {profile?.profile_completeness ?? 0}%
               </Text>
@@ -1052,18 +1084,18 @@ export default function VendorProfilePage() {
           value={activeTab}
           onValueChange={({ value }) => router.push(`/vendor/profile?tab=${value}`)}
         >
-          <Tabs.List>
+          <Tabs.List gap={{ base: 3, sm: 0 }}>
             <Tabs.Trigger value="personal-info">
-              <LuUser size={14} />
-              Personal Info
+              <LuUser size={20} />
+              <Box hideBelow="sm">Personal Info</Box>
             </Tabs.Trigger>
             <Tabs.Trigger value="business-info">
-              <LuBuilding2 size={14} />
-              Business Info
+              <LuBuilding2 size={20} />
+              <Box hideBelow="sm">Business Info</Box>
             </Tabs.Trigger>
             <Tabs.Trigger value="verifications">
-              <LuShieldCheck size={14} />
-              Verifications
+              <LuShieldCheck size={20} />
+              <Box hideBelow="sm">Verifications</Box>
             </Tabs.Trigger>
           </Tabs.List>
 

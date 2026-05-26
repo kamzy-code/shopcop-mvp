@@ -6,6 +6,8 @@ import { LuCopy, LuPackage, LuPencil, LuPlus, LuSearch, LuTrash2 } from 'react-i
 import { AppShell } from '@/components/shared/appShell';
 import { useDeleteProduct, useDuplicateProduct, useProducts } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { Product } from '@/app/_types';
 
 function StockBadge({ status }: { status: Product['stock_status'] }) {
@@ -69,28 +71,17 @@ function MediaThumbnail({ product }: { product: Product }) {
 function ProductCard({
   product,
   onEdit,
-  onDelete,
+  onRequestDelete,
   onDuplicate,
   isDuplicating,
 }: {
   product: Product;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onRequestDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   isDuplicating: boolean;
 }) {
-  const [confirming, setConfirming] = useState(false);
   const router = useRouter();
-
-  const handleDelete = () => {
-    if (!confirming) {
-      setConfirming(true);
-      setTimeout(() => setConfirming(false), 3000);
-      return;
-    }
-    onDelete(product.id);
-    setConfirming(false);
-  };
 
   return (
     <Box
@@ -165,10 +156,10 @@ function ProductCard({
             size="xs"
             flex={1}
             colorPalette="red"
-            onClick={handleDelete}
+            onClick={() => onRequestDelete(product.id)}
           >
             <LuTrash2 size={11} />
-            {confirming ? 'Sure?' : 'Delete'}
+            Delete
           </Button>
         </Flex>
       </Box>
@@ -210,6 +201,10 @@ export default function ProductsPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
+    open: false, title: '', description: '',
+  });
   const { data: products = [], isLoading } = useProducts();
   const deleteMutation = useDeleteProduct();
   const duplicateMutation = useDuplicateProduct();
@@ -220,15 +215,18 @@ export default function ProductsPage() {
       (p.category ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync(deleteTarget);
+      setDeleteTarget(null);
       toaster.create({ title: 'Product deleted', type: 'success' });
     } catch (error) {
-      toaster.create({
+      setDeleteTarget(null);
+      setErrorModal({
+        open: true,
         title: 'Failed to delete product',
-        description: error instanceof Error ? error.message : 'Try again',
-        type: 'error',
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
     }
   };
@@ -239,18 +237,36 @@ export default function ProductsPage() {
       await duplicateMutation.mutateAsync(id);
       toaster.create({ title: 'Product duplicated as draft', type: 'success' });
     } catch (error) {
-      toaster.create({
+      setErrorModal({
+        open: true,
         title: 'Failed to duplicate product',
-        description: error instanceof Error ? error.message : 'Try again',
-        type: 'error',
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
     } finally {
       setDuplicatingId(null);
     }
   };
 
+  const deleteTargetProduct = products.find((p) => p.id === deleteTarget);
+
   return (
     <AppShell>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${deleteTargetProduct?.name ?? 'this product'}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        isLoading={deleteMutation.isPending}
+      />
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title={errorModal.title}
+        description={errorModal.description}
+        type="error"
+      />
       <Stack gap={6}>
         {/* Page header */}
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
@@ -326,7 +342,7 @@ export default function ProductsPage() {
                 key={product.id}
                 product={product}
                 onEdit={(id) => router.push(`/products/${id}/edit`)}
-                onDelete={handleDelete}
+                onRequestDelete={setDeleteTarget}
                 onDuplicate={handleDuplicate}
                 isDuplicating={duplicatingId === product.id}
               />

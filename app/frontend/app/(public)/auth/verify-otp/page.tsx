@@ -26,7 +26,7 @@ export default function VerifyOtpPage() {
 
   if (!email) {
     return (
-      <Center minH="100dvh" bg="bg">
+      <Center minH="100dvh" bg="bg" px={4}>
         <Flex
           direction="column"
           align="center"
@@ -116,7 +116,7 @@ export default function VerifyOtpPage() {
   };
   if (status === 'success') {
     return (
-      <Center minH="100dvh" bg="bg">
+      <Center minH="100dvh" bg="bg" px={4}>
         <Flex
           direction="column"
           align="center"
@@ -167,7 +167,7 @@ export default function VerifyOtpPage() {
     );
   }
   return (
-    <Center minH="100dvh" bg="bg">
+    <Center minH="100dvh" bg="bg" px={4}>
       <Flex
         direction="column"
         align="center"

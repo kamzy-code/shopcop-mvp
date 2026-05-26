@@ -21,7 +21,8 @@ import {
   useAdminRejectVerification,
 } from '@/app/_hooks/admin';
 import { toaster } from '@/components/ui/toaster';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { AlertModal } from '@/components/ui/alert-modal';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'warning',
@@ -58,7 +59,11 @@ export default function AdminVerificationDetailPage({
 
   const [adminNotes, setAdminNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
+    open: false, title: '', description: '',
+  });
 
   if (isLoading) {
     return (
@@ -82,31 +87,72 @@ export default function AdminVerificationDetailPage({
   const handleApprove = async () => {
     try {
       await approveMutation.mutateAsync({ id, admin_notes: adminNotes || undefined });
+      setApproveDialogOpen(false);
       toaster.create({ title: 'Approved', description: 'Verification approved successfully.', type: 'success' });
       router.push('/admin/verifications');
     } catch (error) {
+      setApproveDialogOpen(false);
       const message = error instanceof Error ? error.message : 'Failed to approve.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, title: 'Approval Failed', description: message });
     }
   };
 
   const handleReject = async () => {
     if (!rejectionReason.trim() || rejectionReason.trim().length < 10) {
-      toaster.create({ title: 'Error', description: 'Rejection reason must be at least 10 characters.', type: 'error' });
+      setErrorModal({ open: true, title: 'Rejection Reason Too Short', description: 'Rejection reason must be at least 10 characters.' });
       return;
     }
     try {
       await rejectMutation.mutateAsync({ id, rejection_reason: rejectionReason, admin_notes: adminNotes || undefined });
+      setRejectDialogOpen(false);
       toaster.create({ title: 'Rejected', description: 'Verification rejected. Vendor has been notified.', type: 'success' });
       router.push('/admin/verifications');
     } catch (error) {
+      setRejectDialogOpen(false);
       const message = error instanceof Error ? error.message : 'Failed to reject.';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      setErrorModal({ open: true, title: 'Rejection Failed', description: message });
     }
   };
 
   return (
     <Stack gap={8}>
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onClose={() => setApproveDialogOpen(false)}
+        onConfirm={handleApprove}
+        title="Approve Verification"
+        description="Are you sure you want to approve this verification? This action cannot be undone."
+        confirmLabel="Approve"
+        colorPalette="success"
+        isLoading={approveMutation.isPending}
+      />
+      <ConfirmDialog
+        open={rejectDialogOpen}
+        onClose={() => { setRejectDialogOpen(false); setRejectionReason(''); }}
+        onConfirm={handleReject}
+        title="Reject Verification"
+        description="Provide a reason for rejection. The vendor will be notified."
+        confirmLabel="Reject"
+        colorPalette="red"
+        isLoading={rejectMutation.isPending}
+      >
+        <Textarea
+          placeholder="Explain why this is being rejected… (min 10 characters)"
+          value={rejectionReason}
+          onChange={(e) => setRejectionReason(e.target.value)}
+          size="sm"
+          rows={3}
+          colorPalette="red"
+          mt={2}
+        />
+      </ConfirmDialog>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title={errorModal.title}
+        description={errorModal.description}
+        type="error"
+      />
       {/* Back button */}
       <Button
         variant="ghost"
@@ -266,59 +312,20 @@ export default function AdminVerificationDetailPage({
                   colorPalette="success"
                   size="md"
                   w="full"
-                  onClick={handleApprove}
-                  loading={approveMutation.isPending}
-                  loadingText="Approving…"
+                  onClick={() => setApproveDialogOpen(true)}
                 >
                   Approve Verification
                 </Button>
 
-                {!showRejectForm ? (
-                  <Button
-                    colorPalette="red"
-                    variant="outline"
-                    size="md"
-                    w="full"
-                    onClick={() => setShowRejectForm(true)}
-                  >
-                    Reject Verification
-                  </Button>
-                ) : (
-                  <Stack gap={2}>
-                    <Text textStyle="xs" color="fg.muted">
-                      Rejection reason (required, min 10 chars)
-                    </Text>
-                    <Textarea
-                      placeholder="Explain why this is being rejected…"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      size="sm"
-                      rows={3}
-                      colorPalette="red"
-                    />
-                    <Flex gap={2}>
-                      <Button
-                        colorPalette="red"
-                        size="sm"
-                        flex={1}
-                        onClick={handleReject}
-                        loading={rejectMutation.isPending}
-                        loadingText="Rejecting…"
-                      >
-                        Confirm Reject
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowRejectForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </Flex>
-                  </Stack>
-                )}
-
-                <MutationErrorAlert error={approveMutation.error ?? rejectMutation.error} />
+                <Button
+                  colorPalette="red"
+                  variant="outline"
+                  size="md"
+                  w="full"
+                  onClick={() => setRejectDialogOpen(true)}
+                >
+                  Reject Verification
+                </Button>
               </Stack>
             </Box>
           )}

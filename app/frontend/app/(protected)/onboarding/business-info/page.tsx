@@ -16,7 +16,7 @@ import {
   REFUND_DURATION_OPTIONS,
   COMMON_REFUND_CONDITIONS,
 } from '@/app/validators/vendorSchema';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { useSubmitBusinessInfo, useProfileCompleteness, useGetCategories } from '@/app/_hooks/vendor';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
@@ -58,6 +58,7 @@ export default function BusinessInfoPage() {
   });
 
   const [customConditionInput, setCustomConditionInput] = useState('');
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const selectedPrimaryCategory = watch('primary_category');
   const selectedSubcategories = watch('subcategories') || [];
@@ -75,8 +76,8 @@ export default function BusinessInfoPage() {
     try {
       await submitMutation.mutateAsync(data);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save business info';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      const message = error instanceof Error ? error.message : 'Failed to save business info.';
+      setErrorModal({ open: true, description: message });
       return;
     }
 
@@ -96,8 +97,16 @@ export default function BusinessInfoPage() {
   if (completeness.sections.business_info.completed) return null;
 
   return (
-    <FormCard
-      icon={<LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />}
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Failed to Save"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
+        icon={<LuBuilding2 size={20} color="var(--chakra-colors-primary-600)" />}
       title="Business Information"
       description="Tell us about your business so buyers can find and trust you."
     >
@@ -546,5 +555,6 @@ export default function BusinessInfoPage() {
         </Stack>
       </form>
     </FormCard>
+    </>
   );
 }

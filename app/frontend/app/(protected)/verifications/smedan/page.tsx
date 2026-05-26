@@ -21,8 +21,7 @@ import { useSubmitSMEDANVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
-import { MutationErrorAlert } from '@/components/shared/mutationErrorAlert';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'failed';
 
@@ -35,6 +34,7 @@ export default function SmedanVerificationPage() {
   const [certFile, setCertFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
 
   const {
     register,
@@ -67,8 +67,8 @@ export default function SmedanVerificationPage() {
       setSubmitState('success');
     } catch (error) {
       setSubmitState('failed');
-      const message = error instanceof Error ? error.message : 'Submission failed';
-      toaster.create({ title: 'Submission failed', description: message, type: 'error' });
+      const message = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      setErrorModal({ open: true, description: message });
     }
   };
 
@@ -85,9 +85,17 @@ export default function SmedanVerificationPage() {
   }
 
   return (
-    <FormCard
-      icon={<LuStore size={20} color="var(--chakra-colors-primary-600)" />}
-      title="SMEDAN Verification"
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Submission Failed"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
+        icon={<LuStore size={20} color="var(--chakra-colors-primary-600)" />}
+        title="SMEDAN Verification"
       description="Submit your SMEDAN registration to verify your small or medium enterprise status."
     >
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -142,10 +150,6 @@ export default function SmedanVerificationPage() {
             {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
           </Field.Root>
 
-          {submitState === 'failed' && (
-            <MutationErrorAlert error={verifyMutation.error} />
-          )}
-
           <Button
             type="submit"
             colorPalette="primary"
@@ -171,5 +175,6 @@ export default function SmedanVerificationPage() {
         </Stack>
       </form>
     </FormCard>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field, Flex, Input, Stack, Text } from '@chakra-ui/react';
@@ -9,7 +9,7 @@ import { LuArrowRight, LuUser } from 'react-icons/lu';
 import { FormCard } from '@/components/shared/formCard';
 import { personalInfoSchema, PersonalInfoFormData } from '@/app/validators/vendorSchema';
 import { useSubmitPersonalInfo, useProfileCompleteness } from '@/app/_hooks/vendor';
-import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { SingleChipSelect } from '@/components/shared/chipSelect';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
@@ -24,6 +24,7 @@ export default function PersonalInfoPage() {
   const queryClient = useQueryClient();
   const isNavigating = useRef(false);
   const submitMutation = useSubmitPersonalInfo();
+  const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
   const { data: completeness } = useProfileCompleteness();
 
   const {
@@ -55,8 +56,8 @@ export default function PersonalInfoPage() {
     try {
       await submitMutation.mutateAsync(payload);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save personal info';
-      toaster.create({ title: 'Error', description: message, type: 'error' });
+      const message = error instanceof Error ? error.message : 'Failed to save personal info.';
+      setErrorModal({ open: true, description: message });
       return;
     }
 
@@ -76,7 +77,15 @@ export default function PersonalInfoPage() {
   if (completeness.sections.personal_info.completed) return null;
 
   return (
-    <FormCard
+    <>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title="Failed to Save"
+        description={errorModal.description}
+        type="error"
+      />
+      <FormCard
       icon={<LuUser size={20} color="var(--chakra-colors-primary-600)" />}
       title="Personal Information"
       description="Tell us a bit about yourself so we can verify your identity."
@@ -138,7 +147,6 @@ export default function PersonalInfoPage() {
                 setValue('gender', v as PersonalInfoFormData['gender'], { shouldValidate: true })
               }
               showCheck={false}
-              stretch={true}
             />
             <Field.ErrorText>{errors.gender?.message}</Field.ErrorText>
           </Field.Root>
@@ -195,5 +203,6 @@ export default function PersonalInfoPage() {
         </Stack>
       </form>
     </FormCard>
+    </>
   );
 }

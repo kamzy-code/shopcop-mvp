@@ -20,6 +20,7 @@ import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
+import { AlertModal } from '@/components/ui/alert-modal';
 import { useCreateProduct, useGetCategories } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
@@ -173,6 +174,9 @@ export default function NewProductPage() {
   ]);
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
+    open: false, title: '', description: '',
+  });
 
   const {
     register,
@@ -284,16 +288,23 @@ export default function NewProductPage() {
       toaster.create({ title: 'Product added successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
-      toaster.create({
+      setErrorModal({
+        open: true,
         title: 'Failed to add product',
-        description: error instanceof Error ? error.message : 'Please try again',
-        type: 'error',
+        description: error instanceof Error ? error.message : 'Please try again.',
       });
     }
   };
 
   return (
     <AppShell>
+      <AlertModal
+        open={errorModal.open}
+        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
+        title={errorModal.title}
+        description={errorModal.description}
+        type="error"
+      />
       <Stack gap={6} maxW="720px" mx="auto">
         {/* Header */}
         <Stack gap={0.5}>
