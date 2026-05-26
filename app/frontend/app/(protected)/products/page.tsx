@@ -8,7 +8,7 @@ import { useDeleteProduct, useProducts } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { Product } from '@/app/_types';
 
-function StockBadge({ status }: { status: Product['stockStatus'] }) {
+function StockBadge({ status }: { status: Product['stock_status'] }) {
   const isInStock = status === 'IN_STOCK';
   return (
     <Box
@@ -58,9 +58,9 @@ function ProductCard({
     >
       {/* Product image */}
       <Box w="full" h="180px" bg="bg.subtle" overflow="hidden">
-        {product.images?.[0] ? (
+        {product.media?.[0] ? (
           <img
-            src={product.images[0]}
+            src={product.media[0].media_url}
             alt={product.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
@@ -84,7 +84,7 @@ function ProductCard({
           <Text color="primary.fg" fontWeight="bold" textStyle="md">
             ₦{product.price.toLocaleString()}
           </Text>
-          <StockBadge status={product.stockStatus} />
+          <StockBadge status={product.stock_status} />
         </Flex>
 
         <Flex gap={2}>
@@ -153,7 +153,7 @@ export default function ProductsPage() {
   const filtered = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
+      (p.category ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDelete = async (id: string) => {

@@ -101,17 +101,28 @@ export interface VendorProfile {
   };
 }
 
+export interface ProductMedia {
+  id: string;
+  media_url: string;
+  public_id: string | null;
+  media_type: 'IMAGE' | 'VIDEO';
+  is_primary: boolean;
+  position: number;
+}
+
 export interface Product {
   id: string;
-  vendorId: string;
+  vendor_id: string;
   name: string;
-  description?: string;
+  description: string | null;
   price: number;
   category: string;
-  stockStatus: StockStatus;
-  images: string[];
-  createdAt: string;
-  updatedAt: string;
+  stock_status: StockStatus;
+  media: ProductMedia[];
+  video_url: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface AuthResponse {

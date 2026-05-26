@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
 import { BusinessCategory, Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
 import { BusinessInfoFormData, ProductFormData } from '../validators/vendorSchema';
@@ -133,15 +133,36 @@ export const useProducts = () =>
     placeholderData: keepPreviousData,
   });
 
-export const useCreateProduct = () =>
-  useMutation({
-    mutationFn: (data: ProductFormData & { images: string[] }) =>
+export const useProduct = (id: string) =>
+  useQuery<Product>({
+    queryKey: ['products', id],
+    queryFn: async () => {
+      const res = await apiFetch<Product>(`/products/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+export interface MediaPayloadItem {
+  url: string;
+  public_id?: string;
+  media_type: 'IMAGE' | 'VIDEO';
+}
+
+export const useCreateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ProductFormData & { media: MediaPayloadItem[] }) =>
       apiFetch('/products', {
         method: 'POST',
         body: JSON.stringify(data),
-        headers: {},
       }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
   });
+};
 
 export const useGetVerifications = () =>
   useQuery<VerificationRecord[]>({
@@ -174,17 +195,33 @@ export const useResubmitVerification = () =>
       }),
   });
 
-export const useDeleteProduct = () =>
-  useMutation({
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (productId: string) => apiFetch(`/products/${productId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
   });
+};
 
-export const useUpdateProduct = () =>
-  useMutation({
-    mutationFn: ({ id, data }: { id: string; data: FormData }) =>
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<ProductFormData> & { media?: MediaPayloadItem[] };
+    }) =>
       apiFetch(`/products/${id}`, {
-        method: 'PUT',
-        body: data,
-        headers: {},
+        method: 'PATCH',
+        body: JSON.stringify(data),
       }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', variables.id] });
+    },
   });
+};

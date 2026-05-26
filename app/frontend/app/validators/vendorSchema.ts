@@ -190,12 +190,12 @@ export const smedanVerificationSchema = z.object({
 export const productSchema = z.object({
   name: z
     .string()
-    .min(1, 'Product name is required')
-    .max(100, 'Product name must be at most 100 characters'),
-  description: z.string().max(500, 'Description must be at most 500 characters').optional(),
-  price: z.number().positive('Price must be greater than 0'),
+    .min(3, 'Product name must be at least 3 characters')
+    .max(200, 'Product name must be at most 200 characters'),
+  description: z.string().max(5000, 'Description must be at most 5000 characters').optional(),
+  price: z.number().min(100, 'Price must be at least ₦100').max(10_000_000, 'Price must be at most ₦10,000,000'),
   category: z.string().min(1, 'Please select a category'),
-  stockStatus: z.enum(['IN_STOCK', 'OUT_OF_STOCK']),
+  stock_status: z.enum(['IN_STOCK', 'OUT_OF_STOCK']),
 });
 
 export type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;

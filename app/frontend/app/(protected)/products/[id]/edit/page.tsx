@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -10,19 +10,18 @@ import {
   Grid,
   Heading,
   Input,
+  Spinner,
   Stack,
   Text,
   Textarea,
-  Spinner,
 } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
-import { useCreateProduct, useGetCategories } from '@/app/_hooks/vendor';
+import { useGetCategories, useProduct, useUpdateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
-
 
 function ImageSlot({
   index,
@@ -32,7 +31,6 @@ function ImageSlot({
   onAdd,
   onRemove,
   isPrimary,
-  canDelete,
 }: {
   index: number;
   file: UploadResult | null;
@@ -41,16 +39,15 @@ function ImageSlot({
   onAdd: (index: number, file: File) => void;
   onRemove: (index: number) => void;
   isPrimary: boolean;
-  canDelete: boolean;
 }) {
   const preview = localUrl || file?.url || null;
   const hasContent = !!preview;
 
   const handleClick = () => {
-    if (isUploading) return;
+    if (isUploading || hasContent) return;
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/jpg,image/png,video/mp4,video/quicktime,video/webm';
+    input.accept = 'image/jpeg,image/jpg,image/png,image/webp';
     input.onchange = (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
       if (!f) return;
@@ -74,36 +71,20 @@ function ImageSlot({
       bg={hasContent ? 'transparent' : 'bg.subtle'}
       position="relative"
       overflow="hidden"
-      cursor={isUploading ? 'default' : hasContent ? 'default' : 'pointer'}
+      cursor={isUploading || hasContent ? 'default' : 'pointer'}
       transition="all 0.15s"
-      onClick={isUploading ? undefined : hasContent ? undefined : handleClick}
-      _hover={isUploading ? {} : hasContent ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
+      onClick={handleClick}
+      _hover={isUploading || hasContent ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
     >
       {preview ? (
         <>
-          {file?.resourceType === 'video' ? (
-            <video
-              src={preview}
-              controls
-              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-            />
-          ) : (
-            <img
-              src={preview}
-              alt={`Product image ${index + 1}`}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          )}
+          <img
+            src={preview}
+            alt={`Product image ${index + 1}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
           {isPrimary && (
-            <Box
-              position="absolute"
-              bottom={1}
-              left={1}
-              px={1.5}
-              py={0.5}
-              borderRadius="md"
-              bg="primary.500"
-            >
+            <Box position="absolute" bottom={1} left={1} px={1.5} py={0.5} borderRadius="md" bg="primary.500">
               <Text textStyle="2xs" color="white" fontWeight="bold">
                 Primary
               </Text>
@@ -157,22 +138,21 @@ function ImageSlot({
   );
 }
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter();
-  const createMutation = useCreateProduct();
-  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
+  const params = useParams();
+  const productId = params.id as string;
+
+  const { data: product, isLoading: productLoading } = useProduct(productId);
+  const updateMutation = useUpdateProduct();
+  const { data: categories = [], isLoading: categoriesLoading } = useGetCategories();
   const uploadMutation = useUploadPublicMedia();
   const deleteMutation = useDeleteMedia();
-  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
-  const [mediaFiles, setMediaFiles] = useState<(UploadResult | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
+
+  const [mediaFiles, setMediaFiles] = useState<(UploadResult | null)[]>([null, null, null, null, null]);
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
+  const [initialised, setInitialised] = useState(false);
 
   const {
     register,
@@ -181,6 +161,7 @@ export default function NewProductPage() {
     setValue,
     watch,
     clearErrors,
+    reset,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { stock_status: 'IN_STOCK', category: '' },
@@ -189,45 +170,48 @@ export default function NewProductPage() {
   const selectedCategory = watch('category');
   const selectedStock = watch('stock_status');
 
+  // Pre-fill form once product data loads
+  useEffect(() => {
+    if (product && !initialised) {
+      reset({
+        name: product.name,
+        description: product.description ?? '',
+        price: product.price,
+        category: product.category,
+        stock_status: product.stock_status,
+      });
+
+      const existingMedia = product.media.slice(0, 5).map((img) => ({
+        url: img.media_url,
+        publicId: img.public_id ?? '',
+        resourceType: img.media_type === 'VIDEO' ? 'video' : 'image',
+      }));
+
+      const slots: (UploadResult | null)[] = [null, null, null, null, null];
+      existingMedia.forEach((m, i) => { slots[i] = m; });
+      setMediaFiles(slots);
+      setInitialised(true);
+    }
+  }, [product, initialised, reset]);
+
   const handleAddImage = async (index: number, file: File) => {
     const localUrl = URL.createObjectURL(file);
     setLocalPreviews((prev) => ({ ...prev, [index]: localUrl }));
     setUploadingSlots((prev) => ({ ...prev, [index]: true }));
-    setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
 
     try {
-      const uploadResult = await uploadMutation.mutateAsync({
-        file,
-        setUploadProgress: (percent) => {
-          setUploadProgress((prev) => ({ ...prev, [index]: percent }));
-        },
-      });
-
+      const uploadResult = await uploadMutation.mutateAsync({ file, setUploadProgress: () => {} });
       URL.revokeObjectURL(localUrl);
-      setLocalPreviews((prev) => {
-        const next = { ...prev };
-        delete next[index];
-        return next;
-      });
-      setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+      setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setUploadingSlots((prev) => ({ ...prev, [index]: false }));
-      setMediaFiles((prev) => {
-        const next = [...prev];
-        next[index] = uploadResult;
-        return next;
-      });
+      setMediaFiles((prev) => { const next = [...prev]; next[index] = uploadResult; return next; });
     } catch (error) {
       URL.revokeObjectURL(localUrl);
-      setLocalPreviews((prev) => {
-        const next = { ...prev };
-        delete next[index];
-        return next;
-      });
-      setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+      setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setUploadingSlots((prev) => ({ ...prev, [index]: false }));
       toaster.create({
-        title: 'Failed to upload file',
-        description: error instanceof Error ? error.message : 'An error occurred, please try again.',
+        title: 'Failed to upload image',
+        description: error instanceof Error ? error.message : 'Try again',
         type: 'error',
       });
     }
@@ -236,43 +220,16 @@ export default function NewProductPage() {
   const handleRemoveImage = async (index: number) => {
     const file = mediaFiles[index];
     if (file?.publicId) {
-      try {
-        await deleteMutation.mutateAsync(file.publicId);
-      } catch {
-        // Log but proceed with local removal
-      }
+      try { await deleteMutation.mutateAsync(file.publicId); } catch { /* proceed */ }
     }
-    if (localPreviews[index]) {
-      URL.revokeObjectURL(localPreviews[index]);
-    }
-    setLocalPreviews((prev) => {
-      const next = { ...prev };
-      delete next[index];
-      return next;
-    });
-    setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
+    if (localPreviews[index]) URL.revokeObjectURL(localPreviews[index]);
+    setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
     setUploadingSlots((prev) => ({ ...prev, [index]: false }));
-    setMediaFiles((prev) => {
-      const next = [...prev];
-      next[index] = null;
-      return next;
-    });
+    setMediaFiles((prev) => { const next = [...prev]; next[index] = null; return next; });
   };
 
   const onSubmit = async (data: ProductFormData) => {
-    const hasMedia = mediaFiles.some(Boolean);
-    if (!hasMedia) {
-      toaster.create({ title: 'Please upload at least one product image', type: 'error' });
-      return;
-    }
-
-    const uploadedFiles = mediaFiles.filter(Boolean) as NonNullable<typeof mediaFiles[number]>[];
-
-    if (uploadedFiles.length === 0) {
-      toaster.create({ title: 'Please upload at least one product image or video', type: 'error' });
-      return;
-    }
-
+    const uploadedFiles = mediaFiles.filter(Boolean) as UploadResult[];
     const media = uploadedFiles.map((m) => ({
       url: m.url,
       public_id: m.publicId || undefined,
@@ -280,39 +237,52 @@ export default function NewProductPage() {
     }));
 
     try {
-      await createMutation.mutateAsync({ ...data, media });
-      toaster.create({ title: 'Product added successfully!', type: 'success' });
+      await updateMutation.mutateAsync({ id: productId, data: { ...data, media } });
+      toaster.create({ title: 'Product updated successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
       toaster.create({
-        title: 'Failed to add product',
+        title: 'Failed to update product',
         description: error instanceof Error ? error.message : 'Please try again',
         type: 'error',
       });
     }
   };
 
+  if (productLoading) {
+    return (
+      <AppShell>
+        <Flex justify="center" py={16}>
+          <Spinner size="xl" colorPalette="primary" />
+        </Flex>
+      </AppShell>
+    );
+  }
+
+  if (!product) {
+    return (
+      <AppShell>
+        <Box textAlign="center" py={16}>
+          <Text color="fg.muted">Product not found.</Text>
+          <Button mt={4} onClick={() => router.push('/products')}>Back to Products</Button>
+        </Box>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <Stack gap={6} maxW="720px" mx="auto">
-        {/* Header */}
         <Stack gap={0.5}>
-          <Button
-            variant="ghost"
-            size="sm"
-            color="fg.muted"
-            alignSelf="flex-start"
-            mb={2}
-            onClick={() => router.push('/products')}
-          >
+          <Button variant="ghost" size="sm" color="fg.muted" alignSelf="flex-start" mb={2} onClick={() => router.push('/products')}>
             <LuArrowLeft size={14} />
             Back to Products
           </Button>
           <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-            Add New Product
+            Edit Product
           </Heading>
           <Text color="fg.muted" textStyle="sm">
-            Fill in your product details. Required fields are marked with *.
+            Update your product details below.
           </Text>
         </Stack>
 
@@ -321,26 +291,23 @@ export default function NewProductPage() {
             {/* Images */}
             <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
               <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                Product Images *
+                Product Images
               </Text>
               <Text color="fg.muted" textStyle="xs" mb={4}>
-                Upload up to 5 images. The first image is the primary display image. JPG or PNG, max
-                2MB each.
+                Up to 5 images. The first image is the primary display image.
               </Text>
               <Grid templateColumns="repeat(5, 1fr)" gap={3}>
                 {mediaFiles.map((file, index) => (
-                  <Box key={index}>
-                    <ImageSlot
-                      index={index}
-                      file={file}
-                      localUrl={localPreviews[index]}
-                      isUploading={uploadingSlots[index]}
-                      onAdd={handleAddImage}
-                      onRemove={handleRemoveImage}
-                      isPrimary={index === 0 && !!file}
-                      canDelete={!uploadingSlots[index]}
-                    />
-                  </Box>
+                  <ImageSlot
+                    key={index}
+                    index={index}
+                    file={file}
+                    localUrl={localPreviews[index]}
+                    isUploading={uploadingSlots[index]}
+                    onAdd={handleAddImage}
+                    onRemove={handleRemoveImage}
+                    isPrimary={index === 0 && !!file}
+                  />
                 ))}
               </Grid>
             </Box>
@@ -353,77 +320,39 @@ export default function NewProductPage() {
               <Stack gap={5}>
                 <Field.Root invalid={!!errors.name} required>
                   <Field.Label color="fg">Product Name</Field.Label>
-                  <Input
-                    {...register('name')}
-                    placeholder="e.g. Samsung Galaxy A55 6GB RAM"
-                    size="lg"
-                    colorPalette="primary"
-                  />
+                  <Input {...register('name')} placeholder="e.g. Samsung Galaxy A55" size="lg" colorPalette="primary" />
                   <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
                 </Field.Root>
 
                 <Field.Root invalid={!!errors.description}>
                   <Field.Label color="fg">
                     Description{' '}
-                    <Text as="span" color="fg.muted" fontWeight="normal">
-                      (optional)
-                    </Text>
+                    <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text>
                   </Field.Label>
-                  <Textarea
-                    {...register('description')}
-                    placeholder="Describe your product — features, condition, specifications..."
-                    size="lg"
-                    colorPalette="primary"
-                    rows={4}
-                    resize="none"
-                  />
+                  <Textarea {...register('description')} placeholder="Describe your product..." size="lg" colorPalette="primary" rows={4} resize="none" />
                   <Field.ErrorText>{errors.description?.message}</Field.ErrorText>
                 </Field.Root>
 
-                {/* Price */}
                 <Field.Root invalid={!!errors.price} required>
                   <Field.Label color="fg">Price (₦)</Field.Label>
-                  <Flex
-                    align="center"
-                    borderWidth="1px"
-                    borderColor="border"
-                    borderRadius="lg"
-                    px={4}
-                    h="48px"
-                    gap={2}
-                  >
-                    <Text color="fg.muted" fontWeight="medium" flexShrink={0}>
-                      ₦
-                    </Text>
+                  <Flex align="center" borderWidth="1px" borderColor="border" borderRadius="lg" px={4} h="48px" gap={2}>
+                    <Text color="fg.muted" fontWeight="medium" flexShrink={0}>₦</Text>
                     <input
                       {...register('price', { valueAsNumber: true })}
                       type="number"
                       placeholder="0"
                       min={0}
                       step="0.01"
-                      style={{
-                        flex: 1,
-                        border: 'none',
-                        outline: 'none',
-                        background: 'transparent',
-                        fontSize: '16px',
-                        color: 'inherit',
-                      }}
+                      style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'inherit' }}
                     />
                   </Flex>
                   <Field.ErrorText>{errors.price?.message}</Field.ErrorText>
                 </Field.Root>
 
-                {/* Category */}
                 <Field.Root invalid={!!errors.category} required>
                   <Field.Label color="fg">Category</Field.Label>
                   {categoriesLoading && <Spinner size="sm" colorPalette="primary" />}
-                  {categoriesError && (
-                    <Text color="red.fg" textStyle="xs">
-                      Failed to load categories. Please refresh the page.
-                    </Text>
-                  )}
-                  {!categoriesLoading && !categoriesError && (
+                  {!categoriesLoading && (
                     <Flex gap={2} flexWrap="wrap" pt={1}>
                       {categories.map((cat) => {
                         const isSelected = selectedCategory === cat.name;
@@ -432,13 +361,8 @@ export default function NewProductPage() {
                             key={cat.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => {
-                              setValue('category', cat.name, { shouldValidate: true });
-                              clearErrors('category');
-                            }}
-                            onKeyDown={(e) =>
-                              e.key === 'Enter' && setValue('category', cat.name, { shouldValidate: true })
-                            }
+                            onClick={() => { setValue('category', cat.name, { shouldValidate: true }); clearErrors('category'); }}
+                            onKeyDown={(e) => e.key === 'Enter' && setValue('category', cat.name, { shouldValidate: true })}
                             align="center"
                             px={3}
                             py={1.5}
@@ -462,7 +386,6 @@ export default function NewProductPage() {
                   <Field.ErrorText>{errors.category?.message}</Field.ErrorText>
                 </Field.Root>
 
-                {/* Stock status */}
                 <Field.Root required>
                   <Field.Label color="fg">Stock Status</Field.Label>
                   <Flex gap={3}>
@@ -488,22 +411,11 @@ export default function NewProductPage() {
                           justify="center"
                           transition="all 0.15s"
                           userSelect="none"
-                          onClick={() =>
-                            setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK', {
-                              shouldValidate: true,
-                            })
-                          }
-                          onKeyDown={(e) =>
-                            e.key === 'Enter' &&
-                            setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK')
-                          }
+                          onClick={() => setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK', { shouldValidate: true })}
+                          onKeyDown={(e) => e.key === 'Enter' && setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK')}
                           _hover={{ borderColor: `${option.color}.300` }}
                         >
-                          <Text
-                            textStyle="sm"
-                            fontWeight={isSelected ? 'semibold' : 'normal'}
-                            color={isSelected ? `${option.color}.fg` : 'fg.muted'}
-                          >
+                          <Text textStyle="sm" fontWeight={isSelected ? 'semibold' : 'normal'} color={isSelected ? `${option.color}.fg` : 'fg.muted'}>
                             {option.label}
                           </Text>
                         </Flex>
@@ -514,25 +426,13 @@ export default function NewProductPage() {
               </Stack>
             </Box>
 
-            {/* Actions */}
             <Flex gap={3} justify="flex-end">
-              <Button
-                variant="outline"
-                size="lg"
-                colorPalette="navy"
-                onClick={() => router.push('/products')}
-              >
+              <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.push('/products')}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                colorPalette="primary"
-                size="lg"
-                loading={isSubmitting || createMutation.isPending}
-                disabled={isSubmitting}
-              >
+              <Button type="submit" colorPalette="primary" size="lg" loading={isSubmitting || updateMutation.isPending} disabled={isSubmitting}>
                 <LuPackage />
-                Add Product
+                Save Changes
               </Button>
             </Flex>
           </Stack>

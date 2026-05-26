@@ -434,7 +434,7 @@ model Product {
   stock_status StockStatus @default(IN_STOCK)
 
   // Media
-  images    ProductMedia[]
+  media     ProductMedia[]
   video_url String?
 
   // Timestamps

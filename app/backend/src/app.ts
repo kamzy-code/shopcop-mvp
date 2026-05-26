@@ -15,6 +15,7 @@ import adminUserRouter from '@routes/admin/adminUserRoute.js';
 import adminDashboardRouter from '@routes/admin/adminDashboardRoute.js';
 import adminProfileRouter from '@routes/admin/adminProfileRoute.js';
 import categoryRouter from '@routes/businessCategoryRoute.js';
+import productRouter from '@routes/productRoute.js';
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ app.use('/api/v1/admin/users', adminUserRouter);
 app.use('/api/v1/admin/dashboard', adminDashboardRouter);
 app.use('/api/v1/admin/profile', adminProfileRouter);
 app.use('/api/v1/categories', categoryRouter);
+app.use('/api/v1/products', productRouter);
 
 // 404 handler
 app.use((req, res) => {

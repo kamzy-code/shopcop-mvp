@@ -118,7 +118,7 @@ export default function Dashboard() {
   const { data: profile } = useVendorProfile();
 
   const productCount = products?.length ?? 0;
-  const inStockCount = products?.filter((p) => p.stockStatus === 'IN_STOCK').length ?? 0;
+  const inStockCount = products?.filter((p) => p.stock_status === 'IN_STOCK').length ?? 0;
   const firstName = user?.name?.split(' ')[0] || profile?.first_name || 'Vendor';
   const profileSetupPct =
     [
@@ -600,9 +600,9 @@ export default function Dashboard() {
                   borderRadius="xl"
                 >
                   <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
-                    {product.images?.[0] ? (
+                    {product.media?.[0] ? (
                       <img
-                        src={product.images[0]}
+                        src={product.media[0].media_url}
                         alt={product.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
@@ -623,14 +623,14 @@ export default function Dashboard() {
                       px={2}
                       py={0.5}
                       borderRadius="full"
-                      bg={product.stockStatus === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
+                      bg={product.stock_status === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
                     >
                       <Text
                         textStyle="2xs"
                         fontWeight="medium"
-                        color={product.stockStatus === 'IN_STOCK' ? 'success.fg' : 'red.600'}
+                        color={product.stock_status === 'IN_STOCK' ? 'success.fg' : 'red.600'}
                       >
-                        {product.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
+                        {product.stock_status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
                       </Text>
                     </Box>
                   </Flex>
