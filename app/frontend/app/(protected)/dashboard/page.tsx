@@ -598,6 +598,10 @@ export default function Dashboard() {
                   borderWidth="1px"
                   borderColor="border"
                   borderRadius="xl"
+                  cursor="pointer"
+                  transition="box-shadow 0.15s"
+                  _hover={{ shadow: 'md' }}
+                  onClick={() => router.push(`/products/${product.id}`)}
                 >
                   <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
                     {product.media?.[0] ? (

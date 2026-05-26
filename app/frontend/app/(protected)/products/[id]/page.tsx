@@ -1,19 +1,12 @@
 'use client';
 import { useRef, useState } from 'react';
-import {
-  Box,
-  Button,
-  Flex,
-  Heading,
-  Spinner,
-  Stack,
-  Text,
-} from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage, LuPencil } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
 import { useProduct } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
+import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 function StockBadge({ status }: { status: Product['stock_status'] }) {
   const isInStock = status === 'IN_STOCK';
@@ -34,11 +27,11 @@ function StockBadge({ status }: { status: Product['stock_status'] }) {
 
 function MediaCarousel({ product }: { product: Product }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const mainVideoRef = useRef<HTMLVideoElement | null>(null);
   const media = product.media;
 
   const goToSlide = (index: number) => {
-    videoRefs.current[activeIndex]?.pause();
+    mainVideoRef.current?.pause();
     setActiveIndex(index);
   };
 
@@ -65,14 +58,29 @@ function MediaCarousel({ product }: { product: Product }) {
   return (
     <Stack gap={3} maxW="560px" mx="auto" w="full">
       {/* Main display */}
-      <Box position="relative" w="full" aspectRatio={1} borderRadius="xl" overflow="hidden" bg="bg.subtle">
+      <Box
+        position="relative"
+        w="full"
+        aspectRatio={1}
+        borderRadius="xl"
+        overflow="hidden"
+        bg="bg.subtle"
+      >
         {current.media_type === 'VIDEO' ? (
           <video
-            ref={(el) => { videoRefs.current[activeIndex] = el; }}
+            key={`main-video-${activeIndex}`}
+            ref={mainVideoRef}
             src={current.media_url}
             controls
+            autoPlay
             playsInline
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block',
+              background: '#000',
+            }}
           />
         ) : (
           <img
@@ -171,7 +179,6 @@ function MediaCarousel({ product }: { product: Product }) {
             >
               {item.media_type === 'VIDEO' ? (
                 <video
-                  ref={(el) => { videoRefs.current[i] = el; }}
                   src={item.media_url}
                   muted
                   playsInline
@@ -201,9 +208,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <AppShell>
-        <Flex justify="center" py={16}>
-          <Spinner size="xl" colorPalette="primary" />
-        </Flex>
+        <FullPageSpinner />
       </AppShell>
     );
   }
@@ -212,7 +217,9 @@ export default function ProductDetailPage() {
     return (
       <AppShell>
         <Box textAlign="center" py={16}>
-          <Text color="fg.muted" mb={4}>Product not found.</Text>
+          <Text color="fg.muted" mb={4}>
+            Product not found.
+          </Text>
           <Button onClick={() => router.push('/products')}>Back to Products</Button>
         </Box>
       </AppShell>
@@ -268,14 +275,15 @@ export default function ProductDetailPage() {
           </Flex>
 
           {product.description && (
-            <Box
-              p={4}
-              bg="bg.panel"
-              borderWidth="1px"
-              borderColor="border"
-              borderRadius="xl"
-            >
-              <Text color="fg.muted" textStyle="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wider" mb={2}>
+            <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Text
+                color="fg.muted"
+                textStyle="xs"
+                fontWeight="semibold"
+                textTransform="uppercase"
+                letterSpacing="wider"
+                mb={2}
+              >
                 Description
               </Text>
               <Text color="fg" textStyle="sm" whiteSpace="pre-wrap">

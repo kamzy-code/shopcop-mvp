@@ -467,7 +467,7 @@ model ProductMedia {
   created_at DateTime @default(now())
 
   @@index([product_id])
-  @@map("product_images")
+  @@map("product_media")
 }
 
 // ============================================
