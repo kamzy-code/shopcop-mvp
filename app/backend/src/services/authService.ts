@@ -91,7 +91,7 @@ export class AuthService {
   /**
    * Verifies the OTP submitted during signup and activates the user account.
    * Enforces a 5-attempt lockout on the OTP record to prevent brute-force.
-   * On first VENDOR login, an empty VendorProfile is created in the same transaction.
+   * Creates a role-appropriate empty profile (VendorProfile / BuyerProfile / AdminProfile) in the same transaction.
    * Sets the JWT as an httpOnly cookie via the calling controller.
    *
    * @param email - Email address of the user to verify
@@ -160,6 +160,23 @@ export class AuthService {
       throw new AppError('Invalid OTP. Please try again.', 400);
     }
 
+    const profileCreate =
+      user.role === UserRole.VENDOR
+        ? {
+            vendor_profile: {
+              create: {
+                current_tier: VendorTier.TIER_0,
+                verification_points: 0,
+                personal_info_complete: false,
+                business_info_complete: false,
+                profile_completeness: 0,
+              },
+            },
+          }
+        : user.role === UserRole.BUYER
+        ? { buyer_profile: { create: {} } }
+        : { admin_profile: { create: {} } };
+
     await prisma.$transaction([
       prisma.otpCode.deleteMany({ where: { user_id: user.id } }),
       prisma.user.update({
@@ -167,21 +184,8 @@ export class AuthService {
         data: {
           email_verified: true,
           last_login_at: new Date(),
-          ...(user.role === UserRole.VENDOR
-            ? {
-                vendor_profile: {
-                  create: {
-                    current_tier: VendorTier.TIER_0,
-                    verification_points: 0,
-                    personal_info_complete: false,
-                    business_info_complete: false,
-                    profile_completeness: 0,
-                  },
-                },
-              }
-            : {}),
+          ...profileCreate,
         },
-        include: user.role === UserRole.VENDOR ? { vendor_profile: true } : undefined,
       }),
     ]);
     

@@ -161,6 +161,45 @@ describe('AuthService.verifyOTP', () => {
       data: { attempts: { increment: 1 } },
     });
   });
+
+  describe('profile creation by role', () => {
+    const mockOtp = { id: 'otp-1', code: '123456', attempts: 0, expires_at: new Date(Date.now() + 300000) };
+    const baseUser = { id: 'u1', email: 'ada@test.com', email_verified: false };
+
+    const setup = (role: string) => {
+      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, role });
+      mockPrisma.otpCode.findFirst.mockResolvedValue(mockOtp);
+      mockPrisma.$transaction.mockResolvedValue([]);
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({ ...baseUser, role, email_verified: true });
+    };
+
+    it('includes vendor_profile.create for VENDOR', async () => {
+      setup('VENDOR');
+      await AuthService.verifyOTP({ email: 'ada@test.com', otp_code: '123456' });
+      const data = mockPrisma.user.update.mock.calls[0][0].data;
+      expect(data).toHaveProperty('vendor_profile.create');
+      expect(data).not.toHaveProperty('buyer_profile');
+      expect(data).not.toHaveProperty('admin_profile');
+    });
+
+    it('includes buyer_profile.create for BUYER', async () => {
+      setup('BUYER');
+      await AuthService.verifyOTP({ email: 'ada@test.com', otp_code: '123456' });
+      const data = mockPrisma.user.update.mock.calls[0][0].data;
+      expect(data).toHaveProperty('buyer_profile.create');
+      expect(data).not.toHaveProperty('vendor_profile');
+      expect(data).not.toHaveProperty('admin_profile');
+    });
+
+    it('includes admin_profile.create for ADMIN', async () => {
+      setup('ADMIN');
+      await AuthService.verifyOTP({ email: 'ada@test.com', otp_code: '123456' });
+      const data = mockPrisma.user.update.mock.calls[0][0].data;
+      expect(data).toHaveProperty('admin_profile.create');
+      expect(data).not.toHaveProperty('vendor_profile');
+      expect(data).not.toHaveProperty('buyer_profile');
+    });
+  });
 });
 
 // ============================================
