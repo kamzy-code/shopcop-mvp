@@ -43,6 +43,7 @@ import {
   REFUND_POLICY_OPTIONS,
   REFUND_DURATION_OPTIONS,
   COMMON_REFUND_CONDITIONS,
+  CONTACT_OPTIONS,
 } from '@/app/validators/vendorSchema';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
@@ -58,6 +59,7 @@ import { AppShell } from '@/components/shared/appShell';
 import { TierBadge } from '@/components/shared/tierBadge';
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
+import { SectionHeader, SectionLabel } from '@/components/shared/formCard';
 import { VerificationRecord, VerificationType } from '@/app/_types';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -66,14 +68,6 @@ const GENDER_OPTIONS = [
   { value: 'MALE', label: 'Male' },
   { value: 'FEMALE', label: 'Female' },
   { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
-] as const;
-
-const CONTACT_OPTIONS = [
-  { value: 'WHATSAPP', label: 'WhatsApp' },
-  { value: 'INSTAGRAM', label: 'Instagram' },
-  { value: 'TIKTOK', label: 'TikTok' },
-  { value: 'FACEBOOK', label: 'Facebook' },
-  { value: 'PHONE_CALL', label: 'Phone Call' },
 ] as const;
 
 /** Pill-style read-only label + value row. */
@@ -363,8 +357,35 @@ function BusinessInfoTab() {
   const descriptionValue = watch('business_description') || '';
   const notesValue = watch('refund_custom_notes') || '';
 
+  // Social contact watches
+  const instagramValue = watch('instagram_handle') || '';
+  const tiktokValue = watch('tiktok_handle') || '';
+  const facebookValue = watch('facebook_url') || '';
+  const whatsappValue = watch('whatsapp_number') || '';
+  const currentPrimaryContact = watch('primary_contact');
+
   const selectedCategoryData = categories.find((c) => c.name === selectedPrimaryCategory);
   const subcategoryOptions = selectedCategoryData?.subcategories.map((s) => ({ value: s, label: s })) ?? [];
+
+  // Dynamic primary contact options — only show filled platforms
+  const availableContactOptions = CONTACT_OPTIONS.filter((o) => {
+    if (o.value === 'INSTAGRAM')  return !!instagramValue.trim();
+    if (o.value === 'TIKTOK')     return !!tiktokValue.trim();
+    if (o.value === 'FACEBOOK')   return !!facebookValue.trim();
+    if (o.value === 'WHATSAPP')   return !!whatsappValue.trim();
+    if (o.value === 'PHONE_CALL') return true;
+    return false;
+  });
+
+  // Clear primary_contact if its platform is no longer filled
+  useEffect(() => {
+    if (
+      currentPrimaryContact &&
+      !availableContactOptions.some((o) => o.value === currentPrimaryContact)
+    ) {
+      setValue('primary_contact', undefined);
+    }
+  }, [availableContactOptions, currentPrimaryContact, setValue]);
 
   useEffect(() => {
     if (profile && isEditing) {
@@ -436,9 +457,17 @@ function BusinessInfoTab() {
           </Button>
         </Flex>
 
+        {/* Business Identity */}
+        <Box pt={1} pb={1}>
+          <SectionLabel>Business Identity</SectionLabel>
+        </Box>
         <FieldRow label="Business Name" value={profile?.business_name} />
         <FieldRow label="Description" value={profile?.business_description} />
 
+        {/* Category */}
+        <Box pt={5} mt={1}>
+          <SectionLabel>Category</SectionLabel>
+        </Box>
         <Flex
           direction={{ base: 'column', sm: 'row' }}
           gap={{ base: 0.5, sm: 3 }}
@@ -451,7 +480,6 @@ function BusinessInfoTab() {
             {profile?.primary_category ?? '—'}
           </Text>
         </Flex>
-
         <Flex
           direction={{ base: 'column', sm: 'row' }}
           gap={{ base: 0.5, sm: 3 }}
@@ -463,15 +491,22 @@ function BusinessInfoTab() {
           <ChipList items={profile?.subcategories ?? []} />
         </Flex>
 
+        {/* Location */}
+        <Box pt={5} mt={1}>
+          <SectionLabel>Location</SectionLabel>
+        </Box>
         <FieldRow label="State" value={profile?.state} />
         <FieldRow label="City" value={profile?.city} />
         <FieldRow label="Street Address" value={profile?.street_address} />
         <FieldRow label="Landmark" value={profile?.landmark} />
 
+        {/* Payment & Banking */}
+        <Box pt={5} mt={1} >
+          <SectionLabel>Payment &amp; Banking</SectionLabel>
+        </Box>
         <FieldRow label="Bank Name" value={profile?.bank_name} />
         <FieldRow label="Account Number" value={profile?.account_number} />
         <FieldRow label="Account Name" value={profile?.account_name} />
-
         <Flex
           direction={{ base: 'column', sm: 'row' }}
           gap={{ base: 0.5, sm: 3 }}
@@ -483,6 +518,10 @@ function BusinessInfoTab() {
           <ChipList items={paymentModelLabels} />
         </Flex>
 
+        {/* Refund Policy */}
+        <Box pt={5} mt={1} >
+          <SectionLabel>Refund Policy</SectionLabel>
+        </Box>
         <FieldRow label="Refund Policy" value={refundPolicyLabel} />
         {profile?.refund_duration_days && (
           <FieldRow label="Refund Window" value={`${profile.refund_duration_days} days`} />
@@ -507,6 +546,10 @@ function BusinessInfoTab() {
           <FieldRow label="Refund Notes" value={profile.refund_custom_notes} />
         )}
 
+        {/* Contact & Socials */}
+        <Box pt={5} mt={1}>
+          <SectionLabel>Contact &amp; Socials</SectionLabel>
+        </Box>
         <FieldRow label="Instagram" value={profile?.instagram_handle} />
         <FieldRow label="TikTok" value={profile?.tiktok_handle} />
         <FieldRow label="Facebook" value={profile?.facebook_url} />
@@ -531,7 +574,13 @@ function BusinessInfoTab() {
       />
       <form onSubmit={handleSubmit(onSubmit)}>
       <Stack gap={5}>
-        {/* Business details */}
+
+        {/* ── Business Identity ── */}
+        <SectionHeader
+          title="Business Identity"
+          description="Your brand name and a short pitch that tells buyers what you offer."
+        />
+
         <Field.Root invalid={!!errors.business_name} required>
           <Field.Label color="fg">Business Name</Field.Label>
           <Input {...register('business_name')} size="lg" colorPalette="primary" />
@@ -553,7 +602,12 @@ function BusinessInfoTab() {
           </Flex>
         </Field.Root>
 
-        {/* Category */}
+        {/* ── Category ── */}
+        <SectionHeader
+          title="Category"
+          description="Help buyers discover your products in the right section of the marketplace."
+        />
+
         <Field.Root invalid={!!errors.primary_category} required>
           <Field.Label color="fg">Primary Category</Field.Label>
           {categoriesLoading ? (
@@ -589,7 +643,12 @@ function BusinessInfoTab() {
           <Field.ErrorText>{errors.subcategories?.message}</Field.ErrorText>
         </Field.Root>
 
-        {/* Location */}
+        {/* ── Location ── */}
+        <SectionHeader
+          title="Location"
+          description="Where your business is based. This shows on your public profile."
+        />
+
         <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
           <Field.Root invalid={!!errors.state} required flex={1}>
             <Field.Label color="fg">State</Field.Label>
@@ -628,7 +687,12 @@ function BusinessInfoTab() {
           <Input {...register('landmark')} size="lg" colorPalette="primary" />
         </Field.Root>
 
-        {/* Banking */}
+        {/* ── Payment & Banking ── */}
+        <SectionHeader
+          title="Payment & Banking"
+          description="Your bank details for receiving payouts and the payment types you accept from buyers."
+        />
+
         <Field.Root invalid={!!errors.bank_name} required>
           <Field.Label color="fg">Bank Name</Field.Label>
           <Input {...register('bank_name')} size="lg" colorPalette="primary" />
@@ -660,7 +724,12 @@ function BusinessInfoTab() {
           <Field.ErrorText>{errors.payment_models?.message}</Field.ErrorText>
         </Field.Root>
 
-        {/* Refund Policy */}
+        {/* ── Refund Policy ── */}
+        <SectionHeader
+          title="Refund Policy"
+          description="Set clear expectations for buyers about returns and exchanges."
+        />
+
         <Field.Root invalid={!!errors.refund_policy_type} required>
           <Field.Label color="fg">Refund Policy</Field.Label>
           <SingleChipSelect
@@ -773,7 +842,12 @@ function BusinessInfoTab() {
           </>
         )}
 
-        {/* Social handles */}
+        {/* ── Contact & Socials ── */}
+        <SectionHeader
+          title="Contact & Socials"
+          description="At least one contact is required so buyers can reach you. Fill in the ones you use and pick which is primary."
+        />
+
         <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
           <Field.Root invalid={!!errors.instagram_handle} flex={1}>
             <Field.Label color="fg">Instagram <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text></Field.Label>
@@ -800,15 +874,22 @@ function BusinessInfoTab() {
           </Field.Root>
         </Flex>
 
-        <Field.Root invalid={!!errors.primary_contact}>
-          <Field.Label color="fg">Primary Contact Method <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text></Field.Label>
-          <SingleChipSelect
-            options={[...CONTACT_OPTIONS]}
-            value={watch('primary_contact') ?? ''}
-            onChange={(v) => setValue('primary_contact', v as BusinessInfoFormData['primary_contact'], { shouldValidate: true })}
-          />
-          <Field.ErrorText>{errors.primary_contact?.message}</Field.ErrorText>
-        </Field.Root>
+        {availableContactOptions.length > 0 && (
+          <Field.Root invalid={!!errors.primary_contact}>
+            <Field.Label color="fg">
+              Primary Contact <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text>
+            </Field.Label>
+            <Field.HelperText color="fg.subtle" textStyle="xs">
+              Which channel should buyers use to contact you first?
+            </Field.HelperText>
+            <SingleChipSelect
+              options={availableContactOptions.map((o) => ({ value: o.value, label: o.label }))}
+              value={currentPrimaryContact ?? ''}
+              onChange={(v) => setValue('primary_contact', v as BusinessInfoFormData['primary_contact'], { shouldValidate: true })}
+            />
+            <Field.ErrorText>{errors.primary_contact?.message}</Field.ErrorText>
+          </Field.Root>
+        )}
 
         <Flex gap={3}>
           <Button

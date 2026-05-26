@@ -47,14 +47,33 @@ export function FormCard({ icon, title, description, children }: FormCardProps) 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text
-      textStyle="xs"
+      textStyle="md"
       fontWeight="semibold"
-      color="fg.muted"
-      textTransform="uppercase"
-      letterSpacing="wider"
+      color="primary.fg"
       pt={2}
     >
       {children}
     </Text>
+  );
+}
+
+export function SectionHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <Box pt={5}>
+      <Text fontWeight="semibold" textStyle="md" color="primary.fg">
+        {title}
+      </Text>
+      {description && (
+        <Text textStyle="xs" color="fg.muted" mt={1}>
+          {description}
+        </Text>
+      )}
+    </Box>
   );
 }

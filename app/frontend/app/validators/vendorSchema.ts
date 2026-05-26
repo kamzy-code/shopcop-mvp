@@ -32,6 +32,14 @@ export const REFUND_DURATION_OPTIONS = [
   { value: 90, label: '90 days' },
 ] as const;
 
+export const CONTACT_OPTIONS = [
+  { value: 'WHATSAPP',   label: 'WhatsApp'   },
+  { value: 'INSTAGRAM',  label: 'Instagram'  },
+  { value: 'TIKTOK',     label: 'TikTok'     },
+  { value: 'FACEBOOK',   label: 'Facebook'   },
+  { value: 'PHONE_CALL', label: 'Phone Call' },
+] as const;
+
 export const COMMON_REFUND_CONDITIONS = [
   'Item must be unused and in original packaging',
   'Proof of purchase required',
@@ -103,6 +111,21 @@ export const businessInfoSchema = z.object({
   primary_contact: z
     .enum(['WHATSAPP', 'INSTAGRAM', 'TIKTOK', 'FACEBOOK', 'PHONE_CALL'])
     .optional(),
+}).superRefine((data, ctx) => {
+  const hasContact = [
+    data.instagram_handle,
+    data.tiktok_handle,
+    data.facebook_url,
+    data.whatsapp_number,
+  ].some((v) => v && v.trim().length > 0);
+
+  if (!hasContact) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Add at least one contact method so buyers can reach you',
+      path: ['instagram_handle'],
+    });
+  }
 });
 
 const NAME_REGEX = /^[a-zA-Z\s'-]+$/;
