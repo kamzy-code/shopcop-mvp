@@ -33,6 +33,7 @@ export function TierBadge({ tier, size = 'sm' }: TierBadgeProps) {
         color={`${palette}.fg`}
         textTransform="uppercase"
         letterSpacing="wider"
+        whiteSpace="nowrap"
       >
         {label}
       </Text>

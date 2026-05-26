@@ -93,7 +93,7 @@ export default function NinResubmitPage() {
           title="NIN Resubmitted"
           description="Your updated NIN verification has been submitted for review."
           actionLabel="Back to Verifications"
-          onAction={() => router.push('/verifications')}
+          onAction={() => router.back()}
         />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>

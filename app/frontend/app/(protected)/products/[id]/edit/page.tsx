@@ -277,7 +277,7 @@ export default function EditProductPage() {
       <AppShell>
         <Box textAlign="center" py={16}>
           <Text color="fg.muted">Product not found.</Text>
-          <Button mt={4} onClick={() => router.push('/products')}>Back to Products</Button>
+          <Button mt={4} onClick={() => router.back()}>Back to Products</Button>
         </Box>
       </AppShell>
     );
@@ -294,7 +294,7 @@ export default function EditProductPage() {
       />
       <Stack gap={6} maxW="720px" mx="auto">
         <Stack gap={0.5}>
-          <Button variant="ghost" size="sm" color="fg.muted" alignSelf="flex-start" mb={2} onClick={() => router.push('/products')}>
+          <Button variant="ghost" size="sm" color="fg.muted" alignSelf="flex-start" mb={2} onClick={() => router.back()}>
             <LuArrowLeft size={14} />
             Back to Products
           </Button>
@@ -447,7 +447,7 @@ export default function EditProductPage() {
             </Box>
 
             <Flex gap={3} justify="flex-end">
-              <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.push('/products')}>
+              <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.back()}>
                 Cancel
               </Button>
               <Button type="submit" colorPalette="primary" size="lg" loading={isSubmitting || updateMutation.isPending} disabled={isSubmitting}>

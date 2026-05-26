@@ -1,6 +1,7 @@
 'use client';
-import { Box, Flex, Heading, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   LuArrowLeft,
   LuArrowRight,
@@ -15,6 +16,7 @@ import { useProfileCompleteness } from '@/app/_hooks/vendor';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
 export default function OnboardingHubPage() {
+  const router = useRouter();
   const { data: completeness } = useProfileCompleteness();
 
   if (!completeness) {
@@ -52,18 +54,18 @@ export default function OnboardingHubPage() {
   return (
     <Stack w="full" gap={8} py={2}>
       {/* Back button */}
-     {personalDone && <NextLink href="/dashboard" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
-        <Flex
-          align="center"
-          gap={1.5}
+     {personalDone && (
+        <Button
+          variant="ghost"
+          size="sm"
           color="fg.muted"
-          _hover={{ color: 'fg' }}
-          transition="color 0.15s"
+          alignSelf="flex-start"
+          onClick={() => router.back()}
         >
           <LuArrowLeft size={15} />
-          <Text textStyle="sm">Back to Dashboard</Text>
-        </Flex>
-      </NextLink>}
+          Back to Dashboard
+        </Button>
+      )}
 
       {/* Heading */}
       <Stack gap={1}>

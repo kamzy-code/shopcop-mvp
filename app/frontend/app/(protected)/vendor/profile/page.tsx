@@ -995,7 +995,7 @@ function VerificationsTab() {
 
       <VerificationCard icon={LuIdCard} title="NIN Verification" points="+10 points" record={ninRecord} locked={!businessInfoComplete}>
         {!ninRecord && businessInfoComplete && (
-          <Button colorPalette="primary" variant="outline" size="sm" w="full" onClick={() => router.push('/onboarding/nin')}>
+          <Button colorPalette="primary" variant="outline" size="sm" w="full" onClick={() => router.push('/verifications/nin')}>
             Start Verification <LuArrowRight size={14} />
           </Button>
         )}
@@ -1051,7 +1051,10 @@ export default function VendorProfilePage() {
     <AppShell>
       <Stack gap={6} >
         {/* Profile header */}
-        <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+        <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" position="relative">
+          <Box position="absolute" top={4} right={4}>
+            <TierBadge tier={profile?.current_tier ?? 'TIER_0'} size="md" />
+          </Box>
           <Flex
             direction={{ base: 'column', sm: 'row' }}
             align="center"
@@ -1064,17 +1067,14 @@ export default function VendorProfilePage() {
               <Text fontWeight="bold" textStyle="xl" color="primary.fg">{initials}</Text>
             </Flex>
             <Box flex={1} minW={0} textAlign={{ base: 'center', sm: 'left' }}>
-              <Flex align="center" gap={2} flexWrap="wrap" justify={{ base: 'center', sm: 'flex-start' }}>
-                <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">{fullName}</Heading>
-                <TierBadge tier={profile?.current_tier ?? 'TIER_0'} size="md" />
-              </Flex>
+              <Heading as="h1" textStyle="xl" fontWeight="bold" color="fg">{fullName}</Heading>
               <Text textStyle="sm" color="fg.muted" mt={0.5}>{profile?.user?.email}</Text>
-            </Box>
-            <Box textAlign={{ base: 'center', sm: 'right' }}>
-              <Text textStyle="2xl" fontWeight="bold" color="fg">
-                {profile?.profile_completeness ?? 0}%
-              </Text>
-              <Text textStyle="xs" color="fg.muted">Profile complete</Text>
+              <Flex align="center" gap={1.5} mt={2} justify={{ base: 'center', sm: 'flex-start' }}>
+                <Text textStyle="sm" fontWeight="bold" color="fg">
+                  {profile?.profile_completeness ?? 0}%
+                </Text>
+                <Text textStyle="xs" color="fg.muted">profile complete</Text>
+              </Flex>
             </Box>
           </Flex>
         </Box>

@@ -97,7 +97,7 @@ export default function SmedanResubmitPage() {
           title="SMEDAN Resubmitted"
           description="Your updated SMEDAN verification has been submitted for review."
           actionLabel="Back to Verifications"
-          onAction={() => router.push('/verifications')}
+          onAction={() => router.back()}
         />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>

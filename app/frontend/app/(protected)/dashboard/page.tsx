@@ -129,6 +129,11 @@ export default function Dashboard() {
     (completeness?.sections.personal_info.completed ?? false) &&
     (completeness?.sections.business_info.completed ?? false);
 
+  const hasNoActiveVerification = !(verifications ?? []).some(
+    (v) => v.status === 'APPROVED' || v.status === 'PENDING'
+  );
+  const showVerificationBanner = isProfileSetupComplete && hasNoActiveVerification;
+
   const verifMap = Object.fromEntries((verifications ?? []).map((v) => [v.type, v]));
 
   const verificationItems = [
@@ -157,7 +162,7 @@ export default function Dashboard() {
       href:
         verifMap['NIN']?.status === 'REJECTED'
           ? `/verifications/nin/resubmit?id=${verifMap['NIN'].id}`
-          : '/onboarding/nin',
+          : '/verifications/nin',
     },
     {
       label: 'Address Verified',
@@ -240,6 +245,47 @@ export default function Dashboard() {
                 onClick={() => router.push('/onboarding')}
               >
                 Complete Setup <LuArrowRight size={14} />
+              </Button>
+            </Flex>
+          </Box>
+        )}
+
+        {/* Verification nudge banner */}
+        {showVerificationBanner && (
+          <Box
+            p={5}
+            bg="warning.subtle"
+            borderWidth="1.5px"
+            borderColor="warning.200"
+            borderRadius="xl"
+          >
+            <Flex align="center" gap={4} flexWrap="wrap">
+              <Flex
+                w={10}
+                h={10}
+                borderRadius="lg"
+                bg="warning.400"
+                align="center"
+                justify="center"
+                flexShrink={0}
+              >
+                <LuShieldAlert size={18} color="white" />
+              </Flex>
+              <Box flex={1} minW="200px">
+                <Text fontWeight="semibold" color="warning.fg" textStyle="sm">
+                  Verify your identity to start selling
+                </Text>
+                <Text color="warning.fg" textStyle="xs" opacity={0.85} mt={0.5}>
+                  Add NIN, address, and business verification to build buyer trust and unlock higher tiers.
+                </Text>
+              </Box>
+              <Button
+                colorPalette="warning"
+                size="sm"
+                flexShrink={0}
+                onClick={() => router.push('/vendor/profile?tab=verifications')}
+              >
+                Start Verification <LuArrowRight size={14} />
               </Button>
             </Flex>
           </Box>
@@ -405,7 +451,7 @@ export default function Dashboard() {
               Quick Actions
             </Text>
             <Grid templateColumns="1fr 1fr" gap={3}>
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
                 <Flex
                   w={10}
                   h={10}
@@ -421,10 +467,11 @@ export default function Dashboard() {
                 <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
                   Add Product
                 </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
+                <Text color="fg.muted" textStyle="xs" flex={1}>
                   List a new product in your store.
                 </Text>
                 <Button
+                  mt={4}
                   size="sm"
                   colorPalette="primary"
                   variant="outline"
@@ -435,7 +482,7 @@ export default function Dashboard() {
                 </Button>
               </Box>
 
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
                 <Flex
                   w={10}
                   h={10}
@@ -451,10 +498,11 @@ export default function Dashboard() {
                 <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
                   CAC Verification
                 </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
+                <Text color="fg.muted" textStyle="xs" flex={1}>
                   Verify your business registration.
                 </Text>
                 <Button
+                  mt={4}
                   size="sm"
                   colorPalette="primary"
                   variant="outline"
@@ -465,7 +513,7 @@ export default function Dashboard() {
                 </Button>
               </Box>
 
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
                 <Flex
                   w={10}
                   h={10}
@@ -481,10 +529,11 @@ export default function Dashboard() {
                 <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
                   SMEDAN
                 </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
+                <Text color="fg.muted" textStyle="xs" flex={1}>
                   Register as an SME for higher tiers.
                 </Text>
                 <Button
+                  mt={4}
                   size="sm"
                   colorPalette="primary"
                   variant="outline"
@@ -495,7 +544,7 @@ export default function Dashboard() {
                 </Button>
               </Box>
 
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
                 <Flex
                   w={10}
                   h={10}
@@ -511,10 +560,11 @@ export default function Dashboard() {
                 <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
                   Address Proof
                 </Text>
-                <Text color="fg.muted" textStyle="xs" mb={4}>
+                <Text color="fg.muted" textStyle="xs" flex={1}>
                   Confirm your business location.
                 </Text>
                 <Button
+                  mt={4}
                   size="sm"
                   colorPalette="primary"
                   variant="outline"

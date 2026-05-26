@@ -5,12 +5,13 @@ import { Button, Center, Flex, Heading, Link, PinInput, Stack, Text } from '@cha
 import { LuArrowLeft, LuCircleAlert, LuShield } from 'react-icons/lu';
 import { useResendOTP, useVerifyAccountViaOTP, VerifyOTPResponse } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/app/_store/authStore';
 import { ApiResponse } from '@/app/_types';
 
 export default function VerifyOtpPage() {
   const [otp, setOtp] = useState<string[]>([]);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
@@ -62,17 +63,16 @@ export default function VerifyOtpPage() {
             </Text>
           </Stack>
 
-          <Link
+          <Button
+            variant="ghost"
+            size="sm"
             color="primary.fg"
             fontWeight="medium"
-            href="/auth/signup"
-            display="inline-flex"
-            alignItems="center"
-            gap={1}
+            onClick={() => router.back()}
           >
             <LuArrowLeft />
             Back to sign up
-          </Link>
+          </Button>
         </Flex>
       </Center>
     );
@@ -258,18 +258,16 @@ export default function VerifyOtpPage() {
         </Stack>
 
         {/* Back link */}
-        <Link
+        <Button
+          variant="ghost"
+          size="sm"
           mt={8}
           color="fg.muted"
-          textStyle="sm"
-          href="/auth/signup"
-          display="inline-flex"
-          alignItems="center"
-          gap={1}
+          onClick={() => router.back()}
         >
           <LuArrowLeft />
           Back to sign up
-        </Link>
+        </Button>
       </Flex>
     </Center>
   );

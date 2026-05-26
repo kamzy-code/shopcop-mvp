@@ -75,7 +75,7 @@ export default function AddressResubmitPage() {
           title="Address Document Resubmitted"
           description="Your updated address document has been submitted for review."
           actionLabel="Back to Verifications"
-          onAction={() => router.push('/verifications')}
+          onAction={() => router.back()}
         />
       ) : (
         <Stack gap={5}>

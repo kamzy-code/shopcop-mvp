@@ -105,17 +105,16 @@ export default function VerifyLoginPage() {
             </Text>
           </Stack>
 
-          <Link
+          <Button
+            variant="ghost"
+            size="sm"
             color="primary.fg"
             fontWeight="medium"
-            href="/auth/login"
-            display="inline-flex"
-            alignItems="center"
-            gap={1}
+            onClick={() => router.back()}
           >
             <LuArrowLeft />
             Back to login
-          </Link>
+          </Button>
         </Flex>
       </Center>
     );
