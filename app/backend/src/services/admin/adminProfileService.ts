@@ -63,6 +63,13 @@ export class AdminProfileService {
       },
     });
 
+    if (mergedFirstName && mergedLastName) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name: `${mergedFirstName} ${mergedLastName}` },
+      });
+    }
+
     await this.logAdminAction(userId, 'admin_profile_updated', profile.id, {
       first_name: data.first_name ?? null,
       last_name: data.last_name ?? null,

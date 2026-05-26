@@ -8,6 +8,10 @@ vi.mock('@config/prisma.js', () => ({
       findUnique: vi.fn(),
       findFirst: vi.fn(),
     },
+    user: {
+      update: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -52,11 +56,16 @@ describe('VendorProfileService.updatePersonalInfo', () => {
   it('creates or updates the vendor profile for a valid age', async () => {
     mockPrisma.vendorProfile.upsert.mockResolvedValue({ ...baseProfile, ...personalData });
     mockPrisma.vendorProfile.update.mockResolvedValue({});
+    mockPrisma.user.update.mockResolvedValue({});
+    mockPrisma.$transaction.mockResolvedValue([{}, {}]);
 
     const result = await VendorProfileService.updatePersonalInfo('user-1', personalData);
 
     expect(mockPrisma.vendorProfile.upsert).toHaveBeenCalledOnce();
     expect(result.first_name).toBe('Ada');
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { name: 'Ada Lovelace' } })
+    );
   });
 
   it('throws 400 when age is under 16', async () => {
@@ -80,6 +89,8 @@ describe('VendorProfileService.updatePersonalInfo', () => {
   it('allows a vendor who just turned 16', async () => {
     mockPrisma.vendorProfile.upsert.mockResolvedValue({ ...baseProfile, ...personalData });
     mockPrisma.vendorProfile.update.mockResolvedValue({});
+    mockPrisma.user.update.mockResolvedValue({});
+    mockPrisma.$transaction.mockResolvedValue([{}, {}]);
 
     const exactlySixteen = dobYearsAgo(16);
     await expect(

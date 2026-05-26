@@ -45,13 +45,19 @@ export class VendorProfileService {
       include: { verifications: true },
     });
 
-    // Recalculate profile completeness
+    // Recalculate profile completeness and sync display name on the User record
     const completeness = ProfileCompletenessService.calculateCompleteness(vendorProfile);
 
-    await prisma.vendorProfile.update({
-      where: { id: vendorProfile.id },
-      data: { profile_completeness: completeness },
-    });
+    await prisma.$transaction([
+      prisma.vendorProfile.update({
+        where: { id: vendorProfile.id },
+        data: { profile_completeness: completeness },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { name: `${data.first_name} ${data.last_name}` },
+      }),
+    ]);
 
     vendorLogger.info(`Personal info updated for vendor: ${userId}`, {
       userId,
