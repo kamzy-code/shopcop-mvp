@@ -173,6 +173,107 @@ describe('VerificationService.submitAddressVerification', () => {
 });
 
 // ============================================
+// submitSMEDANVerification
+// ============================================
+
+describe('VerificationService.submitSMEDANVerification', () => {
+  const smedanData = {
+    smedan_suin: 'SUIN-12345',
+    smedan_business_type: 'SOLE_PROPRIETOR',
+    smedan_certificate_url: 'https://cdn.example.com/smedan.pdf',
+    smedan_certificate_public_id: 'uploads/smedan',
+  };
+
+  it('creates and returns a SMEDAN verification', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(completePersonalProfile);
+    mockPrisma.vendorVerification.findFirst.mockResolvedValue(null);
+    mockPrisma.vendorVerification.create.mockResolvedValue({
+      ...baseVerification,
+      type: 'SMEDAN',
+      ...smedanData,
+    });
+
+    const result = await VerificationService.submitSMEDANVerification('vendor-1', smedanData as any);
+
+    expect(result.type).toBe('SMEDAN');
+    expect(mockPrisma.vendorVerification.create).toHaveBeenCalledOnce();
+  });
+
+  it('throws 404 when vendor profile is not found', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(null);
+
+    await expect(
+      VerificationService.submitSMEDANVerification('missing', smedanData as any)
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('throws 400 when business info is not complete', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue({
+      ...completePersonalProfile,
+      business_info_complete: false,
+    });
+
+    await expect(
+      VerificationService.submitSMEDANVerification('vendor-1', smedanData as any)
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('throws 409 when SMEDAN verification is already pending', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(completePersonalProfile);
+    mockPrisma.vendorVerification.findFirst.mockResolvedValue({
+      ...baseVerification,
+      type: 'SMEDAN',
+      status: 'PENDING',
+    });
+
+    await expect(
+      VerificationService.submitSMEDANVerification('vendor-1', smedanData as any)
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('throws 409 when SMEDAN verification is already approved', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(completePersonalProfile);
+    mockPrisma.vendorVerification.findFirst.mockResolvedValue({
+      ...baseVerification,
+      type: 'SMEDAN',
+      status: 'APPROVED',
+    });
+
+    await expect(
+      VerificationService.submitSMEDANVerification('vendor-1', smedanData as any)
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+// ============================================
+// getVerificationById
+// ============================================
+
+describe('VerificationService.getVerificationById', () => {
+  it('returns the verification when found', async () => {
+    mockPrisma.vendorVerification.findUnique.mockResolvedValue({
+      ...baseVerification,
+      vendor: { user: { email: 'vendor@test.com' } },
+    });
+
+    const result = await VerificationService.getVerificationById('verif-1');
+
+    expect(result?.id).toBe('verif-1');
+    expect(mockPrisma.vendorVerification.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'verif-1' } })
+    );
+  });
+
+  it('returns null when not found', async () => {
+    mockPrisma.vendorVerification.findUnique.mockResolvedValue(null);
+
+    const result = await VerificationService.getVerificationById('missing');
+
+    expect(result).toBeNull();
+  });
+});
+
+// ============================================
 // resubmitVerification
 // ============================================
 

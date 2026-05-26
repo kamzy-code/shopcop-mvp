@@ -176,3 +176,108 @@ describe('VendorProfileService.getVendorProfile', () => {
     expect(result?.id).toBe('vendor-1');
   });
 });
+
+// ============================================
+// getVendorProfileWithVerifications
+// ============================================
+
+describe('VendorProfileService.getVendorProfileWithVerifications', () => {
+  it('returns null when profile does not exist', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(null);
+
+    const result = await VendorProfileService.getVendorProfileWithVerifications('user-99');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns profile with verifications and calculated completeness', async () => {
+    const profileWithVerifications = {
+      ...baseProfile,
+      personal_info_complete: true,
+      business_info_complete: true,
+      verifications: [],
+      user: { id: 'user-1', email: 'ada@test.com', role: 'VENDOR' },
+    };
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(profileWithVerifications);
+
+    const result = await VendorProfileService.getVendorProfileWithVerifications('user-1');
+
+    expect(result?.id).toBe('vendor-1');
+    expect(result?.verifications).toBeDefined();
+    expect(typeof result?.profile_completeness).toBe('number');
+  });
+});
+
+// ============================================
+// getProfileCompletenessBreakdown
+// ============================================
+
+describe('VendorProfileService.getProfileCompletenessBreakdown', () => {
+  it('returns all-zero breakdown when profile does not exist', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue(null);
+
+    const result = await VendorProfileService.getProfileCompletenessBreakdown('user-99');
+
+    expect(result.total_completeness).toBe(0);
+    expect(result.sections.personal_info.completed).toBe(false);
+    expect(result.sections.personal_info.percentage).toBe(0);
+    expect(result.sections.business_info.completed).toBe(false);
+    expect(result.sections.nin_verification.completed).toBe(false);
+    expect(result.sections.address_verification.completed).toBe(false);
+    expect(result.sections.business_verification.completed).toBe(false);
+  });
+
+  it('returns correct section completion for a fully-onboarded vendor', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue({
+      ...baseProfile,
+      personal_info_complete: true,
+      business_info_complete: true,
+      verifications: [
+        { type: 'NIN', status: 'APPROVED' },
+        { type: 'ADDRESS', status: 'APPROVED' },
+        { type: 'CAC', status: 'APPROVED' },
+      ],
+    });
+
+    const result = await VendorProfileService.getProfileCompletenessBreakdown('user-1');
+
+    expect(result.sections.personal_info.completed).toBe(true);
+    expect(result.sections.personal_info.percentage).toBe(20);
+    expect(result.sections.business_info.completed).toBe(true);
+    expect(result.sections.nin_verification.completed).toBe(true);
+    expect(result.sections.address_verification.completed).toBe(true);
+    expect(result.sections.business_verification.completed).toBe(true);
+  });
+
+  it('counts SMEDAN as business_verification (same as CAC)', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue({
+      ...baseProfile,
+      personal_info_complete: false,
+      business_info_complete: false,
+      verifications: [
+        { type: 'SMEDAN', status: 'APPROVED' },
+      ],
+    });
+
+    const result = await VendorProfileService.getProfileCompletenessBreakdown('user-1');
+
+    expect(result.sections.business_verification.completed).toBe(true);
+    expect(result.sections.nin_verification.completed).toBe(false);
+  });
+
+  it('pending verifications do not count toward completion', async () => {
+    mockPrisma.vendorProfile.findUnique.mockResolvedValue({
+      ...baseProfile,
+      personal_info_complete: true,
+      business_info_complete: false,
+      verifications: [
+        { type: 'NIN', status: 'PENDING' },
+      ],
+    });
+
+    const result = await VendorProfileService.getProfileCompletenessBreakdown('user-1');
+
+    expect(result.sections.nin_verification.completed).toBe(false);
+    expect(result.sections.nin_verification.percentage).toBe(0);
+  });
+});

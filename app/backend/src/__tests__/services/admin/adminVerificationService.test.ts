@@ -213,6 +213,91 @@ describe('AdminVerificationService.rejectVerification', () => {
 });
 
 // ============================================
+// getAllVerifications
+// ============================================
+
+describe('AdminVerificationService.getAllVerifications', () => {
+  it('returns verifications and pagination', async () => {
+    mockPrisma.vendorVerification.findMany.mockResolvedValue([pendingVerification]);
+    mockPrisma.vendorVerification.count.mockResolvedValue(1);
+
+    const result = await AdminVerificationService.getAllVerifications({});
+
+    expect(result.verifications).toHaveLength(1);
+    expect(result.pagination.total).toBe(1);
+    expect(result.pagination.page).toBe(1);
+    expect(result.pagination.totalPages).toBe(1);
+  });
+
+  it('applies status and type filters', async () => {
+    mockPrisma.vendorVerification.findMany.mockResolvedValue([]);
+    mockPrisma.vendorVerification.count.mockResolvedValue(0);
+
+    await AdminVerificationService.getAllVerifications({ status: 'PENDING' as any, type: 'NIN' as any });
+
+    expect(mockPrisma.vendorVerification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'PENDING', type: 'NIN' }),
+      })
+    );
+  });
+
+  it('sorts PENDING verifications oldest-first', async () => {
+    mockPrisma.vendorVerification.findMany.mockResolvedValue([]);
+    mockPrisma.vendorVerification.count.mockResolvedValue(0);
+
+    await AdminVerificationService.getAllVerifications({ status: 'PENDING' as any });
+
+    expect(mockPrisma.vendorVerification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { submitted_at: 'asc' } })
+    );
+  });
+
+  it('propagates errors from prisma', async () => {
+    mockPrisma.vendorVerification.findMany.mockRejectedValue(new Error('DB error'));
+
+    await expect(AdminVerificationService.getAllVerifications({})).rejects.toThrow('DB error');
+  });
+});
+
+// ============================================
+// getVerificationStats
+// ============================================
+
+describe('AdminVerificationService.getVerificationStats', () => {
+  it('returns summary counts, pending_by_type, and recent_approvals', async () => {
+    mockPrisma.vendorVerification.count
+      .mockResolvedValueOnce(5)   // totalPending
+      .mockResolvedValueOnce(20)  // totalApproved
+      .mockResolvedValueOnce(3);  // totalRejected
+
+    mockPrisma.vendorVerification.groupBy.mockResolvedValue([
+      { type: 'NIN', _count: 3 },
+      { type: 'ADDRESS', _count: 2 },
+    ]);
+
+    mockPrisma.vendorVerification.findMany.mockResolvedValue([
+      { ...pendingVerification, status: 'APPROVED', vendor: { user: { email: 'v@test.com' } } },
+    ]);
+
+    const result = await AdminVerificationService.getVerificationStats();
+
+    expect(result.summary.total_pending).toBe(5);
+    expect(result.summary.total_approved).toBe(20);
+    expect(result.summary.total_rejected).toBe(3);
+    expect(result.pending_by_type).toHaveLength(2);
+    expect(result.pending_by_type[0]).toEqual({ type: 'NIN', count: 3 });
+    expect(result.recent_approvals).toHaveLength(1);
+  });
+
+  it('propagates errors from prisma', async () => {
+    mockPrisma.vendorVerification.count.mockRejectedValue(new Error('DB error'));
+
+    await expect(AdminVerificationService.getVerificationStats()).rejects.toThrow('DB error');
+  });
+});
+
+// ============================================
 // getVerificationDetails
 // ============================================
 
