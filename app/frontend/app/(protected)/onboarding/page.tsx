@@ -52,7 +52,7 @@ export default function OnboardingHubPage() {
   return (
     <Stack w="full" gap={8} py={2}>
       {/* Back button */}
-      <NextLink href="/dashboard" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
+     {personalDone && <NextLink href="/dashboard" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
         <Flex
           align="center"
           gap={1.5}
@@ -63,7 +63,7 @@ export default function OnboardingHubPage() {
           <LuArrowLeft size={15} />
           <Text textStyle="sm">Back to Dashboard</Text>
         </Flex>
-      </NextLink>
+      </NextLink>}
 
       {/* Heading */}
       <Stack gap={1}>

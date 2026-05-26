@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Field, Flex, Input, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
@@ -22,6 +22,7 @@ import FullPageSpinner from '@/components/shared/fullPageSpinner';
 export default function BusinessInfoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isNavigating = useRef(false);
   const submitMutation = useSubmitBusinessInfo();
   const { data: completeness } = useProfileCompleteness();
   const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
@@ -71,16 +72,14 @@ export default function BusinessInfoPage() {
       return;
     }
 
-    // Fire invalidation without awaiting — navigating immediately prevents the
-    // route guard useEffect from seeing completed: true before unmount.
-    queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+    isNavigating.current = true;
+    await queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
     router.push('/onboarding');
   };
 
   // Route guard — redirect if business info has already been filled.
-  // This section can only be updated via the Settings page once submitted.
   useEffect(() => {
-    if (completeness?.sections.business_info.completed) {
+    if (!isNavigating.current && completeness?.sections.business_info.completed) {
       router.replace('/onboarding');
     }
   }, [completeness, router]);
