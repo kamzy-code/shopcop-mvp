@@ -78,11 +78,20 @@ function ImageSlot({
     >
       {preview ? (
         <>
-          <img
-            src={preview}
-            alt={`Product image ${index + 1}`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+          {file?.resourceType === 'video' ? (
+            <video
+              src={preview}
+              muted
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <img
+              src={preview}
+              alt={`Product image ${index + 1}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          )}
           {isPrimary && (
             <Box position="absolute" bottom={1} left={1} px={1.5} py={0.5} borderRadius="md" bg="primary.500">
               <Text textStyle="2xs" color="white" fontWeight="bold">

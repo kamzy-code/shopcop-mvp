@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuPackage, LuPencil, LuPlus, LuSearch, LuTrash2 } from 'react-icons/lu';
+import { LuCopy, LuPackage, LuPencil, LuPlus, LuSearch, LuTrash2 } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
-import { useDeleteProduct, useProducts } from '@/app/_hooks/vendor';
+import { useDeleteProduct, useDuplicateProduct, useProducts } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { Product } from '@/app/_types';
 
@@ -25,16 +25,62 @@ function StockBadge({ status }: { status: Product['stock_status'] }) {
   );
 }
 
+function MediaThumbnail({ product }: { product: Product }) {
+  const first = product.media?.[0];
+  if (!first) {
+    return (
+      <Flex h="full" align="center" justify="center" color="fg.subtle">
+        <LuPackage size={40} />
+      </Flex>
+    );
+  }
+  if (first.media_type === 'VIDEO') {
+    return (
+      <Box position="relative" w="full" h="full">
+        <video
+          src={first.media_url}
+          muted
+          playsInline
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+        <Box
+          position="absolute"
+          bottom={1}
+          left={1}
+          px={1.5}
+          py={0.5}
+          borderRadius="md"
+          bg="blackAlpha.600"
+        >
+          <Text textStyle="2xs" color="white">▶ Video</Text>
+        </Box>
+      </Box>
+    );
+  }
+  return (
+    <img
+      src={first.media_url}
+      alt={product.name}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+    />
+  );
+}
+
 function ProductCard({
   product,
   onEdit,
   onDelete,
+  onDuplicate,
+  isDuplicating,
 }: {
   product: Product;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  isDuplicating: boolean;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const router = useRouter();
 
   const handleDelete = () => {
     if (!confirming) {
@@ -56,24 +102,29 @@ function ProductCard({
       transition="box-shadow 0.15s"
       _hover={{ shadow: 'md' }}
     >
-      {/* Product image */}
-      <Box w="full" h="180px" bg="bg.subtle" overflow="hidden">
-        {product.media?.[0] ? (
-          <img
-            src={product.media[0].media_url}
-            alt={product.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-        ) : (
-          <Flex h="full" align="center" justify="center" color="fg.subtle">
-            <LuPackage size={40} />
-          </Flex>
-        )}
+      {/* Thumbnail — clickable to detail page */}
+      <Box
+        w="full"
+        h="180px"
+        bg="bg.subtle"
+        overflow="hidden"
+        cursor="pointer"
+        onClick={() => router.push(`/products/${product.id}`)}
+      >
+        <MediaThumbnail product={product} />
       </Box>
 
       {/* Content */}
       <Box p={4}>
-        <Text fontWeight="semibold" color="fg" textStyle="sm" truncate mb={0.5}>
+        <Text
+          fontWeight="semibold"
+          color="fg"
+          textStyle="sm"
+          truncate
+          mb={0.5}
+          cursor="pointer"
+          onClick={() => router.push(`/products/${product.id}`)}
+        >
           {product.name}
         </Text>
         <Text color="fg.muted" textStyle="xs" truncate mb={3}>
@@ -102,11 +153,22 @@ function ProductCard({
             variant="outline"
             size="xs"
             flex={1}
+            colorPalette="gray"
+            onClick={() => onDuplicate(product.id)}
+            loading={isDuplicating}
+          >
+            <LuCopy size={11} />
+            Copy
+          </Button>
+          <Button
+            variant="outline"
+            size="xs"
+            flex={1}
             colorPalette="red"
             onClick={handleDelete}
           >
             <LuTrash2 size={11} />
-            {confirming ? 'Confirm?' : 'Delete'}
+            {confirming ? 'Sure?' : 'Delete'}
           </Button>
         </Flex>
       </Box>
@@ -147,8 +209,10 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 export default function ProductsPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const { data: products = [], isLoading } = useProducts();
   const deleteMutation = useDeleteProduct();
+  const duplicateMutation = useDuplicateProduct();
 
   const filtered = products.filter(
     (p) =>
@@ -169,6 +233,22 @@ export default function ProductsPage() {
     }
   };
 
+  const handleDuplicate = async (id: string) => {
+    setDuplicatingId(id);
+    try {
+      await duplicateMutation.mutateAsync(id);
+      toaster.create({ title: 'Product duplicated as draft', type: 'success' });
+    } catch (error) {
+      toaster.create({
+        title: 'Failed to duplicate product',
+        description: error instanceof Error ? error.message : 'Try again',
+        type: 'error',
+      });
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   return (
     <AppShell>
       <Stack gap={6}>
@@ -182,11 +262,7 @@ export default function ProductsPage() {
               {products.length} {products.length === 1 ? 'product' : 'products'} in your store
             </Text>
           </Stack>
-          <Button
-            colorPalette="primary"
-            size="md"
-            onClick={() => router.push('/products/new')}
-          >
+          <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
             <LuPlus />
             Add Product
           </Button>
@@ -225,23 +301,11 @@ export default function ProductsPage() {
         {/* Content */}
         {isLoading ? (
           <Grid
-            templateColumns={{
-              base: '1fr',
-              sm: 'repeat(2, 1fr)',
-              lg: 'repeat(3, 1fr)',
-              xl: 'repeat(4, 1fr)',
-            }}
+            templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }}
             gap={4}
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <Box
-                key={i}
-                h="280px"
-                bg="bg.subtle"
-                borderRadius="xl"
-                borderWidth="1px"
-                borderColor="border"
-              />
+              <Box key={i} h="300px" bg="bg.subtle" borderRadius="xl" borderWidth="1px" borderColor="border" />
             ))}
           </Grid>
         ) : filtered.length === 0 && products.length > 0 ? (
@@ -254,12 +318,7 @@ export default function ProductsPage() {
           <EmptyState onAdd={() => router.push('/products/new')} />
         ) : (
           <Grid
-            templateColumns={{
-              base: '1fr',
-              sm: 'repeat(2, 1fr)',
-              lg: 'repeat(3, 1fr)',
-              xl: 'repeat(4, 1fr)',
-            }}
+            templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }}
             gap={4}
           >
             {filtered.map((product) => (
@@ -268,6 +327,8 @@ export default function ProductsPage() {
                 product={product}
                 onEdit={(id) => router.push(`/products/${id}/edit`)}
                 onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
+                isDuplicating={duplicatingId === product.id}
               />
             ))}
           </Grid>

@@ -601,11 +601,25 @@ export default function Dashboard() {
                 >
                   <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
                     {product.media?.[0] ? (
-                      <img
-                        src={product.media[0].media_url}
-                        alt={product.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      product.media[0].media_type === 'VIDEO' ? (
+                        <Box position="relative" w="full" h="full">
+                          <video
+                            src={product.media[0].media_url}
+                            muted
+                            playsInline
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                          <Box position="absolute" bottom={1} left={1} px={1} py={0.5} borderRadius="md" bg="blackAlpha.600">
+                            <Text textStyle="2xs" color="white">▶ Video</Text>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <img
+                          src={product.media[0].media_url}
+                          alt={product.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      )
                     ) : (
                       <Flex h="full" align="center" justify="center" color="fg.subtle">
                         <LuPackage size={32} />

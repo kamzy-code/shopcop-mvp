@@ -225,3 +225,14 @@ export const useUpdateProduct = () => {
     },
   });
 };
+
+export const useDuplicateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (productId: string) =>
+      apiFetch(`/products/${productId}/duplicate`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+};
