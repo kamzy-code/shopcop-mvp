@@ -163,7 +163,7 @@ export class ProductService {
         description: original.description,
         price: original.price,
         category: original.category,
-        stock_status: 'OUT_OF_STOCK',
+        stock_status: original.stock_status,
         stock_quantity: original.stock_quantity,
         media: original.media.length
           ? {
@@ -182,7 +182,10 @@ export class ProductService {
       },
     });
 
-    productLogger.info('Product duplicated', { originalId: original.id, duplicateId: duplicate.id });
+    productLogger.info('Product duplicated', {
+      originalId: original.id,
+      duplicateId: duplicate.id,
+    });
     return duplicate;
   }
 }
