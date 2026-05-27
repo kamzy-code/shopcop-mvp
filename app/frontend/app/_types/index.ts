@@ -118,6 +118,7 @@ export interface Product {
   price: number;
   category: string;
   stock_status: StockStatus;
+  stock_quantity: number | null;
   media: ProductMedia[];
   video_url: string | null;
   created_at: string;

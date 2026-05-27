@@ -219,6 +219,11 @@ export const productSchema = z.object({
   price: z.number().min(100, 'Price must be at least ₦100').max(10_000_000, 'Price must be at most ₦10,000,000'),
   category: z.string().min(1, 'Please select a category'),
   stock_status: z.enum(['IN_STOCK', 'OUT_OF_STOCK']),
+  stock_quantity: z
+    .number()
+    .int('Must be a whole number')
+    .min(0, 'Cannot be negative')
+    .optional(),
 });
 
 export type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;

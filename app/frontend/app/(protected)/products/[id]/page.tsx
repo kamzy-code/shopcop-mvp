@@ -8,7 +8,7 @@ import { useProduct } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 
-function StockBadge({ status }: { status: Product['stock_status'] }) {
+function StockBadge({ status, quantity }: { status: Product['stock_status']; quantity?: number | null }) {
   const isInStock = status === 'IN_STOCK';
   return (
     <Box
@@ -20,6 +20,7 @@ function StockBadge({ status }: { status: Product['stock_status'] }) {
     >
       <Text textStyle="xs" fontWeight="medium" color={isInStock ? 'success.fg' : 'red.600'}>
         {isInStock ? 'In Stock' : 'Out of Stock'}
+        {quantity != null && ` · ${quantity}`}
       </Text>
     </Box>
   );
@@ -271,7 +272,7 @@ export default function ProductDetailPage() {
             <Text textStyle="2xl" fontWeight="bold" color="primary.fg">
               ₦{product.price.toLocaleString()}
             </Text>
-            <StockBadge status={product.stock_status} />
+            <StockBadge status={product.stock_status} quantity={product.stock_quantity} />
           </Flex>
 
           {product.description && (

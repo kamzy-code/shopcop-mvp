@@ -52,6 +52,7 @@ export class ProductService {
         price: data.price,
         category: data.category,
         stock_status: data.stock_status,
+        stock_quantity: data.stock_quantity ?? null,
         media: data.media?.length
           ? {
               create: data.media.map((item, index) => ({
@@ -115,6 +116,7 @@ export class ProductService {
         ...(data.price !== undefined && { price: data.price }),
         ...(data.category !== undefined && { category: data.category }),
         ...(data.stock_status !== undefined && { stock_status: data.stock_status }),
+        ...(data.stock_quantity !== undefined && { stock_quantity: data.stock_quantity }),
         ...(data.media !== undefined && {
           media: {
             deleteMany: {},
@@ -162,6 +164,7 @@ export class ProductService {
         price: original.price,
         category: original.category,
         stock_status: 'OUT_OF_STOCK',
+        stock_quantity: original.stock_quantity,
         media: original.media.length
           ? {
               create: original.media.map((m) => ({

@@ -10,6 +10,7 @@ export interface CreateProductInput {
   price: number;
   category: string;
   stock_status: 'IN_STOCK' | 'OUT_OF_STOCK';
+  stock_quantity?: number;
   media?: MediaItem[];
 }
 
@@ -19,5 +20,6 @@ export interface UpdateProductInput {
   price?: number;
   category?: string;
   stock_status?: 'IN_STOCK' | 'OUT_OF_STOCK';
+  stock_quantity?: number;
   media?: MediaItem[];
 }

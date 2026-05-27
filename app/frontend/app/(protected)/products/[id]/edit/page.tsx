@@ -192,6 +192,7 @@ export default function EditProductPage() {
         price: product.price,
         category: product.category,
         stock_status: product.stock_status,
+        stock_quantity: product.stock_quantity ?? undefined,
       });
 
       const existingMedia = product.media.slice(0, 5).map((img) => ({
@@ -442,6 +443,30 @@ export default function EditProductPage() {
                       );
                     })}
                   </Flex>
+                </Field.Root>
+
+                {/* Stock quantity */}
+                <Field.Root invalid={!!errors.stock_quantity}>
+                  <Field.Label color="fg">
+                    Stock Quantity{' '}
+                    <Text as="span" color="fg.muted" fontWeight="normal">
+                      (optional)
+                    </Text>
+                  </Field.Label>
+                  <Input
+                    {...register('stock_quantity', {
+                      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
+                    })}
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 50"
+                    size="lg"
+                    colorPalette="primary"
+                  />
+                  <Field.HelperText color="fg.subtle" textStyle="xs">
+                    Leave blank if you are not tracking exact stock count.
+                  </Field.HelperText>
+                  <Field.ErrorText>{errors.stock_quantity?.message}</Field.ErrorText>
                 </Field.Root>
               </Stack>
             </Box>

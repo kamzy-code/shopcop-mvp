@@ -15,6 +15,7 @@ export const createProductSchema = z.object({
     .max(10_000_000, 'Price must be at most ₦10,000,000'),
   category: z.string().min(1, 'Please select a category'),
   stock_status: z.enum(['IN_STOCK', 'OUT_OF_STOCK'], 'Stock status must be IN_STOCK or OUT_OF_STOCK'),
+  stock_quantity: z.number().int('Quantity must be a whole number').min(0, 'Quantity cannot be negative').optional(),
   media: z.array(mediaItemSchema).max(8, 'Maximum 8 media items allowed').optional(),
 });
 

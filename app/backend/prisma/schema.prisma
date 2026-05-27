@@ -431,7 +431,8 @@ model Product {
   description  String?     @db.Text
   price        Float
   category     String
-  stock_status StockStatus @default(IN_STOCK)
+  stock_status    StockStatus @default(IN_STOCK)
+  stock_quantity  Int?
 
   // Media
   media     ProductMedia[]
