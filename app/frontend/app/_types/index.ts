@@ -275,6 +275,187 @@ export interface AdminProfile {
 }
 
 // ============================================================
+// TRANSACTION TYPES
+// ============================================================
+
+export type TransactionStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'IN_PROGRESS'
+  | 'READY_FOR_DISPATCH'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'COMPLETED'
+  | 'REFUND_REQUESTED'
+  | 'REFUND_IN_PROGRESS'
+  | 'REFUNDED'
+  | 'RESOLVED'
+  | 'CANCELLED';
+
+export type PaymentStatus = 'UNPAID' | 'PROOF_SUBMITTED' | 'PAID' | 'REFUNDED';
+export type RefundStatus = 'NONE' | 'REQUESTED' | 'IN_PROGRESS' | 'REFUNDED' | 'RESOLVED';
+export type DeliveryMethod = 'PICKUP' | 'DISPATCH' | 'WAYBILL';
+
+export interface TransactionItem {
+  id: string;
+  transaction_id: string;
+  product_id: string | null;
+  item_name: string;
+  item_price: number;
+  quantity: number;
+  subtotal: number;
+  item_image_url: string | null;
+  variant: string | null;
+  stock_deducted: number;
+  stock_restored: number;
+}
+
+export interface TransactionVendor {
+  id: string;
+  business_name: string | null;
+  profile_photo_url: string | null;
+  current_tier: VendorTier;
+  whatsapp_number: string | null;
+}
+
+export interface TransactionStatusHistoryEntry {
+  id: string;
+  transaction_id: string;
+  from_status: TransactionStatus | null;
+  to_status: TransactionStatus;
+  changed_by: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  reference: string;
+  tracking_token: string;
+
+  vendor_id: string;
+  buyer_id: string | null;
+
+  buyer_email: string | null;
+  delivery_method: DeliveryMethod;
+
+  expected_delivery_start: string | null;
+  expected_delivery_end: string | null;
+  actual_delivery_date: string | null;
+
+  subtotal: number;
+  delivery_fee: number | null;
+  discount_amount: number | null;
+  total_amount: number;
+  currency: string;
+
+  payment_status: PaymentStatus;
+  payment_proof_url: string | null;
+  payment_confirmed_at: string | null;
+  payment_notes: string | null;
+
+  status: TransactionStatus;
+  refund_status: RefundStatus;
+
+  confirmed_at: string | null;
+  in_progress_at: string | null;
+  ready_for_dispatch_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  refund_initiated_at: string | null;
+  refunded_at: string | null;
+  resolved_at: string | null;
+
+  auto_close_at: string | null;
+  cancelled_by: string | null;
+  cancellation_reason: string | null;
+
+  refund_reason: string | null;
+  refund_amount: number | null;
+  refund_vendor_notes: string | null;
+
+  vendor_notes: string | null;
+  order_notes: string | null;
+
+  created_at: string;
+  updated_at: string;
+
+  items: TransactionItem[];
+  vendor: TransactionVendor;
+  status_history: TransactionStatusHistoryEntry[];
+  review: unknown | null;
+}
+
+export interface TransactionListItem extends Omit<Transaction, 'vendor' | 'status_history' | 'review'> {
+  vendor: Pick<TransactionVendor, 'id' | 'business_name'>;
+}
+
+export interface CreateTransactionInput {
+  buyer_email?: string;
+  delivery_method: DeliveryMethod;
+  expected_delivery_start?: string;
+  expected_delivery_end?: string;
+  items: {
+    product_id?: string;
+    item_name: string;
+    item_price: number;
+    quantity: number;
+    variant?: string;
+  }[];
+  delivery_fee?: number;
+  discount_amount?: number;
+  order_notes?: string;
+  vendor_notes?: string;
+}
+
+export interface UpdateTransactionInput {
+  buyer_email?: string;
+  delivery_method?: DeliveryMethod;
+  expected_delivery_start?: string;
+  expected_delivery_end?: string;
+  delivery_fee?: number;
+  discount_amount?: number;
+  order_notes?: string;
+  vendor_notes?: string;
+}
+
+export interface TransactionFilters {
+  status?: string;
+  refund_status?: string;
+  payment_status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: 'newest' | 'oldest' | 'amount_asc' | 'amount_desc';
+  from_date?: string;
+  to_date?: string;
+}
+
+export interface TransactionListResponse {
+  data: TransactionListItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface TransactionAnalytics {
+  all_time_completed: number;
+  this_month: {
+    total_orders: number;
+    completed: number;
+    revenue: number;
+    completion_rate: number;
+    refund_rate: number;
+    by_status: Record<string, number>;
+  };
+}
+
+// ============================================================
 
 export interface BusinessCategory {
   id: string;

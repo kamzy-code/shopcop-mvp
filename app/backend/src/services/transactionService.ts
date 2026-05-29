@@ -86,7 +86,10 @@ export class TransactionService {
               id: true,
               name: true,
               price: true,
-              media: { where: { is_primary: true }, select: { media_url: true }, take: 1 },
+              media: {
+                orderBy: { is_primary: 'desc' },
+                select: { media_url: true, media_type: true },
+              },
             },
           });
           if (!product) {
@@ -98,7 +101,11 @@ export class TransactionService {
             item_price: new Decimal(item.item_price),
             quantity: item.quantity,
             subtotal: new Decimal(item.subtotal),
-            item_image_url: product.media[0]?.media_url ?? null,
+            item_image_url:
+              (
+                product.media.find((m) => m.media_type === 'IMAGE') ??
+                product.media.find((m) => m.media_type === 'VIDEO')
+              )?.media_url ?? null,
             variant: item.variant ?? null,
           };
         }

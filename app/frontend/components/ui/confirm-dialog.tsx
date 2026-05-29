@@ -26,6 +26,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   colorPalette?: string;
   isLoading?: boolean;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmDialog({
@@ -39,6 +40,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   colorPalette = 'red',
   isLoading = false,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   return (
     <DialogRoot
@@ -74,6 +76,7 @@ export function ConfirmDialog({
               colorPalette={colorPalette}
               size="md"
               loading={isLoading}
+              disabled={confirmDisabled || isLoading}
               onClick={onConfirm}
             >
               {confirmLabel}
