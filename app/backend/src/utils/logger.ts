@@ -134,6 +134,17 @@ const categoryLogger = createLogger({
   defaultMeta: { service: 'categoryService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to transaction CRUD and fulfillment operations. */
+const transactionLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'transactionService', timeStamp: new Date().toISOString() },
+});
+
 /** Winston logger scoped to product CRUD operations. */
 const productLogger = createLogger({
   level: 'info',
@@ -188,4 +199,4 @@ const productLogger = createLogger({
 // });
 
 export default logger;
-export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger };
+export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, transactionLogger };

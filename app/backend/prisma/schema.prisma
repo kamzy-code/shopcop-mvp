@@ -89,10 +89,37 @@ enum StockStatus {
 enum TransactionStatus {
   PENDING
   CONFIRMED
-  SENT_OUT
-  IN_TRANSIT
+  IN_PROGRESS
+  READY_FOR_DISPATCH
+  SHIPPED
   DELIVERED
+  COMPLETED
+  REFUND_REQUESTED
+  REFUND_IN_PROGRESS
+  REFUNDED
+  RESOLVED
   CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PROOF_SUBMITTED
+  PAID
+  REFUNDED
+}
+
+enum RefundStatus {
+  NONE
+  REQUESTED
+  IN_PROGRESS
+  REFUNDED
+  RESOLVED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DISPATCH
+  WAYBILL
 }
 
 enum ModerationStatus {
@@ -152,6 +179,7 @@ model User {
   buyer_profile  BuyerProfile[]
   admin_profile  AdminProfile[]
   admin_actions  AdminActivityLog[]
+  transactions   Transaction[]
 
   @@index([email])
   @@index([google_id])
@@ -412,8 +440,7 @@ model BuyerProfile {
   updated_at DateTime @updatedAt
 
   // Relations
-  transactions Transaction[]
-  reviews      Review[]
+  reviews Review[]
 
   @@map("buyer_profiles")
 }
@@ -427,12 +454,14 @@ model Product {
   vendor_id String
   vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
 
-  name         String
-  description  String?     @db.Text
-  price        Float
-  category     String
-  stock_status    StockStatus @default(IN_STOCK)
-  stock_quantity  Int?
+  name                String
+  description         String?     @db.Text
+  price               Float
+  category            String
+  stock_status        StockStatus @default(IN_STOCK)
+  stock_quantity      Int?
+  track_inventory     Boolean     @default(false)
+  low_stock_threshold Int?
 
   // Media
   media     ProductMedia[]
@@ -444,7 +473,7 @@ model Product {
   deleted_at DateTime?
 
   // Relations
-  transactions Transaction[]
+  transaction_items TransactionItem[]
 
   @@index([vendor_id])
   @@index([category])
@@ -505,53 +534,111 @@ model VendorPost {
 // ============================================
 
 model Transaction {
-  id String @id @default(cuid())
+  id             String @id @default(cuid())
+  reference      String @unique // SC-2025-00047
+  tracking_token String @unique // 12-char random alphanumeric
 
-  // Vendor
-  vendor_id String
-  vendor    VendorProfile @relation(fields: [vendor_id], references: [id])
-
-  // Buyer
+  // Parties
+  vendor_id   String
+  vendor      VendorProfile @relation(fields: [vendor_id], references: [id])
   buyer_id    String?
-  buyer       BuyerProfile? @relation(fields: [buyer_id], references: [id])
-  buyer_phone String?
+  buyer       User?         @relation(fields: [buyer_id], references: [id])
+  buyer_email String?
 
-  // Product
-  product_id   String?
-  product      Product? @relation(fields: [product_id], references: [id])
-  product_name String
+  // Expected Delivery Window
+  delivery_method         DeliveryMethod
+  expected_delivery_start DateTime?
+  expected_delivery_end   DateTime?
+  actual_delivery_date    DateTime?
 
-  // Transaction Details
-  amount Float
+  // Items
+  items TransactionItem[]
+
+  // Financials
+  subtotal        Decimal  @db.Decimal(10, 2)
+  delivery_fee    Decimal? @db.Decimal(10, 2)
+  discount_amount Decimal? @db.Decimal(10, 2)
+  total_amount    Decimal  @db.Decimal(10, 2)
+  currency        String   @default("NGN")
+
+  // Payment
+  payment_status       PaymentStatus @default(UNPAID)
+  payment_proof_url    String?
+  payment_confirmed_at DateTime?
+  payment_notes        String?
+
+  // Status
   status TransactionStatus @default(PENDING)
 
-  // Verification
-  payment_proof_url   String?
-  verification_status VerificationStatus @default(PENDING)
-  verified_by         String?
-  verified_at         DateTime?
-  rejection_reason    String?
+  // Status Timestamps
+  confirmed_at          DateTime?
+  in_progress_at        DateTime?
+  ready_for_dispatch_at DateTime?
+  shipped_at            DateTime?
+  delivered_at          DateTime?
+  completed_at          DateTime?
+  cancelled_at          DateTime?
+  refund_initiated_at   DateTime?
+  refunded_at           DateTime?
+  resolved_at           DateTime?
 
-  // Tracking
-  tracking_slug      String    @unique
-  estimated_delivery DateTime?
+  // Refund
+  refund_status       RefundStatus @default(NONE)
+  refund_reason       String?
+  refund_amount       Decimal?     @db.Decimal(10, 2)
+  refund_vendor_notes String?
+
+  // Auto-close (48h after DELIVERED)
+  auto_close_at DateTime?
+
+  // Cancellation
+  cancelled_by        String?
+  cancellation_reason String?
+
+  // Notes
+  vendor_notes String?
+  order_notes  String?
 
   // Timestamps
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  delivered_at DateTime?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   status_history TransactionStatusHistory[]
   review         Review?
 
-  @@index([vendor_id])
-  @@index([buyer_id])
-  @@index([status])
-  @@index([verification_status])
-  @@index([tracking_slug])
-  @@index([created_at])
+  @@index([vendor_id, status])
+  @@index([tracking_token])
+  @@index([reference])
+  @@index([buyer_email])
+  @@index([refund_status])
   @@map("transactions")
+}
+
+model TransactionItem {
+  id             String      @id @default(cuid())
+  transaction_id String
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+
+  // Product reference (optional — null for manual items)
+  product_id String?
+  product    Product? @relation(fields: [product_id], references: [id])
+
+  // Snapshot of product at time of transaction
+  item_name      String
+  item_price     Decimal @db.Decimal(10, 2)
+  quantity       Int     @default(1)
+  subtotal       Decimal @db.Decimal(10, 2)
+  item_image_url String?
+  variant        String?
+
+  // Stock audit trail
+  stock_deducted Int @default(0)
+  stock_restored Int @default(0)
+
+  @@index([transaction_id])
+  @@index([product_id])
+  @@map("transaction_items")
 }
 
 model TransactionStatusHistory {
@@ -559,8 +646,10 @@ model TransactionStatusHistory {
   transaction_id String
   transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
 
-  status TransactionStatus
-  notes  String?
+  from_status TransactionStatus?
+  to_status   TransactionStatus
+  changed_by  String
+  note        String?
 
   created_at DateTime @default(now())
 
@@ -675,4 +764,3 @@ model AdminActivityLog {
   @@index([created_at])
   @@map("admin_activity_logs")
 }
-

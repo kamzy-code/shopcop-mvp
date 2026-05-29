@@ -16,6 +16,8 @@ import adminDashboardRouter from '@routes/admin/adminDashboardRoute.js';
 import adminProfileRouter from '@routes/admin/adminProfileRoute.js';
 import categoryRouter from '@routes/businessCategoryRoute.js';
 import productRouter from '@routes/productRoute.js';
+import transactionRouter from '@routes/transactionRoute.js';
+import { TransactionController } from '@controllers/transactionController.js';
 
 dotenv.config();
 
@@ -81,6 +83,8 @@ app.use('/api/v1/admin/dashboard', adminDashboardRouter);
 app.use('/api/v1/admin/profile', adminProfileRouter);
 app.use('/api/v1/categories', categoryRouter);
 app.use('/api/v1/products', productRouter);
+app.use('/api/v1/transactions', transactionRouter);
+app.get('/api/v1/track/:token', TransactionController.getTransactionByToken);
 
 // 404 handler
 app.use((req, res) => {
