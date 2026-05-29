@@ -415,6 +415,13 @@ export interface UpdateTransactionInput {
   delivery_method?: DeliveryMethod;
   expected_delivery_start?: string;
   expected_delivery_end?: string;
+  items?: {
+    product_id?: string;
+    item_name: string;
+    item_price: number;
+    quantity: number;
+    variant?: string;
+  }[];
   delivery_fee?: number;
   discount_amount?: number;
   order_notes?: string;

@@ -27,6 +27,7 @@ export const transactionEditSchema = z.object({
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
   expected_delivery_end: z.string().optional(),
+  items: z.array(itemSchema).min(1, 'Add at least one item'),
   delivery_fee: z.number().min(0).optional(),
   discount_amount: z.number().min(0).optional(),
   order_notes: z.string().optional(),

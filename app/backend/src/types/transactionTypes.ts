@@ -26,6 +26,7 @@ export interface UpdateTransactionInput {
   delivery_method?: DeliveryMethod;
   expected_delivery_start?: Date;
   expected_delivery_end?: Date;
+  items?: TransactionItemInput[];
   delivery_fee?: number;
   discount_amount?: number;
   order_notes?: string;

@@ -267,24 +267,106 @@ export class TransactionService {
       throw new AppError('Transaction can only be edited while PENDING', 400);
     }
 
+    // ── Metadata-only fields (always applied) ─────────────────────────────────
+    const metaUpdate = {
+      ...(data.buyer_email !== undefined && { buyer_email: data.buyer_email || null }),
+      ...(data.delivery_method !== undefined && { delivery_method: data.delivery_method || null }),
+      ...(data.expected_delivery_start !== undefined && {
+        expected_delivery_start: data.expected_delivery_start,
+      }),
+      ...(data.expected_delivery_end !== undefined && {
+        expected_delivery_end: data.expected_delivery_end,
+      }),
+      ...(data.order_notes !== undefined && { order_notes: data.order_notes || null }),
+      ...(data.vendor_notes !== undefined && { vendor_notes: data.vendor_notes || null }),
+      ...(data.delivery_fee !== undefined && { delivery_fee: new Decimal(data.delivery_fee) }),
+      ...(data.discount_amount !== undefined && {
+        discount_amount: new Decimal(data.discount_amount),
+      }),
+    };
+
+    // ── Item replacement (when items are provided) ─────────────────────────────
+    if (data.items && data.items.length > 0) {
+      const vendor = await this.getVendorByUserId(userId);
+
+      const itemSubtotals = data.items.map((item) => ({
+        ...item,
+        subtotal: item.item_price * item.quantity,
+      }));
+      const subtotal = calculateSubtotal(data.items);
+
+      const itemsWithSnapshots = await Promise.all(
+        itemSubtotals.map(async (item) => {
+          if (item.product_id) {
+            const product = await prisma.product.findFirst({
+              where: { id: item.product_id, vendor_id: vendor.id, deleted_at: null },
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                media: {
+                  orderBy: { is_primary: 'desc' as const },
+                  select: { media_url: true, media_type: true },
+                },
+              },
+            });
+            if (!product) {
+              throw new AppError(`Product not found: ${item.product_id}`, 404);
+            }
+            return {
+              product_id: item.product_id,
+              item_name: item.item_name || product.name,
+              item_price: new Decimal(item.item_price),
+              quantity: item.quantity,
+              subtotal: new Decimal(item.subtotal),
+              item_image_url:
+                (
+                  product.media.find((m) => m.media_type === 'IMAGE') ??
+                  product.media.find((m) => m.media_type === 'VIDEO')
+                )?.media_url ?? null,
+              variant: item.variant ?? null,
+            };
+          }
+          return {
+            product_id: null,
+            item_name: item.item_name,
+            item_price: new Decimal(item.item_price),
+            quantity: item.quantity,
+            subtotal: new Decimal(item.subtotal),
+            item_image_url: null,
+            variant: item.variant ?? null,
+          };
+        })
+      );
+
+      const existingDeliveryFee = Number(transaction.delivery_fee ?? 0);
+      const existingDiscount = Number(transaction.discount_amount ?? 0);
+      const deliveryFee = data.delivery_fee ?? existingDeliveryFee;
+      const discount = data.discount_amount ?? existingDiscount;
+      const total = calculateTotal(subtotal, deliveryFee, discount);
+
+      const updated = await prisma.$transaction(async (tx) => {
+        await tx.transactionItem.deleteMany({ where: { transaction_id: transactionId } });
+        return tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            ...metaUpdate,
+            subtotal: new Decimal(subtotal),
+            total_amount: new Decimal(total),
+            items: { create: itemsWithSnapshots },
+          },
+          include: TRANSACTION_INCLUDE,
+        });
+      });
+
+      transactionLogger.info('Transaction updated (with items)', { transactionId });
+      return updated;
+    }
+
+    // ── Metadata-only path ─────────────────────────────────────────────────────
     const updated = await prisma.transaction.update({
       where: { id: transactionId },
-      data: {
-        ...(data.buyer_email !== undefined && { buyer_email: data.buyer_email || null }),
-        ...(data.delivery_method !== undefined && { delivery_method: data.delivery_method || null }),
-        ...(data.expected_delivery_start !== undefined && {
-          expected_delivery_start: data.expected_delivery_start,
-        }),
-        ...(data.expected_delivery_end !== undefined && {
-          expected_delivery_end: data.expected_delivery_end,
-        }),
-        ...(data.order_notes !== undefined && { order_notes: data.order_notes || null }),
-        ...(data.vendor_notes !== undefined && { vendor_notes: data.vendor_notes || null }),
-        ...(data.delivery_fee !== undefined && { delivery_fee: new Decimal(data.delivery_fee) }),
-        ...(data.discount_amount !== undefined && {
-          discount_amount: new Decimal(data.discount_amount),
-        }),
-      },
+      data: metaUpdate,
       include: TRANSACTION_INCLUDE,
     });
 

@@ -48,6 +48,7 @@ export const updateTransactionSchema = z.object({
   delivery_method: z.enum(DeliveryMethod).optional(),
   expected_delivery_start: z.coerce.date().optional(),
   expected_delivery_end: z.coerce.date().optional(),
+  items: z.array(transactionItemSchema).min(1, 'At least 1 item is required').optional(),
   delivery_fee: z.number().min(0).optional(),
   discount_amount: z.number().min(0).optional(),
   order_notes: z.string().max(1000).optional(),
