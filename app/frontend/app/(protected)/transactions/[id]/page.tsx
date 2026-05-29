@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -26,7 +26,12 @@ import {
 } from '@/app/_hooks/transaction';
 import { Transaction, TransactionStatus } from '@/app/_types';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { formatCurrency, formatDate, formatDateTime, isVideoUrl } from '@/app/_lib/transactionHelpers';
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  isVideoUrl,
+} from '@/app/_lib/transactionHelpers';
 
 // ─── Vendor-allowed status transitions ────────────────────────────────────────
 
@@ -293,14 +298,17 @@ function StatusUpdateModal({
 }) {
   const [note, setNote] = useState('');
 
+  useEffect(() => {
+    if (!open) setNote('');
+  }, [open]);
+
   const handleClose = () => {
     setNote('');
     onClose();
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     onConfirm(note || undefined);
-    setNote('');
   };
 
   return (
@@ -502,7 +510,7 @@ export default function TransactionDetailPage() {
           )}
           <Button variant="outline" size="sm" colorPalette="gray" onClick={copyTrackingLink}>
             <LuCopy size={14} />
-            Share
+            Copy Link
           </Button>
         </Flex>
 
@@ -630,7 +638,12 @@ export default function TransactionDetailPage() {
                           src={item.item_image_url}
                           muted
                           playsInline
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
                         />
                       ) : (
                         <img

@@ -3,8 +3,11 @@ export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov|avi|mkv)(\?.*)?$/i.test(url);
 }
 
-export function formatCurrency(n: number) {
-  return `₦${n.toLocaleString('en-NG')}`;
+export function formatCurrency(n: number): string {
+  return `₦${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n)}`;
 }
 
 export function formatDate(iso: string | null | undefined) {
