@@ -24,5 +24,7 @@ transactionRouter.patch('/:id/status', TransactionController.updateStatus);
 transactionRouter.patch('/:id/confirm-payment', TransactionController.confirmPayment);
 /** DELETE /api/v1/transactions/:id — Cancel transaction + restore stock. */
 transactionRouter.delete('/:id', TransactionController.cancelTransaction);
+/** PATCH /api/v1/transactions/:id/refund-status — Update status with refund_amount and refund_vendor_notes. */
+transactionRouter.patch('/:id/refund-status', TransactionController.updateRefundStatus);
 
 export default transactionRouter;

@@ -18,7 +18,7 @@ import categoryRouter from '@routes/businessCategoryRoute.js';
 import productRouter from '@routes/productRoute.js';
 import { ProductController } from '@controllers/productController.js';
 import transactionRouter from '@routes/transactionRoute.js';
-import { TransactionController } from '@controllers/transactionController.js';
+import trackRouter from '@routes/trackRoute.js';
 
 dotenv.config();
 
@@ -86,8 +86,7 @@ app.use('/api/v1/categories', categoryRouter);
 app.get('/api/v1/products/public/:id', ProductController.getPublicProductById);
 app.use('/api/v1/products', productRouter);
 app.use('/api/v1/transactions', transactionRouter);
-app.get('/api/v1/track/:token', TransactionController.getTransactionByToken);
-app.post('/api/v1/track/:token/submit-payment', TransactionController.submitPaymentProof);
+app.use('/api/v1/track', trackRouter);
 
 // 404 handler
 app.use((req, res) => {

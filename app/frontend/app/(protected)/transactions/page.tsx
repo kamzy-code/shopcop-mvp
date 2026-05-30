@@ -184,12 +184,17 @@ export default function TransactionsPage() {
     setPage(1);
   }, []);
 
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
   const filters: TransactionFilters = {
     page,
     limit: 20,
     sort,
     ...(statusFilter && { status: statusFilter }),
     ...(debouncedSearch && { search: debouncedSearch }),
+    ...(fromDate && { from_date: fromDate }),
+    ...(toDate && { to_date: toDate }),
   };
 
   const { data, isLoading } = useTransactions(filters);
@@ -275,6 +280,51 @@ export default function TransactionsPage() {
               <option value="amount_asc">Amount ↑</option>
             </select>
           </Flex>
+        </Flex>
+
+        {/* Date range filter */}
+        <Flex gap={3} flexWrap="wrap" align="center">
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
+            style={{
+              height: '36px',
+              padding: '0 10px',
+              borderRadius: '8px',
+              border: '1px solid var(--chakra-colors-border)',
+              background: 'transparent',
+              fontSize: '13px',
+              color: 'inherit',
+              outline: 'none',
+            }}
+          />
+          <Text textStyle="sm" color="fg.muted">to</Text>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+            style={{
+              height: '36px',
+              padding: '0 10px',
+              borderRadius: '8px',
+              border: '1px solid var(--chakra-colors-border)',
+              background: 'transparent',
+              fontSize: '13px',
+              color: 'inherit',
+              outline: 'none',
+            }}
+          />
+          {(fromDate || toDate) && (
+            <Button
+              size="xs"
+              variant="ghost"
+              colorPalette="gray"
+              onClick={() => { setFromDate(''); setToDate(''); setPage(1); }}
+            >
+              Clear
+            </Button>
+          )}
         </Flex>
 
         {/* Status filter chips */}

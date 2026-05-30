@@ -770,6 +770,239 @@ export class TransactionService {
     return result;
   }
 
+  // ─── Buyer: cancel transaction by token ───────────────────────────────────────
+
+  static async buyerCancelTransaction(token: string, reason: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: token },
+    });
+
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found for buyer cancellation', {
+        action: 'buyerCancelTransaction',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (transaction.status !== TransactionStatus.PENDING) {
+      transactionLogger.warn('Cannot cancel non-PENDING transaction as buyer', {
+        action: 'buyerCancelTransaction',
+        transactionId: transaction.id,
+        status: transaction.status,
+      });
+      throw new AppError('Only pending orders can be cancelled', 400);
+    }
+
+    const cancelled = await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: TransactionStatus.CANCELLED,
+        cancelled_by: 'buyer',
+        cancellation_reason: reason,
+        cancelled_at: new Date(),
+      },
+      include: BUYER_TRANSACTION_INCLUDE,
+    });
+
+    await prisma.transactionStatusHistory.create({
+      data: {
+        transaction_id: transaction.id,
+        from_status: transaction.status,
+        to_status: TransactionStatus.CANCELLED,
+        changed_by: 'buyer',
+        note: reason,
+      },
+    });
+
+    transactionLogger.info('Buyer cancelled transaction', { transactionId: transaction.id, token });
+
+    const { vendor_notes: _omit, ...buyerSafe } = cancelled;
+    void _omit;
+    return buyerSafe;
+  }
+
+  // ─── Buyer: confirm delivery by token ─────────────────────────────────────────
+
+  static async buyerConfirmDelivery(token: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: token },
+    });
+
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found for buyer delivery confirmation', {
+        action: 'buyerConfirmDelivery',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (transaction.status !== TransactionStatus.DELIVERED) {
+      transactionLogger.warn('Cannot confirm delivery — transaction not DELIVERED', {
+        action: 'buyerConfirmDelivery',
+        transactionId: transaction.id,
+        status: transaction.status,
+      });
+      throw new AppError('Only delivered orders can be confirmed as received', 400);
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: TransactionStatus.COMPLETED,
+        completed_at: new Date(),
+      },
+      include: BUYER_TRANSACTION_INCLUDE,
+    });
+
+    await prisma.transactionStatusHistory.create({
+      data: {
+        transaction_id: transaction.id,
+        from_status: transaction.status,
+        to_status: TransactionStatus.COMPLETED,
+        changed_by: 'buyer',
+        note: 'Buyer confirmed delivery',
+      },
+    });
+
+    transactionLogger.info('Buyer confirmed delivery', { transactionId: transaction.id, token });
+
+    const { vendor_notes: _omit, ...buyerSafe } = updated;
+    void _omit;
+    return buyerSafe;
+  }
+
+  // ─── Buyer: request refund by token ──────────────────────────────────────────
+
+  static async buyerRequestRefund(token: string, reason: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: token },
+    });
+
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found for buyer refund request', {
+        action: 'buyerRequestRefund',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (transaction.status !== TransactionStatus.DELIVERED && transaction.status !== TransactionStatus.COMPLETED) {
+      transactionLogger.warn('Cannot request refund — transaction not DELIVERED or COMPLETED', {
+        action: 'buyerRequestRefund',
+        transactionId: transaction.id,
+        status: transaction.status,
+      });
+      throw new AppError('Refund can only be requested for delivered or completed orders', 400);
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: TransactionStatus.REFUND_REQUESTED,
+          refund_status: RefundStatus.REQUESTED,
+          refund_initiated_at: new Date(),
+          refund_reason: reason,
+        },
+        include: BUYER_TRANSACTION_INCLUDE,
+      });
+
+      await tx.transactionStatusHistory.create({
+        data: {
+          transaction_id: transaction.id,
+          from_status: transaction.status,
+          to_status: TransactionStatus.REFUND_REQUESTED,
+          changed_by: 'buyer',
+          note: reason,
+        },
+      });
+
+      return result;
+    });
+
+    transactionLogger.info('Buyer requested refund', { transactionId: transaction.id, token });
+
+    const { vendor_notes: _omit, ...buyerSafe } = updated;
+    void _omit;
+    return buyerSafe;
+  }
+
+  // ─── Update status with refund data ───────────────────────────────────────────
+
+  static async updateTransactionStatusWithRefund(
+    transactionId: string,
+    userId: string,
+    newStatus: TransactionStatus,
+    note?: string,
+    refundAmount?: number,
+    refundVendorNotes?: string,
+  ) {
+    const transaction = await this.getTransaction(transactionId, userId);
+
+    if (!isTransitionValid(transaction.status, newStatus)) {
+      transactionLogger.warn('Invalid transaction status transition', {
+        action: 'updateTransactionStatusWithRefund',
+        userId,
+        transactionId,
+        fromStatus: transaction.status,
+        toStatus: newStatus,
+      });
+      throw new AppError(`Cannot transition from ${transaction.status} to ${newStatus}`, 400);
+    }
+
+    const timestampField = getStatusTimestampField(newStatus);
+    const timestampData = timestampField ? { [timestampField]: new Date() } : {};
+
+    const autoCloseData =
+      newStatus === TransactionStatus.DELIVERED
+        ? { auto_close_at: new Date(Date.now() + 48 * 60 * 60 * 1000) }
+        : {};
+
+    const refundStatusSync = REFUND_STATUS_SYNC[newStatus];
+    const refundStatusData =
+      refundStatusSync !== undefined ? { refund_status: refundStatusSync } : {};
+
+    const refundData = {
+      ...(refundAmount !== undefined && { refund_amount: new Decimal(refundAmount) }),
+      ...(refundVendorNotes !== undefined && { refund_vendor_notes: refundVendorNotes }),
+    };
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          status: newStatus,
+          ...timestampData,
+          ...autoCloseData,
+          ...refundStatusData,
+          ...refundData,
+        },
+        include: TRANSACTION_INCLUDE,
+      });
+
+      await tx.transactionStatusHistory.create({
+        data: {
+          transaction_id: transactionId,
+          from_status: transaction.status,
+          to_status: newStatus,
+          changed_by: userId,
+          note: note || null,
+        },
+      });
+
+      return updated;
+    });
+
+    transactionLogger.info('Transaction status updated with refund info', {
+      transactionId,
+      from: transaction.status,
+      to: newStatus,
+    });
+
+    return result;
+  }
+
   // ─── Analytics ────────────────────────────────────────────────────────────────
 
   static async getAnalyticsSummary(userId: string) {

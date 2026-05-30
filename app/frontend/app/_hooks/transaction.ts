@@ -157,3 +157,72 @@ export const useTransactionAnalytics = () =>
     },
     staleTime: 5 * 60 * 1000,
   });
+
+export const useBuyerCancelTransaction = (token: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { reason: string }) =>
+      apiFetch(`/track/${token}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+    },
+  });
+};
+
+export const useBuyerConfirmDelivery = (token: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch(`/track/${token}/confirm-delivery`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+    },
+  });
+};
+
+export const useBuyerRequestRefund = (token: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { reason: string }) =>
+      apiFetch(`/track/${token}/request-refund`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+    },
+  });
+};
+
+export const useUpdateTransactionStatusWithRefund = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      note,
+      refund_amount,
+      refund_vendor_notes,
+    }: {
+      id: string;
+      status: TransactionStatus;
+      note?: string;
+      refund_amount?: number;
+      refund_vendor_notes?: string;
+    }) =>
+      apiFetch<Transaction>(`/transactions/${id}/refund-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, note, refund_amount, refund_vendor_notes }),
+      }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+    },
+  });
+};

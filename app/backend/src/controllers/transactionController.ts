@@ -8,6 +8,10 @@ import {
   cancelTransactionSchema,
   transactionFiltersSchema,
   submitPaymentProofSchema,
+  buyerCancelTransactionSchema,
+  confirmDeliverySchema,
+  updateRefundStatusSchema,
+  buyerRefundRequestSchema,
 } from '@validators/transactionValidator.js';
 import { transactionLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
@@ -453,6 +457,193 @@ export class TransactionController {
       });
     } catch (error) {
       transactionLogger.error('Failed to cancel transaction', {
+        action,
+        userId,
+        transactionId: id,
+        error,
+      });
+      next(error);
+    }
+  }
+
+  // ─── Buyer: cancel by token ───────────────────────────────────────────────────
+
+  /**
+   * Cancel a PENDING transaction via tracking token (buyer-side).
+   *
+   * @route  POST /api/v1/track/:token/cancel
+   * @access Public (token-based)
+   * @param req.params.token - Tracking token from the shareable link
+   * @param req.body.reason - Cancellation reason (min 10 characters)
+   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @throws {AppError} 400 — Invalid input or not PENDING
+   * @throws {AppError} 404 — Transaction not found
+   */
+  static async buyerCancelTransaction(req: Request, res: Response, next: NextFunction) {
+    const action = 'buyerCancelTransaction';
+    const token = req.params.token as string;
+
+    const parsed = buyerCancelTransactionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      transactionLogger.warn('Invalid buyer cancel input', {
+        action,
+        token,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
+
+    try {
+      const transaction = await TransactionService.buyerCancelTransaction(
+        token,
+        parsed.data.reason
+      );
+      transactionLogger.info('Buyer cancelled transaction', { action, token });
+      res.status(200).json({
+        success: true,
+        data: transaction,
+        message: 'Order cancelled successfully',
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to cancel transaction as buyer', { action, token, error });
+      next(error);
+    }
+  }
+
+  // ─── Buyer: confirm delivery by token ─────────────────────────────────────────
+
+  /**
+   * Confirm delivery for a DELIVERED transaction via tracking token (buyer-side).
+   *
+   * @route  POST /api/v1/track/:token/confirm-delivery
+   * @access Public (token-based)
+   * @param req.params.token - Tracking token from the shareable link
+   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @throws {AppError} 400 — Invalid input or not DELIVERED
+   * @throws {AppError} 404 — Transaction not found
+   */
+  static async buyerConfirmDelivery(req: Request, res: Response, next: NextFunction) {
+    const action = 'buyerConfirmDelivery';
+    const token = req.params.token as string;
+
+    const parsed = confirmDeliverySchema.safeParse(req.body);
+    if (!parsed.success) {
+      transactionLogger.warn('Invalid confirm delivery input', {
+        action,
+        token,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
+
+    try {
+      const transaction = await TransactionService.buyerConfirmDelivery(token);
+      transactionLogger.info('Buyer confirmed delivery', { action, token });
+      res.status(200).json({
+        success: true,
+        data: transaction,
+        message: 'Delivery confirmed. Order completed!',
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to confirm delivery as buyer', { action, token, error });
+      next(error);
+    }
+  }
+
+  // ─── Buyer: request refund by token ───────────────────────────────────────────
+
+  /**
+   * Request a refund for a DELIVERED or COMPLETED transaction via tracking token.
+   *
+   * @route  POST /api/v1/track/:token/request-refund
+   * @access Public (token-based)
+   * @param req.params.token - Tracking token
+   * @param req.body.reason - Refund reason (min 10 characters)
+   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   */
+  static async buyerRequestRefund(req: Request, res: Response, next: NextFunction) {
+    const action = 'buyerRequestRefund';
+    const token = req.params.token as string;
+
+    const parsed = buyerRefundRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      transactionLogger.warn('Invalid buyer refund request input', {
+        action,
+        token,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
+
+    try {
+      const transaction = await TransactionService.buyerRequestRefund(
+        token,
+        parsed.data.reason
+      );
+      transactionLogger.info('Buyer requested refund', { action, token });
+      res.status(200).json({
+        success: true,
+        data: transaction,
+        message: 'Refund requested successfully',
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to request refund as buyer', { action, token, error });
+      next(error);
+    }
+  }
+
+  // ─── Status update (with refund fields) ───────────────────────────────────────
+
+  /**
+   * Advance status with optional refund_amount and refund_vendor_notes.
+   *
+   * @route  PATCH /api/v1/transactions/:id/refund-status
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.body.status - Target status
+   * @param req.body.note - Optional note
+   * @param req.body.refund_amount - Optional refund amount
+   * @param req.body.refund_vendor_notes - Optional internal notes about refund
+   * @returns 200 `{ success, data: Transaction, message }`
+   */
+  static async updateRefundStatus(req: Request, res: Response, next: NextFunction) {
+    const action = 'updateRefundStatus';
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const parsed = updateRefundStatusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      transactionLogger.warn('Invalid refund status update input', {
+        action,
+        userId,
+        transactionId: id,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
+
+    try {
+      const transaction = await TransactionService.updateTransactionStatusWithRefund(
+        id,
+        userId,
+        parsed.data.status as TransactionStatus,
+        parsed.data.note,
+        parsed.data.refund_amount,
+        parsed.data.refund_vendor_notes,
+      );
+      transactionLogger.info('Refund status updated', {
+        action,
+        userId,
+        transactionId: id,
+        status: parsed.data.status,
+      });
+      res.status(200).json({
+        success: true,
+        data: transaction,
+        message: `Status updated to ${parsed.data.status}`,
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to update refund status', {
         action,
         userId,
         transactionId: id,

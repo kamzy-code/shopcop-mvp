@@ -75,6 +75,33 @@ export const cancelTransactionSchema = z.object({
   reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500),
 });
 
+export const buyerCancelTransactionSchema = z.object({
+  reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500),
+});
+
+export const confirmDeliverySchema = z.object({});
+
+export const buyerRefundRequestSchema = z.object({
+  reason: z.string().min(10, 'Refund reason must be at least 10 characters').max(1000),
+});
+
+export const updateRefundStatusSchema = z.object({
+  status: z.enum([
+    'IN_PROGRESS',
+    'READY_FOR_DISPATCH',
+    'SHIPPED',
+    'DELIVERED',
+    'COMPLETED',
+    'REFUND_REQUESTED',
+    'REFUND_IN_PROGRESS',
+    'REFUNDED',
+    'RESOLVED',
+  ]),
+  note: z.string().max(500).optional(),
+  refund_amount: z.number().min(0).optional(),
+  refund_vendor_notes: z.string().max(1000).optional(),
+});
+
 export const transactionFiltersSchema = z.object({
   status: z.string().optional(),
   refund_status: z.string().optional(),

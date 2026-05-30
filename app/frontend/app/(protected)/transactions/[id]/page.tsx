@@ -21,6 +21,7 @@ import { AlertModal } from '@/components/ui/alert-modal';
 import {
   useTransaction,
   useUpdateTransactionStatus,
+  useUpdateTransactionStatusWithRefund,
   useConfirmPayment,
   useCancelTransaction,
 } from '@/app/_hooks/transaction';
@@ -63,7 +64,14 @@ const NEXT_STATUS_ACTION: Partial<
   IN_PROGRESS: { label: 'Mark Ready for Dispatch', next: 'READY_FOR_DISPATCH' },
   READY_FOR_DISPATCH: { label: 'Mark Shipped', next: 'SHIPPED' },
   SHIPPED: { label: 'Mark Delivered', next: 'DELIVERED' },
-  DELIVERED: { label: 'Mark Completed', next: 'COMPLETED' },
+  DELIVERED: {
+    label: 'Mark Completed',
+    next: 'COMPLETED',
+    secondaryLabel: 'Initiate Refund',
+    secondaryNext: 'REFUND_REQUESTED',
+  },
+  REFUNDED: { label: 'Mark Completed', next: 'COMPLETED' },
+  RESOLVED: { label: 'Mark Completed', next: 'COMPLETED' },
   REFUND_REQUESTED: {
     label: 'Begin Refund Process',
     next: 'REFUND_IN_PROGRESS',
@@ -164,6 +172,16 @@ function StatusTimeline({ tx }: { tx: Transaction }) {
         >
           {STATUS_LABELS[tx.status] ?? tx.status}
         </Text>
+        {tx.cancelled_by === 'buyer' && (
+          <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
+            Cancelled by buyer
+          </Text>
+        )}
+        {tx.cancelled_by && tx.cancelled_by !== 'buyer' && (
+          <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
+            Cancelled by vendor
+          </Text>
+        )}
         {tx.cancellation_reason && (
           <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
             Reason: {tx.cancellation_reason}
@@ -316,6 +334,11 @@ function StatusUpdateModal({
   isLoading,
   note,
   onNoteChange,
+  refundAmount,
+  onRefundAmountChange,
+  refundVendorNotes,
+  onRefundVendorNotesChange,
+  showRefundFields,
 }: {
   open: boolean;
   onClose: () => void;
@@ -324,6 +347,11 @@ function StatusUpdateModal({
   isLoading: boolean;
   note: string;
   onNoteChange: (v: string) => void;
+  refundAmount?: string;
+  onRefundAmountChange?: (v: string) => void;
+  refundVendorNotes?: string;
+  onRefundVendorNotesChange?: (v: string) => void;
+  showRefundFields?: boolean;
 }) {
   return (
     <ConfirmDialog
@@ -347,6 +375,41 @@ function StatusUpdateModal({
           value={note}
           onChange={(e) => onNoteChange(e.target.value)}
         />
+        {showRefundFields && (
+          <>
+            <Text textStyle="xs" color="fg.muted" mb={1} mt={3}>
+              Refund Amount (₦)
+            </Text>
+            <input
+              type="number"
+              min={0}
+              placeholder="Enter refund amount..."
+              value={refundAmount ?? ''}
+              onChange={(e) => onRefundAmountChange?.(e.target.value)}
+              style={{
+                width: '100%',
+                height: '36px',
+                padding: '0 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--chakra-colors-border)',
+                background: 'transparent',
+                fontSize: '14px',
+                color: 'inherit',
+                outline: 'none',
+              }}
+            />
+            <Text textStyle="xs" color="fg.muted" mb={1} mt={3}>
+              Refund Notes (internal)
+            </Text>
+            <Textarea
+              size="sm"
+              rows={2}
+              placeholder="Internal notes about the refund..."
+              value={refundVendorNotes ?? ''}
+              onChange={(e) => onRefundVendorNotesChange?.(e.target.value)}
+            />
+          </>
+        )}
       </Box>
     </ConfirmDialog>
   );
@@ -367,13 +430,18 @@ export default function TransactionDetailPage() {
     next: TransactionStatus;
   } | null>(null);
   const [statusUpdateNote, setStatusUpdateNote] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundVendorNotes, setRefundVendorNotes] = useState('');
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
   const [selectedItem, setSelectedItem] = useState<TransactionItem | null>(null);
 
   const { data: tx, isLoading, error } = useTransaction(id);
   const statusMutation = useUpdateTransactionStatus();
+  const refundStatusMutation = useUpdateTransactionStatusWithRefund();
   const paymentMutation = useConfirmPayment();
   const cancelMutation = useCancelTransaction();
+
+  const isRefundAction = pendingStatusAction?.next.startsWith('REFUND') || pendingStatusAction?.next === 'RESOLVED';
 
   // ─── Copy tracking link ─────────────────────────────────────────────────────
 
@@ -388,9 +456,21 @@ export default function TransactionDetailPage() {
 
   const handleStatusUpdate = async (next: TransactionStatus, note?: string) => {
     try {
-      await statusMutation.mutateAsync({ id, status: next, note });
+      if (isRefundAction) {
+        await refundStatusMutation.mutateAsync({
+          id,
+          status: next,
+          note,
+          refund_amount: refundAmount ? Number(refundAmount) : undefined,
+          refund_vendor_notes: refundVendorNotes || undefined,
+        });
+      } else {
+        await statusMutation.mutateAsync({ id, status: next, note });
+      }
       setPendingStatusAction(null);
       setStatusUpdateNote('');
+      setRefundAmount('');
+      setRefundVendorNotes('');
       toaster.create({ title: 'Status updated', type: 'success' });
     } catch (err) {
       setErrorModal({
@@ -478,14 +558,19 @@ export default function TransactionDetailPage() {
       />
       <StatusUpdateModal
         open={!!pendingStatusAction}
-        onClose={() => { setPendingStatusAction(null); setStatusUpdateNote(''); }}
+        onClose={() => { setPendingStatusAction(null); setStatusUpdateNote(''); setRefundAmount(''); setRefundVendorNotes(''); }}
         onConfirm={() =>
           pendingStatusAction && handleStatusUpdate(pendingStatusAction.next, statusUpdateNote || undefined)
         }
         actionLabel={pendingStatusAction?.label ?? ''}
-        isLoading={statusMutation.isPending}
+        isLoading={statusMutation.isPending || refundStatusMutation.isPending}
         note={statusUpdateNote}
         onNoteChange={setStatusUpdateNote}
+        refundAmount={refundAmount}
+        onRefundAmountChange={setRefundAmount}
+        refundVendorNotes={refundVendorNotes}
+        onRefundVendorNotesChange={setRefundVendorNotes}
+        showRefundFields={isRefundAction}
       />
       <ItemDetailModal
         open={!!selectedItem}

@@ -24,6 +24,8 @@ import {
   useVendorProfile,
 } from '@/app/_hooks/vendor';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
+import { useTransactionAnalytics } from '@/app/_hooks/transaction';
+import { formatCurrency } from '@/app/_lib/transactionHelpers';
 
 function StatCard({
   icon: Icon,
@@ -116,6 +118,7 @@ export default function Dashboard() {
   const { data: completeness } = useProfileCompleteness();
   const { data: verifications } = useGetVerifications();
   const { data: profile } = useVendorProfile();
+  const { data: analytics } = useTransactionAnalytics();
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stock_status === 'IN_STOCK').length ?? 0;
@@ -313,11 +316,14 @@ export default function Dashboard() {
             />
             <StatCard
               icon={LuShoppingCart}
-              label="Orders"
-              value="—"
-              sub="Tracking soon"
+              label="Orders This Month"
+              value={analytics?.this_month.total_orders ?? '—'}
+              sub={
+                analytics
+                  ? `${formatCurrency(analytics.this_month.revenue)} revenue`
+                  : 'Loading...'
+              }
               color="warning"
-              comingSoon
             />
             <StatCard
               icon={LuTrendingUp}

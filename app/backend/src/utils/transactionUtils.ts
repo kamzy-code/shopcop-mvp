@@ -81,7 +81,7 @@ const VALID_TRANSITIONS: Record<string, TransactionStatus[]> = {
   REFUND_IN_PROGRESS: [TransactionStatus.REFUNDED, TransactionStatus.RESOLVED],
   REFUNDED: [TransactionStatus.COMPLETED],
   RESOLVED: [TransactionStatus.COMPLETED],
-  COMPLETED: [],
+  COMPLETED: [TransactionStatus.REFUND_REQUESTED],
   CANCELLED: [],
 };
 
