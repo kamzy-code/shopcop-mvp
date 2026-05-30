@@ -705,6 +705,16 @@ export default function TrackingPage() {
                       : 'Waybill'}
                 </Text>
               </Flex>
+              {tx.delivery_fee != null && tx.delivery_fee > 0 && (
+                <Flex justify="space-between">
+                  <Text textStyle="sm" color="fg.muted">
+                    Delivery fee
+                  </Text>
+                  <Text textStyle="sm" color="fg">
+                    {formatCurrency(tx.delivery_fee)}
+                  </Text>
+                </Flex>
+              )}
             </Stack>
           </Box>
 
