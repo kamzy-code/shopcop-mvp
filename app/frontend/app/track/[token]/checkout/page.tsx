@@ -10,6 +10,7 @@ import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { formatCurrency, isVideoUrl } from '@/app/_lib/transactionHelpers';
 import { Transaction, TransactionVendor } from '@/app/_types';
 import { toaster } from '@/components/ui/toaster';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const uploadMutation = useUploadPublicMedia();
   const submitMutation = useSubmitPaymentProof(token);
@@ -320,11 +322,22 @@ export default function CheckoutPage() {
           </Box>
 
           {/* Submit */}
+          <ConfirmDialog
+            open={showConfirm}
+            onClose={() => setShowConfirm(false)}
+            onConfirm={() => { setShowConfirm(false); handleSubmit(); }}
+            title="Confirm Payment"
+            description={`Please confirm that you have sent ${formatCurrency(tx.total_amount)} to ${vendor?.account_name ?? 'the seller'}. Once submitted, the seller will verify your payment before processing your order.`}
+            confirmLabel="Yes, I've Sent It"
+            colorPalette="primary"
+            isLoading={isSubmitting}
+          />
+
           <Button
             colorPalette="primary"
             size="lg"
             w="full"
-            onClick={handleSubmit}
+            onClick={() => setShowConfirm(true)}
             loading={isSubmitting}
             loadingText={uploadMutation.isPending ? 'Uploading receipt…' : 'Submitting…'}
           >
