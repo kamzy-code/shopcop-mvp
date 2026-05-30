@@ -19,16 +19,19 @@ export class CloudinaryService {
   static async generateUplaodSignature(folder: string) {
     const timestamp = Math.round(Date.now() / 1000);
 
+    // upload_preset is intentionally excluded from the signed params.
+    // If the preset is configured for 'public' delivery in the Cloudinary dashboard
+    // it would silently override type: 'authenticated', causing signed-URL access to 401.
+    // Signed uploads without a preset still respect all explicit params (folder, type).
     const params = {
       timestamp,
-      upload_preset: env.CLOUDINARY_UPLOAD_PRESET,
       folder,
       type: 'authenticated',
     };
 
     const signature = cloudinary.utils.api_sign_request(params, env.CLOUDINARY_API_SECRET!);
 
-    fileUplaodLogger.info('Uplaod signuature generated', {
+    fileUplaodLogger.info('Upload signature generated', {
       action: 'generateUplaodSignature',
       timestamp,
       folder,
@@ -37,6 +40,7 @@ export class CloudinaryService {
       ...params,
       signature,
       apiKey: env.CLOUDINARY_API_KEY,
+      // upload_preset intentionally absent
     };
   }
 

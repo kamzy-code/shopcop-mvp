@@ -52,8 +52,18 @@ export const useSubmitBusinessInfo = () =>
       }),
   });
 
-export const useSubmitNINVerification = () =>
-  useMutation({
+const useInvalidateAfterVerification = () => {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['vendor-profile'] });
+    queryClient.invalidateQueries({ queryKey: ['verifications'] });
+    queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+  };
+};
+
+export const useSubmitNINVerification = () => {
+  const invalidate = useInvalidateAfterVerification();
+  return useMutation({
     mutationFn: (data: {
       nin_number: string;
       nin_full_name: string;
@@ -66,13 +76,16 @@ export const useSubmitNINVerification = () =>
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    onSuccess: invalidate,
   });
+};
 
 /** @deprecated Use useSubmitNINVerification */
 export const useVerifyNin = useSubmitNINVerification;
 
-export const useSubmitCACVerification = () =>
-  useMutation({
+export const useSubmitCACVerification = () => {
+  const invalidate = useInvalidateAfterVerification();
+  return useMutation({
     mutationFn: (data: {
       cac_rc_number: string;
       cac_company_type: 'LIMITED_LIABILITY' | 'BUSINESS_NAME' | 'INCORPORATED_TRUSTEES';
@@ -83,10 +96,13 @@ export const useSubmitCACVerification = () =>
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    onSuccess: invalidate,
   });
+};
 
-export const useSubmitSMEDANVerification = () =>
-  useMutation({
+export const useSubmitSMEDANVerification = () => {
+  const invalidate = useInvalidateAfterVerification();
+  return useMutation({
     mutationFn: (data: {
       smedan_suin: string;
       smedan_business_type: 'SOLE_PROPRIETOR' | 'PARTNERSHIP' | 'COOPERATIVE';
@@ -97,10 +113,13 @@ export const useSubmitSMEDANVerification = () =>
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    onSuccess: invalidate,
   });
+};
 
-export const useSubmitAddressVerification = () =>
-  useMutation({
+export const useSubmitAddressVerification = () => {
+  const invalidate = useInvalidateAfterVerification();
+  return useMutation({
     mutationFn: (data: {
       address_document_url: string;
       address_document_public_id: string;
@@ -109,7 +128,9 @@ export const useSubmitAddressVerification = () =>
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    onSuccess: invalidate,
   });
+};
 
 export const useProfileCompleteness = () =>
   useQuery<ProfileCompletenessBreakdown>({

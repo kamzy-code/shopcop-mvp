@@ -56,6 +56,9 @@ export function VerificationSuccessCard({
       borderRadius="2xl"
       p={{ base: 6, sm: 8 }}
       shadow="lg"
+      maxW="680px"
+      mx="auto"
+      w="full"
     >
       {content}
     </Box>

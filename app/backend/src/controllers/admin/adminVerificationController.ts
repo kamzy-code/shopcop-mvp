@@ -11,6 +11,20 @@ import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
 import { VerificationStatus, VerificationType } from '../../generated/prisma/client.js';
 
+/**
+ * Parses the Cloudinary resource type out of a stored URL.
+ * Cloudinary URLs have the format:
+ *   https://res.cloudinary.com/{cloud}/{resource_type}/{delivery_type}/...
+ * Returns 'image', 'raw', or 'video'. Falls back to 'image'.
+ */
+function getResourceTypeFromCloudinaryUrl(url: string | null | undefined): string {
+  if (!url) return 'image';
+  const match = url.match(/res\.cloudinary\.com\/[^/]+\/([^/]+)\//);
+  const type = match?.[1];
+  if (type === 'raw' || type === 'video') return type;
+  return 'image';
+}
+
 export class AdminVerificationController {
   /**
    * GET /api/v1/admin/verifications
@@ -262,11 +276,17 @@ export class AdminVerificationController {
           throw new AppError('No document found for this verification', 404);
         }
 
-        const frontUrl = CloudinaryService.getSignedUrl(verification.govt_id_front_public_id);
-        let backUrl: string | null = null;
+        const frontResourceType = getResourceTypeFromCloudinaryUrl(verification.govt_id_front_url);
+        const frontUrl = CloudinaryService.getSignedUrl(verification.govt_id_front_public_id, {
+          resourceType: frontResourceType,
+        });
 
+        let backUrl: string | null = null;
         if (verification.govt_id_back_public_id) {
-          backUrl = CloudinaryService.getSignedUrl(verification.govt_id_back_public_id);
+          const backResourceType = getResourceTypeFromCloudinaryUrl(verification.govt_id_back_url);
+          backUrl = CloudinaryService.getSignedUrl(verification.govt_id_back_public_id, {
+            resourceType: backResourceType,
+          });
         }
 
         res.status(200).json({
@@ -278,18 +298,23 @@ export class AdminVerificationController {
           action,
           verificationId: id,
           hasBackImage: !!backUrl,
+          frontResourceType,
         });
         return;
       }
 
       let publicId: string | null = null;
+      let storedUrl: string | null | undefined = null;
 
       if (verification.type === 'CAC') {
         publicId = verification.cac_certificate_public_id;
+        storedUrl = verification.cac_certificate_url;
       } else if (verification.type === 'SMEDAN') {
         publicId = verification.smedan_certificate_public_id;
+        storedUrl = verification.smedan_certificate_url;
       } else if (verification.type === 'ADDRESS') {
         publicId = verification.address_document_public_id;
+        storedUrl = verification.address_document_url;
       }
 
       if (!publicId) {
@@ -301,7 +326,8 @@ export class AdminVerificationController {
         throw new AppError('No document found for this verification', 404);
       }
 
-      const url = CloudinaryService.getSignedUrl(publicId);
+      const resourceType = getResourceTypeFromCloudinaryUrl(storedUrl);
+      const url = CloudinaryService.getSignedUrl(publicId, { resourceType });
 
       res.status(200).json({
         success: true,
@@ -312,6 +338,7 @@ export class AdminVerificationController {
         action,
         verificationId: id,
         type: verification.type,
+        resourceType,
       });
     } catch (error) {
       adminLogger.error('Failed to generate signed URL', {

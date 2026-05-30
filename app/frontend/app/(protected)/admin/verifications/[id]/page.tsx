@@ -13,7 +13,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuExternalLink } from 'react-icons/lu';
+import { LuArrowLeft, LuX } from 'react-icons/lu';
 import {
   useAdminVerificationDetail,
   useAdminSignedUrl,
@@ -64,6 +64,7 @@ export default function AdminVerificationDetailPage({
   const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
     open: false, title: '', description: '',
   });
+  const [docPreview, setDocPreview] = useState<{ url: string; label: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -245,25 +246,37 @@ export default function AdminVerificationDetailPage({
             {signedUrls ? (
               <Stack gap={2}>
                 {signedUrls.front_url && (
-                  <a href={signedUrls.front_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
-                    <Button size="sm" variant="outline" colorPalette="primary" w="full">
-                      View Front Document <LuExternalLink size={12} />
-                    </Button>
-                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    colorPalette="primary"
+                    w="full"
+                    onClick={() => setDocPreview({ url: signedUrls.front_url!, label: 'Front Document' })}
+                  >
+                    View Front Document
+                  </Button>
                 )}
                 {signedUrls.back_url && (
-                  <a href={signedUrls.back_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
-                    <Button size="sm" variant="outline" colorPalette="primary" w="full">
-                      View Back Document <LuExternalLink size={12} />
-                    </Button>
-                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    colorPalette="primary"
+                    w="full"
+                    onClick={() => setDocPreview({ url: signedUrls.back_url!, label: 'Back Document' })}
+                  >
+                    View Back Document
+                  </Button>
                 )}
                 {signedUrls.url && (
-                  <a href={signedUrls.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
-                    <Button size="sm" variant="outline" colorPalette="primary" w="full">
-                      View Certificate <LuExternalLink size={12} />
-                    </Button>
-                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    colorPalette="primary"
+                    w="full"
+                    onClick={() => setDocPreview({ url: signedUrls.url!, label: 'Certificate' })}
+                  >
+                    View Certificate
+                  </Button>
                 )}
               </Stack>
             ) : (
@@ -331,6 +344,88 @@ export default function AdminVerificationDetailPage({
           )}
         </Box>
       </Flex>
+
+      {/* Document preview modal */}
+      {docPreview && (
+        <Box
+          position="fixed"
+          inset={0}
+          zIndex={200}
+          bg="rgba(0,0,0,0.88)"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          onClick={() => setDocPreview(null)}
+        >
+          <Box
+            maxW="90vw"
+            maxH="90vh"
+            display="flex"
+            flexDirection="column"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <Flex justify="space-between" align="center" mb={3} px={1}>
+              <Text color="white" fontWeight="semibold" textStyle="sm">
+                {docPreview.label}
+              </Text>
+              <Flex gap={2}>
+                <a
+                  href={docPreview.url}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '13px',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Open in new tab
+                </a>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="white"
+                  _hover={{ bg: 'whiteAlpha.200' }}
+                  onClick={() => setDocPreview(null)}
+                >
+                  <LuX size={16} />
+                  Close
+                </Button>
+              </Flex>
+            </Flex>
+
+            {/* Document body */}
+            {docPreview.url.includes('/raw/') ? (
+              <iframe
+                src={docPreview.url}
+                style={{
+                  width: '80vw',
+                  height: '80vh',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'white',
+                }}
+                title={docPreview.label}
+              />
+            ) : (
+              <img
+                src={docPreview.url}
+                alt={docPreview.label}
+                style={{
+                  maxWidth: '80vw',
+                  maxHeight: '80vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  display: 'block',
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+      )}
     </Stack>
   );
 }

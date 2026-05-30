@@ -18,7 +18,7 @@ interface UploadSignature {
   apiKey: string;
   timestamp: number;
   signature: string;
-  upload_preset: string;
+  upload_preset?: string; // intentionally optional — sensitive doc uploads omit it
   folder: string;
   type: string;
 }
@@ -90,7 +90,9 @@ export function useUploadSensitiveDocument() {
       formData.append('api_key', sig.apiKey);
       formData.append('timestamp', String(sig.timestamp));
       formData.append('signature', sig.signature);
-      formData.append('upload_preset', sig.upload_preset); // ← now included
+      // upload_preset intentionally omitted when absent — prevents a public-delivery
+      // preset from overriding type: 'authenticated' on the Cloudinary side
+      if (sig.upload_preset) formData.append('upload_preset', sig.upload_preset);
       formData.append('folder', sig.folder);
       formData.append('type', sig.type);
 

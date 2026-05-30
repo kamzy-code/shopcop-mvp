@@ -175,6 +175,10 @@ export const useAdminApproveVerification = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin-verification', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      // Approval triggers a tier recalculation — invalidate user list and any
+      // open vendor detail so tier badges don't stay stale
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user'] });
     },
   });
 };
@@ -199,6 +203,9 @@ export const useAdminRejectVerification = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin-verification', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      // Rejection updates verification points — same stale risk on user views
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user'] });
     },
   });
 };
