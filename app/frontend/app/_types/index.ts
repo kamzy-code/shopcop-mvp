@@ -316,6 +316,9 @@ export interface TransactionVendor {
   profile_photo_url: string | null;
   current_tier: VendorTier;
   whatsapp_number: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  account_name: string | null;
 }
 
 export interface TransactionStatusHistoryEntry {

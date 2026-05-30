@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -32,6 +32,18 @@ import {
   formatDateTime,
   isVideoUrl,
 } from '@/app/_lib/transactionHelpers';
+
+// ─── Payment status badge config ──────────────────────────────────────────────
+
+const PAYMENT_STATUS_CONFIG: Record<
+  string,
+  { label: string; bg: string; color: string; darkColor: string }
+> = {
+  UNPAID:          { label: 'Unpaid',          bg: 'gray.subtle',   color: 'gray.600',   darkColor: 'gray.300'   },
+  PROOF_SUBMITTED: { label: 'Proof Submitted', bg: 'orange.subtle', color: 'orange.700', darkColor: 'orange.300' },
+  PAID:            { label: 'Paid',            bg: 'green.subtle',  color: 'green.700',  darkColor: 'green.300'  },
+  REFUNDED:        { label: 'Refunded',        bg: 'blue.subtle',   color: 'blue.700',   darkColor: 'blue.300'   },
+};
 
 // ─── Vendor-allowed status transitions ────────────────────────────────────────
 
@@ -135,12 +147,24 @@ function StatusTimeline({ tx }: { tx: Transaction }) {
 
   if (isFinalBad) {
     return (
-      <Box p={4} bg="red.subtle" borderRadius="xl" borderWidth="1px" borderColor="red.200">
-        <Text textStyle="sm" fontWeight="semibold" color="red.700">
+      <Box
+        p={4}
+        bg="red.subtle"
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="red.200"
+        _dark={{ borderColor: 'red.800' }}
+      >
+        <Text
+          textStyle="sm"
+          fontWeight="semibold"
+          color="red.700"
+          _dark={{ color: 'red.300' }}
+        >
           {STATUS_LABELS[tx.status] ?? tx.status}
         </Text>
         {tx.cancellation_reason && (
-          <Text textStyle="xs" color="red.600" mt={1}>
+          <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
             Reason: {tx.cancellation_reason}
           </Text>
         )}
@@ -289,35 +313,24 @@ function StatusUpdateModal({
   onConfirm,
   actionLabel,
   isLoading,
+  note,
+  onNoteChange,
 }: {
   open: boolean;
   onClose: () => void;
-  onConfirm: (note?: string) => void;
+  onConfirm: () => void;
   actionLabel: string;
   isLoading: boolean;
+  note: string;
+  onNoteChange: (v: string) => void;
 }) {
-  const [note, setNote] = useState('');
-
-  useEffect(() => {
-    if (!open) setNote('');
-  }, [open]);
-
-  const handleClose = () => {
-    setNote('');
-    onClose();
-  };
-
-  const handleConfirm = () => {
-    onConfirm(note || undefined);
-  };
-
   return (
     <ConfirmDialog
       open={open}
-      onClose={handleClose}
-      onConfirm={handleConfirm}
+      onClose={onClose}
+      onConfirm={onConfirm}
       title={actionLabel}
-      description={`Are you sure you want to proceed?`}
+      description="Are you sure you want to proceed?"
       confirmLabel={actionLabel}
       colorPalette="primary"
       isLoading={isLoading}
@@ -331,7 +344,7 @@ function StatusUpdateModal({
           rows={2}
           placeholder="Any notes about this status update..."
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => onNoteChange(e.target.value)}
         />
       </Box>
     </ConfirmDialog>
@@ -347,10 +360,12 @@ export default function TransactionDetailPage() {
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [pendingStatusAction, setPendingStatusAction] = useState<{
     label: string;
     next: TransactionStatus;
   } | null>(null);
+  const [statusUpdateNote, setStatusUpdateNote] = useState('');
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
 
   const { data: tx, isLoading, error } = useTransaction(id);
@@ -373,6 +388,7 @@ export default function TransactionDetailPage() {
     try {
       await statusMutation.mutateAsync({ id, status: next, note });
       setPendingStatusAction(null);
+      setStatusUpdateNote('');
       toaster.create({ title: 'Status updated', type: 'success' });
     } catch (err) {
       setErrorModal({
@@ -460,12 +476,14 @@ export default function TransactionDetailPage() {
       />
       <StatusUpdateModal
         open={!!pendingStatusAction}
-        onClose={() => setPendingStatusAction(null)}
-        onConfirm={(note) =>
-          pendingStatusAction && handleStatusUpdate(pendingStatusAction.next, note)
+        onClose={() => { setPendingStatusAction(null); setStatusUpdateNote(''); }}
+        onConfirm={() =>
+          pendingStatusAction && handleStatusUpdate(pendingStatusAction.next, statusUpdateNote || undefined)
         }
         actionLabel={pendingStatusAction?.label ?? ''}
         isLoading={statusMutation.isPending}
+        note={statusUpdateNote}
+        onNoteChange={setStatusUpdateNote}
       />
       <AlertModal
         open={errorModal.open}
@@ -487,6 +505,9 @@ export default function TransactionDetailPage() {
             <LuArrowLeft />
           </Button>
           <Box flex={1}>
+            <Text textStyle="2xs" color="fg.subtle" fontWeight="medium" mb={0.5}>
+              ORDER ID
+            </Text>
             <Flex align="center" gap={2} flexWrap="wrap" mb={1}>
               <Heading textStyle="xl" fontWeight="bold" color="fg">
                 {tx.reference}
@@ -701,7 +722,7 @@ export default function TransactionDetailPage() {
                       <Text textStyle="sm" color="fg.muted">
                         Discount
                       </Text>
-                      <Text textStyle="sm" color="green.600">
+                      <Text textStyle="sm" color="green.600" _dark={{ color: 'green.400' }}>
                         −{formatCurrency(tx.discount_amount)}
                       </Text>
                     </Flex>
@@ -729,28 +750,61 @@ export default function TransactionDetailPage() {
                 <Text textStyle="sm" color="fg.muted">
                   Status
                 </Text>
+                {(() => {
+                  const cfg = PAYMENT_STATUS_CONFIG[tx.payment_status] ?? PAYMENT_STATUS_CONFIG.UNPAID;
+                  return (
+                    <Box px={2} py={0.5} borderRadius="full" bg={cfg.bg} display="inline-flex">
+                      <Text
+                        textStyle="xs"
+                        fontWeight="medium"
+                        color={cfg.color}
+                        _dark={{ color: cfg.darkColor }}
+                      >
+                        {cfg.label}
+                      </Text>
+                    </Box>
+                  );
+                })()}
+              </Flex>
+
+              {/* "Customer has sent payment" alert */}
+              {tx.payment_status === 'PROOF_SUBMITTED' && (
                 <Box
-                  px={2}
-                  py={0.5}
-                  borderRadius="full"
-                  bg={tx.payment_status === 'PAID' ? 'success.subtle' : 'gray.subtle'}
-                  display="inline-flex"
+                  bg="orange.subtle"
+                  borderRadius="lg"
+                  p={3}
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  _dark={{ borderColor: 'orange.800' }}
                 >
                   <Text
-                    textStyle="xs"
-                    fontWeight="medium"
-                    color={tx.payment_status === 'PAID' ? 'success.fg' : 'gray.600'}
+                    textStyle="sm"
+                    fontWeight="semibold"
+                    color="orange.700"
+                    _dark={{ color: 'orange.300' }}
                   >
-                    {tx.payment_status === 'UNPAID'
-                      ? 'Unpaid'
-                      : tx.payment_status === 'PROOF_SUBMITTED'
-                        ? 'Proof Submitted'
-                        : tx.payment_status === 'PAID'
-                          ? 'Paid'
-                          : 'Refunded'}
+                    Customer has sent payment
                   </Text>
                 </Box>
-              </Flex>
+              )}
+
+              {/* Receipt */}
+              {tx.payment_proof_url ? (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorPalette="orange"
+                  alignSelf="flex-start"
+                  onClick={() => setShowReceiptModal(true)}
+                >
+                  View Receipt
+                </Button>
+              ) : tx.payment_status !== 'UNPAID' ? (
+                <Text textStyle="xs" color="fg.muted">
+                  No receipt was uploaded — please check your bank to confirm payment.
+                </Text>
+              ) : null}
+
               {tx.payment_confirmed_at && (
                 <Flex justify="space-between">
                   <Text textStyle="sm" color="fg.muted">
@@ -815,6 +869,46 @@ export default function TransactionDetailPage() {
           )}
         </Stack>
       </Box>
+
+      {/* Receipt image preview overlay */}
+      {showReceiptModal && tx.payment_proof_url && (
+        <Box
+          position="fixed"
+          inset={0}
+          zIndex={200}
+          bg="rgba(0,0,0,0.8)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          onClick={() => setShowReceiptModal(false)}
+        >
+          <Box position="relative" onClick={(e) => e.stopPropagation()}>
+            <Flex justify="flex-end" mb={2}>
+              <Button
+                size="sm"
+                variant="ghost"
+                color="white"
+                _hover={{ bg: 'whiteAlpha.200' }}
+                onClick={() => setShowReceiptModal(false)}
+              >
+                <LuX size={16} />
+                Close
+              </Button>
+            </Flex>
+            <img
+              src={tx.payment_proof_url}
+              alt="Payment receipt"
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '80vh',
+                borderRadius: '12px',
+                display: 'block',
+                objectFit: 'contain',
+              }}
+            />
+          </Box>
+        </Box>
+      )}
     </AppShell>
   );
 }

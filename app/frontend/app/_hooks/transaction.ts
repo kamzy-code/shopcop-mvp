@@ -134,6 +134,20 @@ export const useCancelTransaction = () => {
   });
 };
 
+export const useSubmitPaymentProof = (token: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { buyer_email?: string; payment_proof_url?: string }) =>
+      apiFetch(`/track/${token}/submit-payment`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+    },
+  });
+};
+
 export const useTransactionAnalytics = () =>
   useQuery<TransactionAnalytics>({
     queryKey: ['transaction-analytics'],

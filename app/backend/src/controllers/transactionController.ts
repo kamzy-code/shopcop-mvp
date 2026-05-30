@@ -7,6 +7,7 @@ import {
   confirmPaymentSchema,
   cancelTransactionSchema,
   transactionFiltersSchema,
+  submitPaymentProofSchema,
 } from '@validators/transactionValidator.js';
 import { transactionLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
@@ -16,6 +17,26 @@ import { DeliveryMethod, TransactionStatus } from '../generated/prisma/enums.js'
 export class TransactionController {
   // ─── Create ──────────────────────────────────────────────────────────────────
 
+  /**
+   * Create a new transaction with items.
+   * Validates input via Zod, snapshots catalog product details, and generates a reference and tracking token.
+   *
+   * @route  POST /api/v1/transactions
+   * @access Vendor (authenticated)
+   * @param req.body.delivery_method - PICKUP | DISPATCH | WAYBILL
+   * @param req.body.items - Array of line items (min 1)
+   * @param req.body.buyer_email - Buyer's email for order notifications (optional)
+   * @param req.body.expected_delivery_start - Start of delivery window (optional)
+   * @param req.body.expected_delivery_end - End of delivery window (optional)
+   * @param req.body.delivery_fee - Delivery fee in Naira (default 0)
+   * @param req.body.discount_amount - Discount in Naira (default 0)
+   * @param req.body.order_notes - Notes visible to buyer (optional)
+   * @param req.body.vendor_notes - Internal notes (optional)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 201 `{ success, data: Transaction, message }`
+   * @throws {AppError} 400 — Invalid input or profile incomplete
+   * @throws {AppError} 404 — Vendor profile not found
+   */
   static async createTransaction(req: Request, res: Response, next: NextFunction) {
     const action = 'createTransaction';
     const userId = req.user!.userId;
@@ -53,12 +74,35 @@ export class TransactionController {
 
   // ─── List ─────────────────────────────────────────────────────────────────────
 
+  /**
+   * List the vendor's transactions with filtering, sorting, and pagination.
+   *
+   * @route  GET /api/v1/transactions
+   * @access Vendor (authenticated)
+   * @param req.query.status - Filter by transaction status
+   * @param req.query.refund_status - Filter by refund status
+   * @param req.query.payment_status - Filter by payment status
+   * @param req.query.search - Search buyer_email or reference
+   * @param req.query.page - Page number (default 1)
+   * @param req.query.limit - Results per page (default 20, max 100)
+   * @param req.query.sort - Sort order: newest | oldest | amount_asc | amount_desc
+   * @param req.query.from_date - Filter from date
+   * @param req.query.to_date - Filter to date
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction[], meta: PaginationMeta }`
+   * @throws {AppError} 400 — Invalid filter input
+   */
   static async getTransactions(req: Request, res: Response, next: NextFunction) {
     const action = 'getTransactions';
     const userId = req.user!.userId;
 
     const parsed = transactionFiltersSchema.safeParse(req.query);
     if (!parsed.success) {
+      transactionLogger.warn('Invalid transaction filters', {
+        action,
+        userId,
+        issues: parsed.error.issues,
+      });
       return next(new AppError(`Invalid filters: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
@@ -76,6 +120,17 @@ export class TransactionController {
 
   // ─── Get single ───────────────────────────────────────────────────────────────
 
+  /**
+   * Get a single transaction by ID. Verifies vendor ownership.
+   *
+   * @route  GET /api/v1/transactions/:id
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction }`
+   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 403 — Not authorized to view this transaction
+   */
   static async getTransaction(req: Request, res: Response, next: NextFunction) {
     const action = 'getTransaction';
     const userId = req.user!.userId;
@@ -97,6 +152,15 @@ export class TransactionController {
 
   // ─── Public tracking (no auth) ────────────────────────────────────────────────
 
+  /**
+   * Get a transaction by tracking token (public). Strips vendor_notes from the response.
+   *
+   * @route  GET /api/v1/track/:token
+   * @access Public
+   * @param req.params.token - Tracking token from the shareable link
+   * @returns 200 `{ success, data: Transaction (buyer-safe, no vendor_notes) }`
+   * @throws {AppError} 404 — Transaction not found
+   */
   static async getTransactionByToken(req: Request, res: Response, next: NextFunction) {
     const token = req.params.token as string;
 
@@ -112,8 +176,84 @@ export class TransactionController {
     }
   }
 
+  // ─── Buyer: submit payment proof (public) ────────────────────────────────────
+
+  /**
+   * Submit payment proof for an UNPAID transaction (public).
+   *
+   * @route  POST /api/v1/track/:token/submit-payment
+   * @access Public
+   * @param req.params.token - Tracking token from the shareable link
+   * @param req.body.buyer_email - Buyer's email (optional)
+   * @param req.body.payment_proof_url - URL of the payment proof screenshot (optional)
+   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @throws {AppError} 400 — Invalid input or proof already submitted
+   * @throws {AppError} 404 — Transaction not found
+   */
+  static async submitPaymentProof(req: Request, res: Response, next: NextFunction) {
+    const action = 'submitPaymentProof';
+    const token = req.params.token as string;
+
+    const parsed = submitPaymentProofSchema.safeParse(req.body);
+    if (!parsed.success) {
+      transactionLogger.warn('Invalid payment proof input', {
+        action,
+        token,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
+
+    try {
+      const transaction = await TransactionService.submitPaymentProof(token, {
+        buyer_email: parsed.data.buyer_email || undefined,
+        payment_proof_url: parsed.data.payment_proof_url || undefined,
+      });
+
+      const { vendor_notes: _omit, ...buyerSafe } = transaction as typeof transaction & { vendor_notes?: unknown };
+      void _omit;
+
+      transactionLogger.info('Payment proof submitted', {
+        action,
+        token,
+        transactionId: transaction.id,
+        hasProofUrl: !!parsed.data.payment_proof_url,
+        hasBuyerEmail: !!parsed.data.buyer_email,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: buyerSafe,
+        message: 'Payment proof submitted successfully',
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to submit payment proof', { action, token, error });
+      next(error);
+    }
+  }
+
   // ─── Update (before CONFIRMED) ────────────────────────────────────────────────
 
+  /**
+   * Update transaction metadata, items, or both. Only allowed while PENDING.
+   * Providing an items array replaces all existing items.
+   *
+   * @route  PATCH /api/v1/transactions/:id
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.body.buyer_email - Buyer's email (optional)
+   * @param req.body.delivery_method - PICKUP | DISPATCH | WAYBILL (optional)
+   * @param req.body.items - Replacement items array (optional)
+   * @param req.body.delivery_fee - Delivery fee (optional)
+   * @param req.body.discount_amount - Discount amount (optional)
+   * @param req.body.order_notes - Notes visible to buyer (optional)
+   * @param req.body.vendor_notes - Internal notes (optional)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction, message }`
+   * @throws {AppError} 400 — Invalid input or transaction not in PENDING status
+   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 403 — Not authorized
+   */
   static async updateTransaction(req: Request, res: Response, next: NextFunction) {
     const action = 'updateTransaction';
     const userId = req.user!.userId;
@@ -121,6 +261,12 @@ export class TransactionController {
 
     const parsed = updateTransactionSchema.safeParse(req.body);
     if (!parsed.success) {
+      transactionLogger.warn('Invalid transaction update input', {
+        action,
+        userId,
+        transactionId: id,
+        issues: parsed.error.issues,
+      });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
@@ -148,6 +294,21 @@ export class TransactionController {
 
   // ─── Status update ────────────────────────────────────────────────────────────
 
+  /**
+   * Advance the transaction along the valid state machine.
+   * CONFIRMED and CANCELLED transitions are handled by dedicated endpoints (confirmPayment / cancelTransaction).
+   *
+   * @route  PATCH /api/v1/transactions/:id/status
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.body.status - Target status (IN_PROGRESS | READY_FOR_DISPATCH | SHIPPED | DELIVERED | COMPLETED | REFUND_REQUESTED | REFUND_IN_PROGRESS | REFUNDED | RESOLVED)
+   * @param req.body.note - Optional note for the status history
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction, message }`
+   * @throws {AppError} 400 — Invalid input or invalid status transition
+   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 403 — Not authorized
+   */
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
     const action = 'updateStatus';
     const userId = req.user!.userId;
@@ -155,6 +316,12 @@ export class TransactionController {
 
     const parsed = updateTransactionStatusSchema.safeParse(req.body);
     if (!parsed.success) {
+      transactionLogger.warn('Invalid status update input', {
+        action,
+        userId,
+        transactionId: id,
+        issues: parsed.error.issues,
+      });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
@@ -189,6 +356,19 @@ export class TransactionController {
 
   // ─── Confirm payment ──────────────────────────────────────────────────────────
 
+  /**
+   * Confirm payment for a PENDING transaction. Deducts stock for catalog items and sets status to CONFIRMED.
+   *
+   * @route  PATCH /api/v1/transactions/:id/confirm-payment
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.body.payment_notes - Optional notes about the payment
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction, message }`
+   * @throws {AppError} 400 — Invalid input, transaction not PENDING, or insufficient stock
+   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 403 — Not authorized
+   */
   static async confirmPayment(req: Request, res: Response, next: NextFunction) {
     const action = 'confirmPayment';
     const userId = req.user!.userId;
@@ -196,6 +376,12 @@ export class TransactionController {
 
     const parsed = confirmPaymentSchema.safeParse(req.body);
     if (!parsed.success) {
+      transactionLogger.warn('Invalid payment confirmation input', {
+        action,
+        userId,
+        transactionId: id,
+        issues: parsed.error.issues,
+      });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
@@ -224,6 +410,19 @@ export class TransactionController {
 
   // ─── Cancel ───────────────────────────────────────────────────────────────────
 
+  /**
+   * Cancel a cancellable transaction. Restores deducted stock for all items.
+   *
+   * @route  DELETE /api/v1/transactions/:id
+   * @access Vendor (authenticated)
+   * @param req.params.id - Transaction ID
+   * @param req.body.reason - Cancellation reason (min 10 characters)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: Transaction, message }`
+   * @throws {AppError} 400 — Invalid input or transaction not cancellable in current status
+   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 403 — Not authorized
+   */
   static async cancelTransaction(req: Request, res: Response, next: NextFunction) {
     const action = 'cancelTransaction';
     const userId = req.user!.userId;
@@ -231,6 +430,12 @@ export class TransactionController {
 
     const parsed = cancelTransactionSchema.safeParse(req.body);
     if (!parsed.success) {
+      transactionLogger.warn('Invalid cancel transaction input', {
+        action,
+        userId,
+        transactionId: id,
+        issues: parsed.error.issues,
+      });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
@@ -259,6 +464,14 @@ export class TransactionController {
 
   // ─── Analytics ────────────────────────────────────────────────────────────────
 
+  /**
+   * Get monthly and all-time analytics for the vendor's transactions.
+   *
+   * @route  GET /api/v1/transactions/analytics/summary
+   * @access Vendor (authenticated)
+   * @param req.user.userId - Authenticated user's ID (set by auth middleware)
+   * @returns 200 `{ success, data: { all_time_completed, this_month: { total_orders, completed, revenue, completion_rate, refund_rate, by_status } } }`
+   */
   static async getAnalytics(req: Request, res: Response, next: NextFunction) {
     const action = 'getAnalytics';
     const userId = req.user!.userId;

@@ -1,7 +1,8 @@
 'use client';
+import { useEffect } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
-import { useParams } from 'next/navigation';
-import { LuCircleCheck, LuClock, LuPackage, LuStore, LuTruck } from 'react-icons/lu';
+import { useParams, useRouter } from 'next/navigation';
+import { LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
 import { useTransactionByToken } from '@/app/_hooks/transaction';
 import { Transaction, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
 import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
@@ -64,7 +65,7 @@ function BuyerTimeline({
 
     return (
       <Box p={4} bg="red.subtle" borderRadius="xl" textAlign="center">
-        <Text textStyle="md" fontWeight="semibold" color="red.700">
+        <Text textStyle="md" fontWeight="semibold" color="red.700" _dark={{ color: 'red.300' }}>
           {label}
         </Text>
       </Box>
@@ -157,17 +158,31 @@ function DeliveryBanner({ tx }: { tx: Transaction }) {
       borderRadius="xl"
       borderWidth="1px"
       borderColor={isLate ? 'orange.200' : 'primary.200'}
+      _dark={isLate ? { borderColor: 'orange.800' } : {}}
     >
       <Flex align="center" gap={2} mb={1}>
-        <LuTruck
-          size={16}
-          color={isLate ? 'var(--chakra-colors-orange-600)' : 'var(--chakra-colors-primary-fg)'}
-        />
-        <Text textStyle="sm" fontWeight="semibold" color={isLate ? 'orange.700' : 'primary.fg'}>
+        <Box
+          color={isLate ? 'orange.700' : 'primary.fg'}
+          _dark={isLate ? { color: 'orange.300' } : {}}
+          display="flex"
+          alignItems="center"
+        >
+          <LuTruck size={16} />
+        </Box>
+        <Text
+          textStyle="sm"
+          fontWeight="semibold"
+          color={isLate ? 'orange.700' : 'primary.fg'}
+          _dark={isLate ? { color: 'orange.300' } : {}}
+        >
           {isLate ? 'Expected delivery may be delayed' : 'Expected Delivery Window'}
         </Text>
       </Flex>
-      <Text textStyle="sm" color={isLate ? 'orange.600' : 'primary.fg'}>
+      <Text
+        textStyle="sm"
+        color={isLate ? 'orange.600' : 'primary.fg'}
+        _dark={isLate ? { color: 'orange.400' } : {}}
+      >
         {formatDate(tx.expected_delivery_start)} – {formatDate(tx.expected_delivery_end)}
       </Text>
     </Box>
@@ -179,7 +194,17 @@ function DeliveryBanner({ tx }: { tx: Transaction }) {
 export default function TrackingPage() {
   const params = useParams();
   const token = params?.token as string;
+  const router = useRouter();
   const { data: tx, isLoading, error } = useTransactionByToken(token);
+
+  // Must be before early returns — React Hooks rule
+  useEffect(() => {
+    if (!tx) return;
+    const businessName = (tx.vendor as { business_name?: string | null })?.business_name;
+    document.title = businessName
+      ? `Order ${tx.reference} · ${businessName} · ShopCop`
+      : `Order ${tx.reference} · ShopCop`;
+  }, [tx]);
 
   if (isLoading) return <FullPageSpinner />;
 
@@ -217,6 +242,10 @@ export default function TrackingPage() {
     whatsapp_number?: string | null;
   };
 
+  const isUnpaid = tx.payment_status === 'UNPAID';
+  const isProofSubmitted = tx.payment_status === 'PROOF_SUBMITTED';
+  const showTimeline = !isUnpaid && !isProofSubmitted;
+
   return (
     <Box minH="100dvh" bg="bg">
       {/* Brand header */}
@@ -249,29 +278,110 @@ export default function TrackingPage() {
       {/* Content */}
       <Box maxW="520px" mx="auto" px={4} py={6}>
         <Stack gap={4}>
+          {/* Page title */}
+          <Box>
+            <Heading textStyle="xl" fontWeight="bold" color="fg">
+              Your order{vendor?.business_name ? ` with ${vendor.business_name}` : ''}
+            </Heading>
+            <Text textStyle="sm" color="fg.muted" mt={0.5}>
+              Track your delivery below
+            </Text>
+          </Box>
+
           {/* Order header */}
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
             <Flex align="center" justify="space-between" mb={1}>
-              <Text textStyle="xs" color="fg.muted" fontFamily="mono">
-                {tx.reference}
-              </Text>
+              <Box>
+                <Text textStyle="2xs" color="fg.subtle" fontWeight="medium">
+                  ORDER ID
+                </Text>
+                <Text textStyle="xs" color="fg.muted" fontFamily="mono">
+                  {tx.reference}
+                </Text>
+              </Box>
               <TransactionStatusBadge status={tx.status} />
             </Flex>
-            <Text textStyle="xs" color="fg.muted">
+            <Text textStyle="xs" color="fg.muted" mt={1}>
               {formatDateTime(tx.created_at)}
             </Text>
           </Box>
 
-          {/* Delivery window */}
-          <DeliveryBanner tx={tx} />
+          {/* Checkout CTA — shown when payment not yet submitted */}
+          {isUnpaid && (
+            <Box
+              bg="primary.subtle"
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="primary.200"
+              p={5}
+            >
+              <Flex align="center" gap={3} mb={3}>
+                <Flex
+                  w={10}
+                  h={10}
+                  borderRadius="full"
+                  bg="primary.500"
+                  align="center"
+                  justify="center"
+                  flexShrink={0}
+                >
+                  <LuShoppingCart size={18} color="white" />
+                </Flex>
+                <Box>
+                  <Text textStyle="md" fontWeight="semibold" color="fg">
+                    Payment required
+                  </Text>
+                  <Text textStyle="sm" color="fg.muted">
+                    Send payment to confirm your order
+                  </Text>
+                </Box>
+              </Flex>
+              <Button
+                colorPalette="primary"
+                w="full"
+                onClick={() => router.push(`/track/${token}/checkout`)}
+              >
+                Complete Checkout
+              </Button>
+            </Box>
+          )}
 
-          {/* Status timeline */}
-          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
-            <Text textStyle="xs" color="fg.muted" mb={4} fontWeight="medium">
-              ORDER STATUS
-            </Text>
-            <BuyerTimeline status={tx.status} statusHistory={tx.status_history} />
-          </Box>
+          {/* Payment submitted banner */}
+          {isProofSubmitted && (
+            <Box
+              p={4}
+              bg="green.subtle"
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="green.200"
+              _dark={{ borderColor: 'green.800' }}
+            >
+              <Flex align="center" gap={2} mb={1}>
+                <Box color="green.600" _dark={{ color: 'green.400' }} display="flex" alignItems="center">
+                  <LuCircleCheck size={18} />
+                </Box>
+                <Text textStyle="sm" fontWeight="semibold" color="green.700" _dark={{ color: 'green.300' }}>
+                  Payment submitted
+                </Text>
+              </Flex>
+              <Text textStyle="sm" color="green.600" _dark={{ color: 'green.400' }}>
+                Your vendor will confirm your payment shortly. Check back soon.
+              </Text>
+            </Box>
+          )}
+
+          {/* Delivery window — hide before payment */}
+          {!isUnpaid && <DeliveryBanner tx={tx} />}
+
+          {/* Status timeline — hide until payment is confirmed */}
+          {showTimeline && (
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
+              <Text textStyle="xs" color="fg.muted" mb={4} fontWeight="medium">
+                ORDER STATUS
+              </Text>
+              <BuyerTimeline status={tx.status} statusHistory={tx.status_history} />
+            </Box>
+          )}
 
           {/* Order items */}
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>

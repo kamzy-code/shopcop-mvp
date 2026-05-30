@@ -9,7 +9,6 @@ const itemSchema = z.object({
 });
 
 export const transactionFormSchema = z.object({
-  buyer_email: z.email('Invalid email').optional().or(z.literal('')),
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
   expected_delivery_end: z.string().optional(),
@@ -23,7 +22,6 @@ export const transactionFormSchema = z.object({
 export type TransactionFormData = z.infer<typeof transactionFormSchema>;
 
 export const transactionEditSchema = z.object({
-  buyer_email: z.email('Invalid email').optional().or(z.literal('')),
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
   expected_delivery_end: z.string().optional(),

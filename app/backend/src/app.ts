@@ -85,6 +85,7 @@ app.use('/api/v1/categories', categoryRouter);
 app.use('/api/v1/products', productRouter);
 app.use('/api/v1/transactions', transactionRouter);
 app.get('/api/v1/track/:token', TransactionController.getTransactionByToken);
+app.post('/api/v1/track/:token/submit-payment', TransactionController.submitPaymentProof);
 
 // 404 handler
 app.use((req, res) => {

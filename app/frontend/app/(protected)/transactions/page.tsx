@@ -6,7 +6,7 @@ import { LuChevronLeft, LuChevronRight, LuClipboardList, LuPlus, LuSearch } from
 import { AppShell } from '@/components/shared/appShell';
 import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
 import { useTransactions } from '@/app/_hooks/transaction';
-import { TransactionFilters, TransactionListItem, TransactionStatus } from '@/app/_types';
+import { PaymentStatus, TransactionFilters, TransactionListItem, TransactionStatus } from '@/app/_types';
 import { formatCurrency, formatDate } from '@/app/_lib/transactionHelpers';
 
 
@@ -65,12 +65,33 @@ function TransactionCard({ tx }: { tx: TransactionListItem }) {
         <TransactionStatusBadge status={tx.status as TransactionStatus} />
       </Flex>
 
-      <Text textStyle="xs" color="fg.subtle" truncate mb={3}>
+      <Text textStyle="xs" color="fg.subtle" truncate>
         {preview}
         {itemCount > 2 ? ` +${itemCount - 2} more` : ''}
       </Text>
 
-      <Flex align="center" justify="space-between">
+      {(tx.payment_status as PaymentStatus) === 'PROOF_SUBMITTED' && (
+        <Flex align="center" gap={1.5} mt={2}>
+          <Box
+            w={2}
+            h={2}
+            borderRadius="full"
+            bg="orange.400"
+            _dark={{ bg: 'orange.300' }}
+            flexShrink={0}
+          />
+          <Text
+            textStyle="xs"
+            color="orange.700"
+            _dark={{ color: 'orange.300' }}
+            fontWeight="medium"
+          >
+            Payment proof submitted
+          </Text>
+        </Flex>
+      )}
+
+      <Flex align="center" justify="space-between" mt={3}>
         <Text textStyle="sm" fontWeight="bold" color="primary.fg">
           {formatCurrency(tx.total_amount)}
         </Text>

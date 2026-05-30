@@ -2,7 +2,7 @@ import { Decimal } from '@prisma/client/runtime/client';
 import { prisma } from '@config/prisma.js';
 import { transactionLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { TransactionStatus, RefundStatus } from '../generated/prisma/enums.js';
+import { TransactionStatus, RefundStatus, PaymentStatus } from '../generated/prisma/enums.js';
 import {
   CreateTransactionInput,
   UpdateTransactionInput,
@@ -35,6 +35,26 @@ const TRANSACTION_INCLUDE = {
   review: true,
 } as const;
 
+// Buyer-facing include — adds bank details so the checkout page can show payment info.
+// Never used on authenticated vendor endpoints to avoid leaking bank details.
+const BUYER_TRANSACTION_INCLUDE = {
+  items: true,
+  vendor: {
+    select: {
+      id: true,
+      business_name: true,
+      profile_photo_url: true,
+      current_tier: true,
+      whatsapp_number: true,
+      bank_name: true,
+      account_number: true,
+      account_name: true,
+    },
+  },
+  status_history: { orderBy: { created_at: 'asc' as const } },
+  review: true,
+} as const;
+
 export class TransactionService {
   private static async getVendorByUserId(userId: string) {
     const vendor = await prisma.vendorProfile.findUnique({
@@ -46,6 +66,7 @@ export class TransactionService {
       },
     });
     if (!vendor) {
+      transactionLogger.warn('Vendor profile not found', { action: 'getVendorByUserId', userId });
       throw new AppError('Vendor profile not found', 404);
     }
     return vendor;
@@ -57,6 +78,11 @@ export class TransactionService {
     const vendor = await this.getVendorByUserId(userId);
 
     if (!vendor.personal_info_complete || !vendor.business_info_complete) {
+      transactionLogger.warn('Vendor profile incomplete, cannot create transaction', {
+        action: 'createTransaction',
+        userId,
+        vendorId: vendor.id,
+      });
       throw new AppError(
         'Complete your personal and business profile before creating transactions',
         400
@@ -93,6 +119,12 @@ export class TransactionService {
             },
           });
           if (!product) {
+            transactionLogger.warn('Catalog product not found during transaction creation', {
+              action: 'createTransaction',
+              userId,
+              vendorId: vendor.id,
+              productId: item.product_id,
+            });
             throw new AppError(`Product not found: ${item.product_id}`, 404);
           }
           return {
@@ -235,9 +267,22 @@ export class TransactionService {
       include: TRANSACTION_INCLUDE,
     });
 
-    if (!transaction) throw new AppError('Transaction not found', 404);
-    if (transaction.vendor_id !== vendor.id)
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found', {
+        action: 'getTransaction',
+        userId,
+        transactionId,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+    if (transaction.vendor_id !== vendor.id) {
+      transactionLogger.warn('Unauthorized transaction access attempt', {
+        action: 'getTransaction',
+        userId,
+        transactionId,
+      });
       throw new AppError('Not authorized to view this transaction', 403);
+    }
 
     return transaction;
   }
@@ -247,11 +292,58 @@ export class TransactionService {
   static async getTransactionByToken(token: string) {
     const transaction = await prisma.transaction.findUnique({
       where: { tracking_token: token },
-      include: TRANSACTION_INCLUDE,
+      include: BUYER_TRANSACTION_INCLUDE,
     });
 
-    if (!transaction) throw new AppError('Transaction not found', 404);
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found by tracking token', {
+        action: 'getTransactionByToken',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
     return transaction;
+  }
+
+  // ─── Buyer: submit payment proof ──────────────────────────────────────────────
+
+  static async submitPaymentProof(
+    token: string,
+    data: { buyer_email?: string; payment_proof_url?: string }
+  ) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: token },
+    });
+
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found for payment proof submission', {
+        action: 'submitPaymentProof',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (transaction.payment_status !== PaymentStatus.UNPAID) {
+      transactionLogger.warn('Payment proof already submitted for transaction', {
+        action: 'submitPaymentProof',
+        transactionId: transaction.id,
+        paymentStatus: transaction.payment_status,
+      });
+      throw new AppError('Payment proof has already been submitted', 400);
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { tracking_token: token },
+      data: {
+        payment_status: PaymentStatus.PROOF_SUBMITTED,
+        ...(data.buyer_email && { buyer_email: data.buyer_email }),
+        ...(data.payment_proof_url && { payment_proof_url: data.payment_proof_url }),
+      },
+      include: BUYER_TRANSACTION_INCLUDE,
+    });
+
+    transactionLogger.info('Buyer submitted payment proof', { transactionId: updated.id });
+    return updated;
   }
 
   // ─── Update (before CONFIRMED) ────────────────────────────────────────────────
@@ -264,6 +356,12 @@ export class TransactionService {
     const transaction = await this.getTransaction(transactionId, userId);
 
     if (transaction.status !== TransactionStatus.PENDING) {
+      transactionLogger.warn('Attempted to edit non-pending transaction', {
+        action: 'updateTransaction',
+        userId,
+        transactionId,
+        status: transaction.status,
+      });
       throw new AppError('Transaction can only be edited while PENDING', 400);
     }
 
@@ -311,6 +409,12 @@ export class TransactionService {
               },
             });
             if (!product) {
+              transactionLogger.warn('Catalog product not found during transaction update', {
+                action: 'updateTransaction',
+                userId,
+                transactionId,
+                productId: item.product_id,
+              });
               throw new AppError(`Product not found: ${item.product_id}`, 404);
             }
             return {
@@ -389,9 +493,22 @@ export class TransactionService {
 
       // Safety net: should never fire given the check above, but guards against
       // race conditions where the transaction was deleted between the two fetches.
-      if (!transaction) throw new AppError('Transaction not found', 404);
+      if (!transaction) {
+        transactionLogger.warn('Transaction not found during payment confirmation (safety net)', {
+          action: 'confirmPayment',
+          userId,
+          transactionId,
+        });
+        throw new AppError('Transaction not found', 404);
+      }
 
       if (transaction.status !== TransactionStatus.PENDING) {
+        transactionLogger.warn('Attempted to confirm payment on non-pending transaction', {
+          action: 'confirmPayment',
+          userId,
+          transactionId,
+          status: transaction.status,
+        });
         throw new AppError('Only PENDING transactions can have payment confirmed', 400);
       }
 
@@ -416,6 +533,15 @@ export class TransactionService {
 
         const available = product.stock_quantity ?? 0;
         if (available < item.quantity) {
+          transactionLogger.warn('Insufficient stock during payment confirmation', {
+            action: 'confirmPayment',
+            userId,
+            transactionId,
+            productId: product.id,
+            productName: product.name,
+            available,
+            requested: item.quantity,
+          });
           throw new AppError(
             `Insufficient stock for "${product.name}". Available: ${available}, requested: ${item.quantity}`,
             400
@@ -501,6 +627,13 @@ export class TransactionService {
     const transaction = await this.getTransaction(transactionId, userId);
 
     if (!isTransitionValid(transaction.status, newStatus)) {
+      transactionLogger.warn('Invalid transaction status transition', {
+        action: 'updateTransactionStatus',
+        userId,
+        transactionId,
+        fromStatus: transaction.status,
+        toStatus: newStatus,
+      });
       throw new AppError(`Cannot transition from ${transaction.status} to ${newStatus}`, 400);
     }
 
@@ -565,9 +698,22 @@ export class TransactionService {
       });
 
       // Safety net only — ownership already verified above.
-      if (!transaction) throw new AppError('Transaction not found', 404);
+      if (!transaction) {
+        transactionLogger.warn('Transaction not found during cancellation (safety net)', {
+          action: 'cancelTransaction',
+          userId,
+          transactionId,
+        });
+        throw new AppError('Transaction not found', 404);
+      }
 
       if (NON_CANCELLABLE_STATUSES.includes(transaction.status)) {
+        transactionLogger.warn('Attempted to cancel non-cancellable transaction', {
+          action: 'cancelTransaction',
+          userId,
+          transactionId,
+          status: transaction.status,
+        });
         throw new AppError(`Cannot cancel a transaction in ${transaction.status} status`, 400);
       }
 

@@ -225,7 +225,7 @@ export default function NewTransactionPage() {
 
   const STEP_FIELDS: (keyof TransactionFormData)[][] = [
     ['items'],
-    ['buyer_email', 'delivery_method', 'expected_delivery_start', 'expected_delivery_end'],
+    ['delivery_method', 'expected_delivery_start', 'expected_delivery_end'],
     ['delivery_fee', 'discount_amount', 'order_notes', 'vendor_notes'],
   ];
 
@@ -242,7 +242,6 @@ export default function NewTransactionPage() {
     const d = data as TransactionFormData;
     try {
       const result = await createMutation.mutateAsync({
-        buyer_email: d.buyer_email || undefined,
         delivery_method: d.delivery_method,
         expected_delivery_start: d.expected_delivery_start || undefined,
         expected_delivery_end: d.expected_delivery_end || undefined,
@@ -317,7 +316,7 @@ export default function NewTransactionPage() {
               <Stack gap={4}>
                 {errors.items?.root && (
                   <Box bg="red.subtle" borderRadius="lg" px={3} py={2}>
-                    <Text textStyle="xs" color="red.600">
+                    <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }}>
                       {errors.items.root.message}
                     </Text>
                   </Box>
@@ -513,19 +512,7 @@ export default function NewTransactionPage() {
                   />
                 </Field.Root>
 
-                <Field.Root invalid={!!errors.buyer_email}>
-                  <Field.Label>Buyer Email (optional — for order notifications)</Field.Label>
-                  <Input
-                    {...register('buyer_email')}
-                    placeholder="buyer@example.com"
-                    type="email"
-                  />
-                  {errors.buyer_email && (
-                    <Field.ErrorText>{errors.buyer_email.message}</Field.ErrorText>
-                  )}
-                </Field.Root>
-
-                <Text textStyle="xs" color="fg.muted" mt={1}>
+                <Text textStyle="xs" color="fg.muted">
                   Expected delivery window (optional)
                 </Text>
 
@@ -637,7 +624,7 @@ export default function NewTransactionPage() {
                         <Text textStyle="sm" color="fg.muted">
                           Discount
                         </Text>
-                        <Text textStyle="sm" color="green.600">
+                        <Text textStyle="sm" color="green.600" _dark={{ color: 'green.400' }}>
                           −{formatCurrency(Number(watchDiscount))}
                         </Text>
                       </Flex>

@@ -33,15 +33,6 @@ export const createTransactionSchema = z
     },
     { message: 'Delivery start must be before end time', path: ['expected_delivery_end'] }
   );
-// .refine(
-//   (data) => {
-//     if (data.delivery_method !== 'PICKUP' && !data.delivery_address) {
-//       return false;
-//     }
-//     return true;
-//   },
-//   { message: 'Delivery address is required for courier/delivery orders', path: ['delivery_address'] }
-// );
 
 export const updateTransactionSchema = z.object({
   buyer_email: z.email().optional().or(z.literal('')),
@@ -55,9 +46,8 @@ export const updateTransactionSchema = z.object({
   vendor_notes: z.string().max(1000).optional(),
 });
 
+// CONFIRMED and CANCELLED are excluded — they have dedicated stock/payment endpoints
 export const updateTransactionStatusSchema = z.object({
-  // CONFIRMED is excluded — only reachable via confirmPayment (sets payment_status + deducts stock)
-  // CANCELLED is excluded — only reachable via cancelTransaction (restores stock)
   status: z.enum([
     'IN_PROGRESS',
     'READY_FOR_DISPATCH',
@@ -74,6 +64,11 @@ export const updateTransactionStatusSchema = z.object({
 
 export const confirmPaymentSchema = z.object({
   payment_notes: z.string().max(500).optional(),
+});
+
+export const submitPaymentProofSchema = z.object({
+  buyer_email: z.email('Invalid email address').optional().or(z.literal('')),
+  payment_proof_url: z.url('Invalid URL').optional(),
 });
 
 export const cancelTransactionSchema = z.object({

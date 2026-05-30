@@ -1,5 +1,6 @@
 import { DeliveryMethod } from '../generated/prisma/enums.js';
 
+/** Input for a single line item within a transaction. */
 export interface TransactionItemInput {
   product_id?: string;
   item_name: string;
@@ -9,6 +10,7 @@ export interface TransactionItemInput {
   variant?: string;
 }
 
+/** Payload for creating a new transaction. */
 export interface CreateTransactionInput {
   buyer_email?: string;
   delivery_method: DeliveryMethod;
@@ -21,6 +23,7 @@ export interface CreateTransactionInput {
   vendor_notes?: string;
 }
 
+/** Payload for updating an existing transaction (all fields optional). */
 export interface UpdateTransactionInput {
   buyer_email?: string;
   delivery_method?: DeliveryMethod;
@@ -33,6 +36,7 @@ export interface UpdateTransactionInput {
   vendor_notes?: string;
 }
 
+/** Filters and pagination options for listing transactions. */
 export interface TransactionFilters {
   status?: string;
   refund_status?: string;
@@ -45,6 +49,7 @@ export interface TransactionFilters {
   to_date?: Date;
 }
 
+/** Pagination metadata returned alongside a paginated list. */
 export interface PaginationMeta {
   page: number;
   limit: number;

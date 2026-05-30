@@ -181,7 +181,6 @@ export default function EditTransactionPage() {
     resolver: zodResolver(transactionEditSchema) as unknown as Resolver<TransactionEditData>,
     defaultValues: {
       delivery_method: 'PICKUP',
-      buyer_email: '',
       expected_delivery_start: '',
       expected_delivery_end: '',
       items: [],
@@ -208,7 +207,6 @@ export default function EditTransactionPage() {
     if (tx) {
       reset({
         delivery_method: tx.delivery_method as 'PICKUP' | 'DISPATCH' | 'WAYBILL',
-        buyer_email: tx.buyer_email ?? '',
         expected_delivery_start: tx.expected_delivery_start
           ? tx.expected_delivery_start.slice(0, 10)
           : '',
@@ -243,7 +241,6 @@ export default function EditTransactionPage() {
         id,
         data: {
           delivery_method: data.delivery_method,
-          buyer_email: data.buyer_email || undefined,
           expected_delivery_start: data.expected_delivery_start || undefined,
           expected_delivery_end: data.expected_delivery_end || undefined,
           items: data.items.map((i) => ({
@@ -460,7 +457,7 @@ export default function EditTransactionPage() {
                 ))}
 
                 {errors.items?.root && (
-                  <Text textStyle="xs" color="red.500">
+                  <Text textStyle="xs" color="red.500" _dark={{ color: 'red.400' }}>
                     {errors.items.root.message}
                   </Text>
                 )}
@@ -540,23 +537,6 @@ export default function EditTransactionPage() {
                   />
                   {errors.delivery_method && (
                     <Field.ErrorText>{errors.delivery_method.message}</Field.ErrorText>
-                  )}
-                </Field.Root>
-
-                <Field.Root invalid={!!errors.buyer_email}>
-                  <Field.Label textStyle="sm" fontWeight="medium">
-                    Buyer Email{' '}
-                    <Text as="span" color="fg.subtle" fontWeight="normal">
-                      (optional)
-                    </Text>
-                  </Field.Label>
-                  <Input
-                    type="email"
-                    placeholder="buyer@example.com"
-                    {...register('buyer_email')}
-                  />
-                  {errors.buyer_email && (
-                    <Field.ErrorText>{errors.buyer_email.message}</Field.ErrorText>
                   )}
                 </Field.Root>
 

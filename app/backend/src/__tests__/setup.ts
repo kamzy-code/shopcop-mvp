@@ -33,5 +33,7 @@ vi.mock('@utils/logger.js', () => {
     vendorLogger: silent,
     adminLogger: silent,
     categoryLogger: silent,
+    transactionLogger: silent,
+    productLogger: silent,
   };
 });
