@@ -714,7 +714,7 @@ export default function NewTransactionPage() {
                   colorPalette="primary"
                   type="submit"
                   loading={createMutation.isPending}
-                  disabled={watchItems.length === 0}
+                  disabled={createMutation.isPending || watchItems.length === 0}
                 >
                   Create Transaction
                 </Button>

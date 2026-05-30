@@ -1,13 +1,14 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
 import { useTransactionByToken } from '@/app/_hooks/transaction';
-import { Transaction, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
+import { Transaction, TransactionItem, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
 import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { formatDate, formatCurrency, formatDateTime, isVideoUrl } from '@/app/_lib/transactionHelpers';
+import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
 
 // ─── Status timeline for buyer ────────────────────────────────────────────────
 
@@ -196,6 +197,8 @@ export default function TrackingPage() {
   const token = params?.token as string;
   const router = useRouter();
   const { data: tx, isLoading, error } = useTransactionByToken(token);
+
+  const [selectedItem, setSelectedItem] = useState<TransactionItem | null>(null);
 
   // Must be before early returns — React Hooks rule
   useEffect(() => {
@@ -390,7 +393,7 @@ export default function TrackingPage() {
             </Text>
             <Stack gap={3}>
               {(tx.items as Transaction['items']).map((item, i) => (
-                <Flex key={i} align="center" gap={3}>
+                <Flex key={i} align="center" gap={3} cursor="pointer" onClick={() => setSelectedItem(item)}>
                   <Box
                     w={9}
                     h={9}
@@ -516,6 +519,12 @@ export default function TrackingPage() {
           </Text>
         </Stack>
       </Box>
+
+      <ItemDetailModal
+        open={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+        item={selectedItem!}
+      />
     </Box>
   );
 }

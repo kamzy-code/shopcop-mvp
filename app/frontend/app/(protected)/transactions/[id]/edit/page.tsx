@@ -659,7 +659,7 @@ export default function EditTransactionPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" colorPalette="primary" loading={isSubmitting}>
+              <Button type="submit" colorPalette="primary" loading={isSubmitting} disabled={isSubmitting}>
                 Save Changes
               </Button>
             </Flex>

@@ -21,6 +21,7 @@ import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useGetCategories, useProduct, useUpdateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
@@ -163,6 +164,7 @@ export default function EditProductPage() {
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
   const [initialised, setInitialised] = useState(false);
+  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
   const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
     open: false, title: '', description: '',
   });
@@ -182,6 +184,7 @@ export default function EditProductPage() {
 
   const selectedCategory = watch('category');
   const selectedStock = watch('stock_status');
+  const anyUploading = Object.values(uploadingSlots).some(Boolean);
 
   // Pre-fill form once product data loads
   useEffect(() => {
@@ -231,7 +234,13 @@ export default function EditProductPage() {
     }
   };
 
-  const handleRemoveImage = async (index: number) => {
+  const handleRemoveImage = (index: number) => {
+    setRemovingIndex(index);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (removingIndex === null) return;
+    const index = removingIndex;
     const file = mediaFiles[index];
     if (file?.publicId) {
       try { await deleteMutation.mutateAsync(file.publicId); } catch { /* proceed */ }
@@ -240,9 +249,15 @@ export default function EditProductPage() {
     setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
     setUploadingSlots((prev) => ({ ...prev, [index]: false }));
     setMediaFiles((prev) => { const next = [...prev]; next[index] = null; return next; });
+    setRemovingIndex(null);
   };
 
   const onSubmit = async (data: ProductFormData) => {
+    if (Object.values(uploadingSlots).some(Boolean)) {
+      toaster.create({ title: 'Please wait for uploads to complete', type: 'warning' });
+      return;
+    }
+
     const uploadedFiles = mediaFiles.filter(Boolean) as UploadResult[];
     const media = uploadedFiles.map((m) => ({
       url: m.url,
@@ -292,6 +307,20 @@ export default function EditProductPage() {
         title={errorModal.title}
         description={errorModal.description}
         type="error"
+      />
+      <ConfirmDialog
+        open={removingIndex !== null}
+        onClose={() => setRemovingIndex(null)}
+        onConfirm={handleConfirmRemove}
+        title="Remove Image"
+        description={
+          removingIndex !== null && mediaFiles[removingIndex]
+            ? 'This will permanently delete this file. Continue?'
+            : 'Remove this image?'
+        }
+        confirmLabel="Remove"
+        colorPalette="red"
+        isLoading={deleteMutation.isPending}
       />
       <Stack gap={6} maxW="720px" mx="auto">
         <Stack gap={0.5}>
@@ -475,7 +504,7 @@ export default function EditProductPage() {
               <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.back()}>
                 Cancel
               </Button>
-              <Button type="submit" colorPalette="primary" size="lg" loading={isSubmitting || updateMutation.isPending} disabled={isSubmitting}>
+              <Button type="submit" colorPalette="primary" size="lg" loading={isSubmitting || updateMutation.isPending} disabled={isSubmitting || anyUploading}>
                 <LuPackage />
                 Save Changes
               </Button>

@@ -122,6 +122,7 @@ export default function SignupPage() {
                 size="lg"
                 w="full"
                 loading={signupMutation.isPending}
+                disabled={signupMutation.isPending}
               >
                 Send verification code
                 <LuArrowRight />

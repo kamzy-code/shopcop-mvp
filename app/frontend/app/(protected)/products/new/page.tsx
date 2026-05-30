@@ -21,6 +21,7 @@ import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useCreateProduct, useGetCategories } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
 
@@ -174,6 +175,7 @@ export default function NewProductPage() {
   ]);
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
+  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
   const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
     open: false, title: '', description: '',
   });
@@ -192,6 +194,7 @@ export default function NewProductPage() {
 
   const selectedCategory = watch('category');
   const selectedStock = watch('stock_status');
+  const anyUploading = Object.values(uploadingSlots).some(Boolean);
 
   const handleAddImage = async (index: number, file: File) => {
     const localUrl = URL.createObjectURL(file);
@@ -237,7 +240,13 @@ export default function NewProductPage() {
     }
   };
 
-  const handleRemoveImage = async (index: number) => {
+  const handleRemoveImage = (index: number) => {
+    setRemovingIndex(index);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (removingIndex === null) return;
+    const index = removingIndex;
     const file = mediaFiles[index];
     if (file?.publicId) {
       try {
@@ -261,9 +270,15 @@ export default function NewProductPage() {
       next[index] = null;
       return next;
     });
+    setRemovingIndex(null);
   };
 
   const onSubmit = async (data: ProductFormData) => {
+    if (Object.values(uploadingSlots).some(Boolean)) {
+      toaster.create({ title: 'Please wait for uploads to complete', type: 'warning' });
+      return;
+    }
+
     const hasMedia = mediaFiles.some(Boolean);
     if (!hasMedia) {
       toaster.create({ title: 'Please upload at least one product image', type: 'error' });
@@ -304,6 +319,20 @@ export default function NewProductPage() {
         title={errorModal.title}
         description={errorModal.description}
         type="error"
+      />
+      <ConfirmDialog
+        open={removingIndex !== null}
+        onClose={() => setRemovingIndex(null)}
+        onConfirm={handleConfirmRemove}
+        title="Remove Image"
+        description={
+          removingIndex !== null && mediaFiles[removingIndex]
+            ? 'This will permanently delete this file. Continue?'
+            : 'Remove this image?'
+        }
+        confirmLabel="Remove"
+        colorPalette="red"
+        isLoading={deleteMutation.isPending}
       />
       <Stack gap={6} maxW="720px" mx="auto">
         {/* Header */}
@@ -564,7 +593,7 @@ export default function NewProductPage() {
                 colorPalette="primary"
                 size="lg"
                 loading={isSubmitting || createMutation.isPending}
-                disabled={isSubmitting}
+                disabled={isSubmitting || anyUploading}
               >
                 <LuPackage />
                 Add Product

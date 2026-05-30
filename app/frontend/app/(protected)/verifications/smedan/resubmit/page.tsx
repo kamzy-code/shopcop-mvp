@@ -149,6 +149,7 @@ export default function SmedanResubmitPage() {
               w="full"
               loading={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
               loadingText={uploadMutation.isPending ? `Uploading... ${uploadProgress}%` : 'Submitting...'}
+              disabled={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
             >
               Resubmit Verification <LuArrowRight />
             </Button>

@@ -24,7 +24,8 @@ import {
   useConfirmPayment,
   useCancelTransaction,
 } from '@/app/_hooks/transaction';
-import { Transaction, TransactionStatus } from '@/app/_types';
+import { Transaction, TransactionItem, TransactionStatus } from '@/app/_types';
+import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import {
   formatCurrency,
@@ -367,6 +368,7 @@ export default function TransactionDetailPage() {
   } | null>(null);
   const [statusUpdateNote, setStatusUpdateNote] = useState('');
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
+  const [selectedItem, setSelectedItem] = useState<TransactionItem | null>(null);
 
   const { data: tx, isLoading, error } = useTransaction(id);
   const statusMutation = useUpdateTransactionStatus();
@@ -484,6 +486,11 @@ export default function TransactionDetailPage() {
         isLoading={statusMutation.isPending}
         note={statusUpdateNote}
         onNoteChange={setStatusUpdateNote}
+      />
+      <ItemDetailModal
+        open={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+        item={selectedItem!}
       />
       <AlertModal
         open={errorModal.open}
@@ -645,7 +652,7 @@ export default function TransactionDetailPage() {
             </Text>
             <Stack gap={3}>
               {tx.items.map((item) => (
-                <Flex key={item.id} align="center" gap={3}>
+                <Flex key={item.id} align="center" gap={3} cursor="pointer" onClick={() => setSelectedItem(item)}>
                   <Box
                     w={9}
                     h={9}
