@@ -16,6 +16,7 @@ import adminDashboardRouter from '@routes/admin/adminDashboardRoute.js';
 import adminProfileRouter from '@routes/admin/adminProfileRoute.js';
 import categoryRouter from '@routes/businessCategoryRoute.js';
 import productRouter from '@routes/productRoute.js';
+import { ProductController } from '@controllers/productController.js';
 import transactionRouter from '@routes/transactionRoute.js';
 import { TransactionController } from '@controllers/transactionController.js';
 
@@ -82,6 +83,7 @@ app.use('/api/v1/admin/users', adminUserRouter);
 app.use('/api/v1/admin/dashboard', adminDashboardRouter);
 app.use('/api/v1/admin/profile', adminProfileRouter);
 app.use('/api/v1/categories', categoryRouter);
+app.get('/api/v1/products/public/:id', ProductController.getPublicProductById);
 app.use('/api/v1/products', productRouter);
 app.use('/api/v1/transactions', transactionRouter);
 app.get('/api/v1/track/:token', TransactionController.getTransactionByToken);

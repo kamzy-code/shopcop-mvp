@@ -35,7 +35,7 @@ export function ItemDetailModal({ open, onClose, item }: ItemDetailModalProps) {
   const { data: liveProduct } = useQuery<Product>({
     queryKey: ['product', item?.product_id],
     queryFn: async () => {
-      const res = await apiFetch<Product>(`/products/${item?.product_id}`);
+      const res = await apiFetch<Product>(`/products/public/${item?.product_id}`);
       return res.data;
     },
     enabled: !!item?.product_id && open,

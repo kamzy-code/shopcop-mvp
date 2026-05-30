@@ -105,6 +105,25 @@ export class ProductService {
     return product;
   }
 
+  static async getPublicProductById(productId: string) {
+    const product = await prisma.product.findFirst({
+      where: { id: productId, deleted_at: null },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        description: true,
+        media: { orderBy: { position: 'asc' } },
+      },
+    });
+
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
+
+    return product;
+  }
+
   static async updateProduct(productId: string, userId: string, data: UpdateProductInput) {
     const existing = await this.getProductById(productId, userId);
 

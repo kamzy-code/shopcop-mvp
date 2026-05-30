@@ -796,13 +796,22 @@ export default function TransactionDetailPage() {
                 </Box>
               )}
 
+              {tx.payment_confirmed_at && (
+                <Flex justify="space-between">
+                  <Text textStyle="sm" color="fg.muted">
+                    Confirmed at
+                  </Text>
+                  <Text textStyle="sm">{formatDateTime(tx.payment_confirmed_at)}</Text>
+                </Flex>
+              )}
+
               {/* Receipt */}
               {tx.payment_proof_url ? (
                 <Button
                   size="xs"
                   variant="outline"
                   colorPalette="orange"
-                  alignSelf="flex-start"
+                  w="full"
                   onClick={() => setShowReceiptModal(true)}
                 >
                   View Receipt
@@ -812,15 +821,6 @@ export default function TransactionDetailPage() {
                   No receipt was uploaded — please check your bank to confirm payment.
                 </Text>
               ) : null}
-
-              {tx.payment_confirmed_at && (
-                <Flex justify="space-between">
-                  <Text textStyle="sm" color="fg.muted">
-                    Confirmed at
-                  </Text>
-                  <Text textStyle="sm">{formatDateTime(tx.payment_confirmed_at)}</Text>
-                </Flex>
-              )}
               {tx.payment_notes && (
                 <Flex justify="space-between" align="flex-start" gap={4}>
                   <Text textStyle="sm" color="fg.muted" flexShrink={0}>

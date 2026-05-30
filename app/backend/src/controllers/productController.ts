@@ -55,6 +55,17 @@ export class ProductController {
     }
   }
 
+  static async getPublicProductById(req: Request, res: Response, next: NextFunction) {
+    const id = req.params.id as string;
+
+    try {
+      const product = await ProductService.getPublicProductById(id);
+      res.status(200).json({ success: true, data: product });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async updateProduct(req: Request, res: Response, next: NextFunction) {
     const action = 'updateProduct';
     const userId = req.user!.userId;
