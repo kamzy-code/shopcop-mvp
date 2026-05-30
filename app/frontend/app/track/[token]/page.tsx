@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
-import { LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
+import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
 import {
   useTransactionByToken,
   useBuyerCancelTransaction,
@@ -52,30 +52,114 @@ const STATUS_ICONS: Partial<Record<TransactionStatus, React.ElementType>> = {
 function BuyerTimeline({
   status,
   statusHistory = [],
+  refundAmount,
 }: {
   status: TransactionStatus;
   statusHistory?: TransactionStatusHistoryEntry[];
+  refundAmount?: number | null;
 }) {
   const currentIndex = STATUS_ORDER.indexOf(status);
-  const isBad = !STATUS_ORDER.includes(status);
+  const isOffMainPath = !STATUS_ORDER.includes(status);
 
-  if (isBad) {
-    const label =
-      status === 'CANCELLED'
-        ? 'Order Cancelled'
-        : status === 'REFUND_REQUESTED'
-          ? 'Refund Requested'
-          : status === 'REFUND_IN_PROGRESS'
-            ? 'Refund In Progress'
-            : status === 'REFUNDED'
-              ? 'Refunded'
-              : status;
+  if (isOffMainPath) {
+    // ── Cancelled ───────────────────────────────────────────────
+    if (status === 'CANCELLED') {
+      return (
+        <Box p={4} bg="red.subtle" borderRadius="xl" borderWidth="1px" borderColor="red.200" _dark={{ borderColor: 'red.800' }}>
+          <Flex align="center" gap={2} mb={1}>
+            <LuCircleAlert size={16} color="var(--chakra-colors-red-600)" />
+            <Text textStyle="sm" fontWeight="semibold" color="red.700" _dark={{ color: 'red.300' }}>
+              Order Cancelled
+            </Text>
+          </Flex>
+          <Text textStyle="sm" color="red.600" _dark={{ color: 'red.400' }}>
+            This order was cancelled. If you believe this is a mistake, contact the seller directly.
+          </Text>
+        </Box>
+      );
+    }
 
+    // ── Refund requested ────────────────────────────────────────
+    if (status === 'REFUND_REQUESTED') {
+      return (
+        <Box p={4} bg="orange.subtle" borderRadius="xl" borderWidth="1px" borderColor="orange.200" _dark={{ borderColor: 'orange.800' }}>
+          <Flex align="center" gap={2} mb={1}>
+            <LuCircleAlert size={16} color="var(--chakra-colors-orange-600)" />
+            <Text textStyle="sm" fontWeight="semibold" color="orange.700" _dark={{ color: 'orange.300' }}>
+              Refund Requested
+            </Text>
+          </Flex>
+          <Text textStyle="sm" color="orange.600" _dark={{ color: 'orange.400' }}>
+            Your refund request has been received. The seller needs to receive the goods back before processing your refund — please return the item(s) and check back soon.
+          </Text>
+        </Box>
+      );
+    }
+
+    // ── Refund in progress ──────────────────────────────────────
+    if (status === 'REFUND_IN_PROGRESS') {
+      return (
+        <Box p={4} bg="blue.subtle" borderRadius="xl" borderWidth="1px" borderColor="blue.200" _dark={{ borderColor: 'blue.800' }}>
+          <Flex align="center" gap={2} mb={1}>
+            <Box color="blue.600" _dark={{ color: 'blue.300' }} display="flex" alignItems="center">
+              <LuClock size={16} />
+            </Box>
+            <Text textStyle="sm" fontWeight="semibold" color="blue.700" _dark={{ color: 'blue.300' }}>
+              Refund Being Processed
+            </Text>
+          </Flex>
+          <Text textStyle="sm" color="blue.600" _dark={{ color: 'blue.400' }}>
+            The seller is actively processing your refund. Funds will be returned to you soon — this typically takes a few business days.
+          </Text>
+        </Box>
+      );
+    }
+
+    // ── Refunded ────────────────────────────────────────────────
+    if (status === 'REFUNDED') {
+      return (
+        <Box p={4} bg="green.subtle" borderRadius="xl" borderWidth="1px" borderColor="green.200" _dark={{ borderColor: 'green.800' }}>
+          <Flex align="center" gap={2} mb={1}>
+            <Box color="green.600" _dark={{ color: 'green.400' }} display="flex" alignItems="center">
+              <LuCircleCheck size={16} />
+            </Box>
+            <Text textStyle="sm" fontWeight="semibold" color="green.700" _dark={{ color: 'green.300' }}>
+              Refund Issued
+            </Text>
+          </Flex>
+          <Text textStyle="sm" color="green.600" _dark={{ color: 'green.400' }}>
+            {refundAmount != null
+              ? `A refund of ${formatCurrency(refundAmount)} has been sent to you.`
+              : 'Your refund has been issued by the seller.'}
+            {' '}Please allow 2–5 business days for the funds to appear in your account.
+          </Text>
+        </Box>
+      );
+    }
+
+    // ── Resolved ────────────────────────────────────────────────
+    if (status === 'RESOLVED') {
+      return (
+        <Box p={4} bg="teal.subtle" borderRadius="xl" borderWidth="1px" borderColor="teal.200" _dark={{ borderColor: 'teal.800' }}>
+          <Flex align="center" gap={2} mb={1}>
+            <Box color="teal.600" _dark={{ color: 'teal.300' }} display="flex" alignItems="center">
+              <LuCircleCheck size={16} />
+            </Box>
+            <Text textStyle="sm" fontWeight="semibold" color="teal.700" _dark={{ color: 'teal.300' }}>
+              Order Resolved
+            </Text>
+          </Flex>
+          <Text textStyle="sm" color="teal.600" _dark={{ color: 'teal.400' }}>
+            This order has been resolved by the seller. If you have any outstanding questions, reach out to them directly.
+          </Text>
+        </Box>
+      );
+    }
+
+    // ── Fallback for any future states ──────────────────────────
     return (
-      <Box p={4} bg="red.subtle" borderRadius="xl" textAlign="center">
-        <Text textStyle="md" fontWeight="semibold" color="red.700" _dark={{ color: 'red.300' }}>
-          {label}
-        </Text>
+      <Box p={4} bg="gray.subtle" borderRadius="xl">
+        <Text textStyle="sm" fontWeight="semibold" color="fg">{status}</Text>
       </Box>
     );
   }
@@ -265,6 +349,7 @@ export default function TrackingPage() {
   const isProofSubmitted = tx.payment_status === 'PROOF_SUBMITTED';
   const isCancelled = tx.status === 'CANCELLED';
   const showTimeline = (!isUnpaid && !isProofSubmitted) || isCancelled;
+  const isCompletedAfterRefund = tx.status === 'COMPLETED' && tx.refund_status !== 'NONE';
   const isPending = tx.status === 'PENDING';
   const isDelivered = tx.status === 'DELIVERED';
   const isRefundable = tx.status === 'DELIVERED' || tx.status === 'COMPLETED';
@@ -492,13 +577,43 @@ export default function TrackingPage() {
           {/* Delivery window — hide before payment or when cancelled */}
           {!isUnpaid && !isCancelled && <DeliveryBanner tx={tx} />}
 
+          {/* Completed-after-refund banner */}
+          {isCompletedAfterRefund && (
+            <Box
+              p={4}
+              bg="teal.subtle"
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="teal.200"
+              _dark={{ borderColor: 'teal.800' }}
+            >
+              <Flex align="center" gap={2} mb={1}>
+                <Box color="teal.600" _dark={{ color: 'teal.300' }} display="flex" alignItems="center">
+                  <LuCircleCheck size={16} />
+                </Box>
+                <Text textStyle="sm" fontWeight="semibold" color="teal.700" _dark={{ color: 'teal.300' }}>
+                  Order Completed
+                </Text>
+              </Flex>
+              <Text textStyle="sm" color="teal.600" _dark={{ color: 'teal.400' }}>
+                {tx.refund_status === 'REFUNDED'
+                  ? `Your order has been completed following a refund${tx.refund_amount != null ? ` of ${formatCurrency(tx.refund_amount)}` : ''}. Allow 2–5 business days for funds to reach your account.`
+                  : 'Your order has been completed after being resolved. Contact the seller if you need further assistance.'}
+              </Text>
+            </Box>
+          )}
+
           {/* Status timeline — hide until payment is confirmed */}
           {showTimeline && (
             <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
               <Text textStyle="xs" color="fg.muted" mb={4} fontWeight="medium">
                 ORDER STATUS
               </Text>
-              <BuyerTimeline status={tx.status} statusHistory={tx.status_history} />
+              <BuyerTimeline
+                status={tx.status}
+                statusHistory={tx.status_history}
+                refundAmount={tx.refund_amount}
+              />
             </Box>
           )}
 

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
   LuArrowLeft,
   LuCheck,
+  LuCircleAlert,
   LuCircleCheck,
   LuClock,
   LuCopy,
@@ -144,44 +145,71 @@ const STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
   RESOLVED: 'Resolved',
 };
 
-function StatusTimeline({ tx }: { tx: Transaction }) {
-  const currentIndex = STATUS_ORDER.indexOf(tx.status);
-  const isFinalBad = [
-    'CANCELLED',
-    'REFUNDED',
-    'RESOLVED',
-    'REFUND_REQUESTED',
-    'REFUND_IN_PROGRESS',
-  ].includes(tx.status);
-
-  if (isFinalBad) {
-    return (
-      <Box
-        p={4}
-        bg="red.subtle"
-        borderRadius="xl"
-        borderWidth="1px"
-        borderColor="red.200"
-        _dark={{ borderColor: 'red.800' }}
-      >
+function TimelineEntry({
+  label,
+  ts,
+  note,
+  done,
+  active,
+  connector,
+  connectorColor = 'primary.200',
+}: {
+  label: string;
+  ts?: string | null;
+  note?: string | null;
+  done?: boolean;
+  active?: boolean;
+  connector?: boolean;
+  connectorColor?: string;
+}) {
+  return (
+    <Flex gap={3} align="flex-start">
+      <Flex direction="column" align="center">
+        <TimelineIcon done={done} active={active} />
+        {connector && (
+          <Box w="2px" flex={1} minH={6} bg={connectorColor} my={1} />
+        )}
+      </Flex>
+      <Box pb={connector ? 2 : 0} pt={0.5}>
         <Text
           textStyle="sm"
-          fontWeight="semibold"
-          color="red.700"
-          _dark={{ color: 'red.300' }}
+          fontWeight={active ? 'semibold' : 'normal'}
+          color={active ? 'fg' : done ? 'fg.muted' : 'fg.subtle'}
         >
-          {STATUS_LABELS[tx.status] ?? tx.status}
+          {label}
         </Text>
-        {tx.cancelled_by === 'buyer' && (
-          <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
-            Cancelled by buyer
+        {(done || active) && ts && (
+          <Text textStyle="xs" color="fg.subtle">{formatDateTime(ts)}</Text>
+        )}
+        {(done || active) && note && (
+          <Text textStyle="xs" color="fg.muted" mt={0.5} fontStyle="italic">
+            {`"${note}"`}
           </Text>
         )}
-        {tx.cancelled_by && tx.cancelled_by !== 'buyer' && (
-          <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
-            Cancelled by vendor
-          </Text>
-        )}
+      </Box>
+    </Flex>
+  );
+}
+
+const REFUND_STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
+  REFUND_REQUESTED:   'Refund Requested',
+  REFUND_IN_PROGRESS: 'Refund In Progress',
+  REFUNDED:           'Refund Issued',
+  RESOLVED:           'Order Resolved',
+  COMPLETED:          'Marked as Complete',
+};
+
+function StatusTimeline({ tx }: { tx: Transaction }) {
+  // ── Cancelled ──────────────────────────────────────────────────────────────
+  if (tx.status === 'CANCELLED') {
+    return (
+      <Box
+        p={4} bg="red.subtle" borderRadius="xl"
+        borderWidth="1px" borderColor="red.200" _dark={{ borderColor: 'red.800' }}
+      >
+        <Text textStyle="sm" fontWeight="semibold" color="red.700" _dark={{ color: 'red.300' }}>
+          Order Cancelled
+        </Text>
         {tx.cancellation_reason && (
           <Text textStyle="xs" color="red.600" _dark={{ color: 'red.400' }} mt={1}>
             Reason: {tx.cancellation_reason}
@@ -191,42 +219,128 @@ function StatusTimeline({ tx }: { tx: Transaction }) {
     );
   }
 
+  // ── Active refund in progress ──────────────────────────────────────────────
+  if (tx.status === 'REFUND_REQUESTED' || tx.status === 'REFUND_IN_PROGRESS') {
+    return (
+      <Box
+        p={4} bg="orange.subtle" borderRadius="xl"
+        borderWidth="1px" borderColor="orange.200" _dark={{ borderColor: 'orange.800' }}
+      >
+        <Flex align="center" gap={2}>
+          <LuCircleAlert size={15} color="var(--chakra-colors-orange-600)" />
+          <Text textStyle="sm" fontWeight="semibold" color="orange.700" _dark={{ color: 'orange.300' }}>
+            {STATUS_LABELS[tx.status]}
+          </Text>
+        </Flex>
+        {tx.refund_reason && (
+          <Text textStyle="xs" color="orange.600" _dark={{ color: 'orange.400' }} mt={1}>
+            Reason: {tx.refund_reason}
+          </Text>
+        )}
+      </Box>
+    );
+  }
+
+  // ── Refund issued / resolved (awaiting vendor to mark complete) ────────────
+  if (tx.status === 'REFUNDED' || tx.status === 'RESOLVED') {
+    return (
+      <Box
+        p={4} bg="blue.subtle" borderRadius="xl"
+        borderWidth="1px" borderColor="blue.200" _dark={{ borderColor: 'blue.800' }}
+      >
+        <Text textStyle="sm" fontWeight="semibold" color="blue.700" _dark={{ color: 'blue.300' }}>
+          {tx.status === 'REFUNDED' ? 'Refund Issued' : 'Order Resolved'}
+        </Text>
+        {tx.refund_amount != null && (
+          <Text textStyle="xs" color="blue.600" _dark={{ color: 'blue.400' }} mt={1}>
+            Refund amount: {formatCurrency(tx.refund_amount)}
+          </Text>
+        )}
+        {tx.refund_vendor_notes && (
+          <Text textStyle="xs" color="blue.600" _dark={{ color: 'blue.400' }} mt={1}>
+            {tx.refund_vendor_notes}
+          </Text>
+        )}
+      </Box>
+    );
+  }
+
+  // ── Completed after a refund — two-part timeline ───────────────────────────
+  if (tx.status === 'COMPLETED' && tx.refund_status !== 'NONE') {
+    const deliverySteps = STATUS_ORDER.slice(0, STATUS_ORDER.indexOf('DELIVERED') + 1);
+    const refundStatusSet = new Set(['REFUND_REQUESTED', 'REFUND_IN_PROGRESS', 'REFUNDED', 'RESOLVED']);
+    const refundJourney = tx.status_history
+      .filter(
+        (h) =>
+          refundStatusSet.has(h.to_status) ||
+          (h.to_status === 'COMPLETED' && refundStatusSet.has(h.from_status ?? ''))
+      )
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    return (
+      <Stack gap={3}>
+        {/* Delivery journey — all done */}
+        <Stack gap={0}>
+          {deliverySteps.map((status, i) => {
+            const h = tx.status_history.find((e) => e.to_status === status);
+            return (
+              <TimelineEntry
+                key={status}
+                label={STATUS_LABELS[status] ?? status}
+                ts={h?.created_at}
+                note={h?.note}
+                done
+                connector={i < deliverySteps.length - 1}
+              />
+            );
+          })}
+        </Stack>
+
+        {/* Divider */}
+        <Flex align="center" gap={2} px={1}>
+          <Box flex={1} h="1px" bg="border" />
+          <Text textStyle="2xs" color="fg.subtle" fontWeight="medium">REFUND PROCESS</Text>
+          <Box flex={1} h="1px" bg="border" />
+        </Flex>
+
+        {/* Refund journey */}
+        <Stack gap={0}>
+          {refundJourney.map((entry, i) => (
+            <TimelineEntry
+              key={i}
+              label={REFUND_STATUS_LABELS[entry.to_status as TransactionStatus] ?? entry.to_status}
+              ts={entry.created_at}
+              note={entry.note}
+              done
+              connector={i < refundJourney.length - 1}
+              connectorColor="blue.200"
+            />
+          ))}
+        </Stack>
+      </Stack>
+    );
+  }
+
+  // ── Normal in-progress / completed timeline ────────────────────────────────
+  const currentIndex = STATUS_ORDER.indexOf(tx.status);
   return (
     <Stack gap={0}>
       {STATUS_ORDER.map((status, i) => {
         const done = i < currentIndex;
         const active = i === currentIndex;
-        const historyEntry = tx.status_history.find((h) => h.to_status === status);
-        const isLast = i === STATUS_ORDER.length - 1;
-
+        const h = tx.status_history.find((e) => e.to_status === status);
+        const connector = i < STATUS_ORDER.length - 1;
         return (
-          <Flex key={status} gap={3} align="flex-start">
-            <Flex direction="column" align="center">
-              <TimelineIcon done={done} active={active} />
-              {!isLast && (
-                <Box w="2px" flex={1} minH={6} bg={done ? 'primary.200' : 'border'} my={1} />
-              )}
-            </Flex>
-            <Box pb={isLast ? 0 : 2} pt={0.5}>
-              <Text
-                textStyle="sm"
-                fontWeight={active ? 'semibold' : 'normal'}
-                color={active ? 'fg' : done ? 'fg.muted' : 'fg.subtle'}
-              >
-                {STATUS_LABELS[status] ?? status}
-              </Text>
-              {(done || active) && historyEntry && (
-                <Text textStyle="xs" color="fg.subtle">
-                  {formatDateTime(historyEntry.created_at)}
-                </Text>
-              )}
-              {(done || active) && historyEntry?.note && (
-                <Text textStyle="xs" color="fg.muted" mt={0.5} fontStyle="italic">
-                  {`"${historyEntry.note}"`}
-                </Text>
-              )}
-            </Box>
-          </Flex>
+          <TimelineEntry
+            key={status}
+            label={STATUS_LABELS[status] ?? status}
+            ts={h?.created_at}
+            note={h?.note}
+            done={done}
+            active={active}
+            connector={connector}
+            connectorColor={done ? 'primary.200' : 'border'}
+          />
         );
       })}
     </Stack>
@@ -441,7 +555,8 @@ export default function TransactionDetailPage() {
   const paymentMutation = useConfirmPayment();
   const cancelMutation = useCancelTransaction();
 
-  const isRefundAction = pendingStatusAction?.next.startsWith('REFUND') || pendingStatusAction?.next === 'RESOLVED';
+  // Refund fields (amount + notes) are only collected on the initial REFUND_REQUESTED step
+  const isRefundAction = pendingStatusAction?.next === 'REFUND_REQUESTED';
 
   // ─── Copy tracking link ─────────────────────────────────────────────────────
 
@@ -456,7 +571,8 @@ export default function TransactionDetailPage() {
 
   const handleStatusUpdate = async (next: TransactionStatus, note?: string) => {
     try {
-      if (isRefundAction) {
+      if (next === 'REFUND_REQUESTED') {
+        // Only on the initial refund action: persist refund amount + internal notes
         await refundStatusMutation.mutateAsync({
           id,
           status: next,
@@ -465,6 +581,7 @@ export default function TransactionDetailPage() {
           refund_vendor_notes: refundVendorNotes || undefined,
         });
       } else {
+        // All other transitions (including later refund steps) use the plain status endpoint
         await statusMutation.mutateAsync({ id, status: next, note });
       }
       setPendingStatusAction(null);
@@ -918,6 +1035,47 @@ export default function TransactionDetailPage() {
               )}
             </Stack>
           </Box>
+
+          {/* ── Refund info ──────────────────────────────────────────────── */}
+          {tx.refund_status !== 'NONE' && (
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
+              <Text textStyle="xs" color="fg.muted" mb={3} fontWeight="medium">
+                REFUND INFO
+              </Text>
+              <Stack gap={2}>
+                {tx.refund_reason && (
+                  <Flex justify="space-between" align="flex-start" gap={4}>
+                    <Text textStyle="sm" color="fg.muted" flexShrink={0}>
+                      Reason
+                    </Text>
+                    <Text textStyle="sm" textAlign="right">
+                      {tx.refund_reason}
+                    </Text>
+                  </Flex>
+                )}
+                {tx.refund_amount != null && (
+                  <Flex justify="space-between">
+                    <Text textStyle="sm" color="fg.muted">
+                      Amount
+                    </Text>
+                    <Text textStyle="sm" fontWeight="medium">
+                      {formatCurrency(tx.refund_amount)}
+                    </Text>
+                  </Flex>
+                )}
+                {tx.refund_vendor_notes && (
+                  <Flex justify="space-between" align="flex-start" gap={4}>
+                    <Text textStyle="sm" color="fg.muted" flexShrink={0}>
+                      Internal notes
+                    </Text>
+                    <Text textStyle="sm" textAlign="right" color="fg.muted">
+                      {tx.refund_vendor_notes}
+                    </Text>
+                  </Flex>
+                )}
+              </Stack>
+            </Box>
+          )}
 
           {/* ── Status timeline ──────────────────────────────────────────── */}
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
