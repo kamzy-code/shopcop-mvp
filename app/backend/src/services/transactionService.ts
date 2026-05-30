@@ -112,6 +112,7 @@ export class TransactionService {
               id: true,
               name: true,
               price: true,
+              description: true,
               media: {
                 orderBy: { is_primary: 'desc' },
                 select: { media_url: true, media_type: true },
@@ -138,7 +139,7 @@ export class TransactionService {
                 product.media.find((m) => m.media_type === 'IMAGE') ??
                 product.media.find((m) => m.media_type === 'VIDEO')
               )?.media_url ?? null,
-            variant: item.variant ?? null,
+            description: item.description || product.description || null,
           };
         }
         return {
@@ -148,7 +149,7 @@ export class TransactionService {
           quantity: item.quantity,
           subtotal: new Decimal(item.subtotal),
           item_image_url: null,
-          variant: item.variant ?? null,
+          description: item.description ?? null,
         };
       })
     );
@@ -402,6 +403,7 @@ export class TransactionService {
                 id: true,
                 name: true,
                 price: true,
+                description: true,
                 media: {
                   orderBy: { is_primary: 'desc' as const },
                   select: { media_url: true, media_type: true },
@@ -428,7 +430,7 @@ export class TransactionService {
                   product.media.find((m) => m.media_type === 'IMAGE') ??
                   product.media.find((m) => m.media_type === 'VIDEO')
                 )?.media_url ?? null,
-              variant: item.variant ?? null,
+              description: item.description || product.description || null,
             };
           }
           return {
@@ -438,7 +440,7 @@ export class TransactionService {
             quantity: item.quantity,
             subtotal: new Decimal(item.subtotal),
             item_image_url: null,
-            variant: item.variant ?? null,
+            description: item.description ?? null,
           };
         })
       );
@@ -648,7 +650,8 @@ export class TransactionService {
 
     // Sync refund_status so it persists the refund outcome even after status → COMPLETED
     const refundStatusSync = REFUND_STATUS_SYNC[newStatus];
-    const refundStatusData = refundStatusSync !== undefined ? { refund_status: refundStatusSync } : {};
+    const refundStatusData =
+      refundStatusSync !== undefined ? { refund_status: refundStatusSync } : {};
 
     const result = await prisma.$transaction(async (tx) => {
       const updated = await tx.transaction.update({

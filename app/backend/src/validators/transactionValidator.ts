@@ -7,7 +7,7 @@ export const transactionItemSchema = z.object({
   item_price: z.number().min(1, 'Price must be at least ₦1').max(10_000_000, 'Price too large'),
   quantity: z.number().int('Quantity must be a whole number').min(1, 'Quantity must be at least 1'),
   item_image_url: z.url('Enter a valid url for the image').optional(),
-  variant: z.string().max(200, 'Variant description too long').optional(),
+  description: z.string().max(500, 'Item description too long').optional(),
 });
 
 export const createTransactionSchema = z

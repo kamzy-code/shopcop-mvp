@@ -250,7 +250,7 @@ export default function NewTransactionPage() {
           item_name: i.item_name,
           item_price: Number(i.item_price),
           quantity: Number(i.quantity),
-          variant: i.variant || undefined,
+          description: i.description || undefined,
         })),
         delivery_fee: Number(d.delivery_fee) || undefined,
         discount_amount: Number(d.discount_amount) || undefined,
@@ -289,7 +289,7 @@ export default function NewTransactionPage() {
               item_name: p.name,
               item_price: p.price,
               quantity: 1,
-              variant: '',
+              description: p.description ?? '',
             })
           }
           onClose={() => setShowCatalog(false)}
@@ -399,14 +399,14 @@ export default function NewTransactionPage() {
                             </Grid>
                             <Field.Root>
                               <Field.Label>
-                                Variant{' '}
+                                Description{' '}
                                 <Text as="span" color="fg.muted" textStyle="xs">
                                   (optional)
                                 </Text>
                               </Field.Label>
                               <Input
-                                {...register(`items.${index}.variant`)}
-                                placeholder="Size, color, etc."
+                                {...register(`items.${index}.description`)}
+                                placeholder="Size, colour, notes, etc."
                                 size="sm"
                               />
                             </Field.Root>
@@ -452,7 +452,7 @@ export default function NewTransactionPage() {
                         item_name: '',
                         item_price: 0,
                         quantity: 1,
-                        variant: '',
+                        description: '',
                       })
                     }
                   >
@@ -669,7 +669,7 @@ export default function NewTransactionPage() {
                     {watchItems.map((item, i) => (
                       <Flex key={i} justify="space-between" align="center">
                         <Text textStyle="xs" color="fg.muted" truncate flex={1}>
-                          {item.item_name} {item.variant ? `(${item.variant})` : ''} ×{' '}
+                          {item.item_name} {item.description ? `(${item.description})` : ''} ×{' '}
                           {item.quantity}
                         </Text>
                         <Text textStyle="xs" color="fg" fontWeight="medium" ml={3} flexShrink={0}>

@@ -218,7 +218,7 @@ export default function EditTransactionPage() {
           item_name: item.item_name,
           item_price: item.item_price,
           quantity: item.quantity,
-          variant: item.variant ?? '',
+          description: item.description ?? '',
         })),
         delivery_fee: tx.delivery_fee ?? 0,
         discount_amount: tx.discount_amount ?? 0,
@@ -248,7 +248,7 @@ export default function EditTransactionPage() {
             item_name: i.item_name,
             item_price: Number(i.item_price),
             quantity: Number(i.quantity),
-            variant: i.variant || undefined,
+            description: i.description || undefined,
           })),
           delivery_fee: Number(data.delivery_fee) || 0,
           discount_amount: Number(data.discount_amount) || 0,
@@ -307,7 +307,7 @@ export default function EditTransactionPage() {
               item_name: p.name,
               item_price: p.price,
               quantity: 1,
-              variant: '',
+              description: p.description ?? '',
             })
           }
           onClose={() => setShowCatalog(false)}
@@ -440,14 +440,14 @@ export default function EditTransactionPage() {
                         </Grid>
                         <Field.Root>
                           <Field.Label>
-                            Variant{' '}
+                            Description{' '}
                             <Text as="span" color="fg.muted" textStyle="xs">
                               (optional)
                             </Text>
                           </Field.Label>
                           <Input
-                            {...register(`items.${index}.variant`)}
-                            placeholder="Size, color, etc."
+                            {...register(`items.${index}.description`)}
+                            placeholder="Size, colour, notes, etc."
                             size="sm"
                           />
                         </Field.Root>
@@ -482,7 +482,7 @@ export default function EditTransactionPage() {
                     flex={1}
                     colorPalette="gray"
                     onClick={() =>
-                      append({ product_id: undefined, item_name: '', item_price: 0, quantity: 1, variant: '' })
+                      append({ product_id: undefined, item_name: '', item_price: 0, quantity: 1, description: '' })
                     }
                   >
                     <LuPlus size={14} />

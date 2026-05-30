@@ -630,7 +630,7 @@ model TransactionItem {
   quantity       Int     @default(1)
   subtotal       Decimal @db.Decimal(10, 2)
   item_image_url String?
-  variant        String?
+  description    String?  @map("variant")
 
   // Stock audit trail
   stock_deducted Int @default(0)

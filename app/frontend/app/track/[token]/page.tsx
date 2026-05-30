@@ -424,9 +424,9 @@ export default function TrackingPage() {
                     <Text textStyle="sm" fontWeight="medium" truncate>
                       {item.item_name}
                     </Text>
-                    {item.variant && (
+                    {item.description && (
                       <Text textStyle="xs" color="fg.muted">
-                        {item.variant}
+                        {item.description}
                       </Text>
                     )}
                   </Box>

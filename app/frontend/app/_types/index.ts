@@ -305,7 +305,7 @@ export interface TransactionItem {
   quantity: number;
   subtotal: number;
   item_image_url: string | null;
-  variant: string | null;
+  description: string | null;
   stock_deducted: number;
   stock_restored: number;
 }
@@ -405,7 +405,7 @@ export interface CreateTransactionInput {
     item_name: string;
     item_price: number;
     quantity: number;
-    variant?: string;
+    description?: string;
   }[];
   delivery_fee?: number;
   discount_amount?: number;
@@ -423,7 +423,7 @@ export interface UpdateTransactionInput {
     item_name: string;
     item_price: number;
     quantity: number;
-    variant?: string;
+    description?: string;
   }[];
   delivery_fee?: number;
   discount_amount?: number;

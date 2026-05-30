@@ -7,7 +7,7 @@ export interface TransactionItemInput {
   item_price: number;
   quantity: number;
   item_image_url?: string;
-  variant?: string;
+  description?: string;
 }
 
 /** Payload for creating a new transaction. */

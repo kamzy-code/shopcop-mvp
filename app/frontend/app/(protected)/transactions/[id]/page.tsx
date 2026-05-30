@@ -548,6 +548,7 @@ export default function TransactionDetailPage() {
                     colorPalette="primary"
                     size="sm"
                     onClick={() => setShowPaymentModal(true)}
+                    disabled={tx.payment_status === 'UNPAID'}
                   >
                     <LuCircleCheck size={14} />
                     Confirm Payment
@@ -683,9 +684,9 @@ export default function TransactionDetailPage() {
                     <Text textStyle="sm" fontWeight="medium" truncate>
                       {item.item_name}
                     </Text>
-                    {item.variant && (
+                    {item.description && (
                       <Text textStyle="xs" color="fg.muted">
-                        {item.variant}
+                        {item.description}
                       </Text>
                     )}
                   </Box>

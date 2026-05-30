@@ -5,7 +5,7 @@ const itemSchema = z.object({
   item_name: z.string().min(1, 'Item name is required'),
   item_price: z.number().min(1, 'Price must be at least ₦1'),
   quantity: z.number().int().min(1, 'Quantity must be at least 1'),
-  variant: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export const transactionFormSchema = z.object({
