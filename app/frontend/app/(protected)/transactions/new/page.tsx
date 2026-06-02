@@ -212,8 +212,8 @@ export default function NewTransactionPage() {
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   const watchItems = watch('items');
-  const watchDeliveryFee = watch('delivery_fee') ?? 0;
-  const watchDiscount = watch('discount_amount') ?? 0;
+  const watchDeliveryFee = watch('delivery_fee') || 0;
+  const watchDiscount = watch('discount_amount') || 0;
 
   const subtotal = watchItems.reduce(
     (sum, item) => sum + (Number(item.item_price) || 0) * (Number(item.quantity) || 0),
