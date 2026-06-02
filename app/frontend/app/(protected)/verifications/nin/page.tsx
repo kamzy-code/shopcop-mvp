@@ -144,7 +144,7 @@ export default function NinPage() {
                     setGovIdFile(file);
                     if (file) setFileError(null);
                   }}
-                  label="Upload your National ID, Passport, or Driver's License"
+                  label="Upload a clear scan or photo of your National ID"
                   hint="JPG or PNG, max 2MB"
                 />
                 <Field.HelperText color="fg.subtle" textStyle="xs">

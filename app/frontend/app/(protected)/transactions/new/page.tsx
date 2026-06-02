@@ -577,7 +577,7 @@ export default function NewTransactionPage() {
             {/* ── Step 2: Summary ────────────────────────────────────────── */}
             {step === 2 && (
               <Stack gap={4}>
-                <Grid templateColumns="1fr 1fr" gap={4}>
+                <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
                   <Field.Root>
                     <Field.Label>Delivery Fee (₦) <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text></Field.Label>
                     <Input
