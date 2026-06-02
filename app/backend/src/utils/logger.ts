@@ -145,6 +145,39 @@ const transactionLogger = createLogger({
   defaultMeta: { service: 'transactionService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to trust metrics calculation operations. */
+const trustMetricsLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'trustMetricsService', timeStamp: new Date().toISOString() },
+});
+
+/** Winston logger scoped to review CRUD operations. */
+const reviewLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'reviewService', timeStamp: new Date().toISOString() },
+});
+
+/** Winston logger scoped to public profile operations. */
+const publicProfileLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'publicProfileService', timeStamp: new Date().toISOString() },
+});
+
 /** Winston logger scoped to product CRUD operations. */
 const productLogger = createLogger({
   level: 'info',
@@ -199,4 +232,4 @@ const productLogger = createLogger({
 // });
 
 export default logger;
-export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, transactionLogger };
+export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, transactionLogger, trustMetricsLogger, reviewLogger, publicProfileLogger };

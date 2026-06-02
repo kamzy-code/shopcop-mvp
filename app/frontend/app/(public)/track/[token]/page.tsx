@@ -16,6 +16,7 @@ import { formatDate, formatCurrency, formatDateTime, isVideoUrl } from '@/app/_l
 import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toaster } from '@/components/ui/toaster';
+import { ReviewForm } from '@/components/review/ReviewForm';
 
 // ─── Status timeline for buyer ────────────────────────────────────────────────
 
@@ -602,6 +603,11 @@ export default function TrackingPage() {
                   : 'Your order has been completed after being resolved. Contact the seller if you need further assistance.'}
               </Text>
             </Box>
+          )}
+
+          {/* Review CTA — show when COMPLETED and no review exists */}
+          {tx.status === 'COMPLETED' && !tx.review && (
+            <ReviewForm trackingToken={token} />
           )}
 
           {/* Status timeline — hide until payment is confirmed */}

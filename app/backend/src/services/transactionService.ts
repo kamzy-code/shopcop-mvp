@@ -3,6 +3,7 @@ import { prisma } from '@config/prisma.js';
 import { transactionLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { TransactionStatus, RefundStatus, PaymentStatus } from '../generated/prisma/enums.js';
+import { TrustMetricsService } from '@services/trustMetricsService.js';
 import {
   CreateTransactionInput,
   UpdateTransactionInput,
@@ -339,6 +340,7 @@ export class TransactionService {
       where: { tracking_token: token },
       data: {
         payment_status: PaymentStatus.PROOF_SUBMITTED,
+        payment_proof_submitted_at: new Date(),
         ...(data.buyer_email && { buyer_email: data.buyer_email }),
         ...(data.payment_proof_url && { payment_proof_url: data.payment_proof_url }),
       },
@@ -686,6 +688,10 @@ export class TransactionService {
       to: newStatus,
     });
 
+    if (newStatus === TransactionStatus.COMPLETED || newStatus === TransactionStatus.REFUNDED || newStatus === TransactionStatus.RESOLVED) {
+      TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
+    }
+
     return result;
   }
 
@@ -869,6 +875,8 @@ export class TransactionService {
 
     transactionLogger.info('Buyer confirmed delivery', { transactionId: transaction.id, token });
 
+    TrustMetricsService.recalculateVendorTrustMetrics(updated.vendor_id);
+
     const { vendor_notes: _omit, ...buyerSafe } = updated;
     void _omit;
     return buyerSafe;
@@ -1001,6 +1009,10 @@ export class TransactionService {
       from: transaction.status,
       to: newStatus,
     });
+
+    if (newStatus === TransactionStatus.COMPLETED || newStatus === TransactionStatus.REFUNDED || newStatus === TransactionStatus.RESOLVED) {
+      TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
+    }
 
     return result;
   }

@@ -1,0 +1,134 @@
+'use client';
+import { useState } from 'react';
+import { Box, Button, Field, Flex, Input, Stack, Text, Textarea } from '@chakra-ui/react';
+import { toaster } from '@/components/ui/toaster';
+import { useCreateReview } from '@/app/_hooks/useCreateReview';
+import { ReviewStars } from './ReviewStars';
+
+interface ReviewFormProps {
+  trackingToken: string;
+  onSuccess?: () => void;
+}
+
+export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
+  const [overallRating, setOverallRating] = useState(0);
+  const [deliveryRating, setDeliveryRating] = useState(0);
+  const [responseRating, setResponseRating] = useState(0);
+  const [satisfactionRating, setSatisfactionRating] = useState(0);
+  const [buyerName, setBuyerName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const { mutate: createReview, isPending } = useCreateReview();
+
+  const handleSubmit = () => {
+    if (overallRating === 0) {
+      toaster.create({ title: 'Please select an overall rating', type: 'error' });
+      return;
+    }
+
+    createReview(
+      {
+        tracking_token: trackingToken,
+        overall_rating: overallRating,
+        delivery_rating: deliveryRating > 0 ? deliveryRating : undefined,
+        response_rating: responseRating > 0 ? responseRating : undefined,
+        satisfaction_rating: satisfactionRating > 0 ? satisfactionRating : undefined,
+        buyer_name: buyerName.trim() || undefined,
+        review_text: reviewText.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setSubmitted(true);
+          toaster.create({ title: 'Review submitted! Thank you.', type: 'success' });
+          onSuccess?.();
+        },
+        onError: (err) => {
+          toaster.create({ title: err.message || 'Failed to submit review', type: 'error' });
+        },
+      }
+    );
+  };
+
+  if (submitted) {
+    return (
+      <Box p={4} bg="green.subtle" borderRadius="xl" textAlign="center">
+        <Text fontWeight="semibold" color="green.700" _dark={{ color: 'green.300' }}>
+          Thank you for your review!
+        </Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+      <Text textStyle="sm" fontWeight="semibold" mb={4}>
+        How was your experience?
+      </Text>
+
+      <Stack gap={4}>
+        <Field.Root required>
+          <Field.Label>Overall Experience</Field.Label>
+          <ReviewStars rating={overallRating} size="lg" interactive onChange={setOverallRating} />
+        </Field.Root>
+
+        <Field.Root>
+          <Field.Label>
+            Delivery Experience <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+          </Field.Label>
+          <ReviewStars rating={deliveryRating} size="lg" interactive onChange={setDeliveryRating} />
+        </Field.Root>
+
+        <Field.Root>
+          <Field.Label>
+            Vendor Responsiveness <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+          </Field.Label>
+          <ReviewStars rating={responseRating} size="lg" interactive onChange={setResponseRating} />
+        </Field.Root>
+
+        <Field.Root>
+          <Field.Label>
+            Overall Satisfaction <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+          </Field.Label>
+          <ReviewStars rating={satisfactionRating} size="lg" interactive onChange={setSatisfactionRating} />
+        </Field.Root>
+
+        <Field.Root>
+          <Field.Label>
+            Your Name <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+          </Field.Label>
+          <Input
+            value={buyerName}
+            onChange={(e) => setBuyerName(e.target.value)}
+            placeholder="Enter your name"
+            maxLength={100}
+          />
+        </Field.Root>
+
+        <Field.Root>
+          <Field.Label>
+            Review <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+          </Field.Label>
+          <Textarea
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            placeholder="Share your experience..."
+            maxLength={2000}
+            rows={3}
+          />
+        </Field.Root>
+
+        <Flex gap={2} justify="flex-end">
+          <Button
+            colorPalette="primary"
+            onClick={handleSubmit}
+            loading={isPending}
+            disabled={overallRating === 0}
+          >
+            Submit Review
+          </Button>
+        </Flex>
+      </Stack>
+    </Box>
+  );
+}

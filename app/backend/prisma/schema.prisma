@@ -313,9 +313,14 @@ model VendorProfile {
   profile_completeness   Int     @default(0) // 0-100%
 
   // ========== CALCULATED METRICS ==========
-  total_transactions Int   @default(0)
-  fulfillment_rate   Float @default(0)
-  average_rating     Float @default(0)
+  total_transactions       Int   @default(0)
+  successful_transactions  Int   @default(0)
+  fulfillment_rate         Float @default(0)
+  refund_rate              Float @default(0)
+  average_rating           Float @default(0)
+  customer_satisfaction_rate Float @default(0)
+  on_time_delivery_rate    Float @default(0)
+  avg_response_time_minutes Float @default(0)
 
   // Status
   profile_status String @default("active") // active, inactive, suspended
@@ -562,10 +567,11 @@ model Transaction {
   currency        String   @default("NGN")
 
   // Payment
-  payment_status       PaymentStatus @default(UNPAID)
-  payment_proof_url    String?
-  payment_confirmed_at DateTime?
-  payment_notes        String?
+  payment_status            PaymentStatus @default(UNPAID)
+  payment_proof_url         String?
+  payment_proof_submitted_at DateTime?
+  payment_confirmed_at      DateTime?
+  payment_notes             String?
 
   // Status
   status TransactionStatus @default(PENDING)
@@ -675,15 +681,14 @@ model Review {
   // Buyer
   buyer_id   String?
   buyer      BuyerProfile? @relation(fields: [buyer_id], references: [id])
-  buyer_name String
+  buyer_name String?
 
   // Review Content
-  rating            Int // 1-5 stars
-  review_text       String?  @db.Text
-  review_categories String[] @default([])
-
-  // Categorization
-  review_type String // "positive" or "negative"
+  overall_rating     Int // 1-5 stars
+  delivery_rating    Int?
+  response_rating    Int?
+  satisfaction_rating Int?
+  review_text        String? @db.Text
 
   // Moderation
   moderation_status ModerationStatus @default(PENDING)
@@ -696,7 +701,7 @@ model Review {
   updated_at DateTime @updatedAt
 
   @@index([vendor_id])
-  @@index([rating])
+  @@index([overall_rating])
   @@index([moderation_status])
   @@index([created_at])
   @@map("reviews")
