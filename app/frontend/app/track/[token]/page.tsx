@@ -343,6 +343,7 @@ export default function TrackingPage() {
     business_name?: string | null;
     profile_photo_url?: string | null;
     whatsapp_number?: string | null;
+    refund_policy_type?: string | null;
   };
 
   const isUnpaid = tx.payment_status === 'UNPAID';
@@ -352,7 +353,7 @@ export default function TrackingPage() {
   const isCompletedAfterRefund = tx.status === 'COMPLETED' && tx.refund_status !== 'NONE';
   const isPending = tx.status === 'PENDING';
   const isDelivered = tx.status === 'DELIVERED';
-  const isRefundable = tx.status === 'DELIVERED' || tx.status === 'COMPLETED';
+  const isRefundable = (tx.status === 'DELIVERED' || tx.status === 'COMPLETED') && vendor?.refund_policy_type !== 'NO_REFUNDS';
 
   const handleBuyerCancel = async () => {
     try {

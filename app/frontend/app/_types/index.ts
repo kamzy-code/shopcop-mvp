@@ -319,6 +319,7 @@ export interface TransactionVendor {
   bank_name: string | null;
   account_number: string | null;
   account_name: string | null;
+  refund_policy_type: RefundPolicyType;
 }
 
 export interface TransactionStatusHistoryEntry {

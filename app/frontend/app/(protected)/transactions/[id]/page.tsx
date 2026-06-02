@@ -94,6 +94,13 @@ const CANCELLABLE: TransactionStatus[] = [
   'READY_FOR_DISPATCH',
 ];
 
+const REFUND_NEXT_STATUSES: TransactionStatus[] = [
+  'REFUND_REQUESTED',
+  'REFUND_IN_PROGRESS',
+  'REFUNDED',
+  'RESOLVED',
+];
+
 // ─── Timeline icon ─────────────────────────────────────────────────────────────
 
 function TimelineIcon({ done, active }: { done?: boolean; active?: boolean }) {
@@ -657,6 +664,7 @@ export default function TransactionDetailPage() {
   const nextAction = NEXT_STATUS_ACTION[tx.status];
   const canCancel = CANCELLABLE.includes(tx.status);
   const isPending = tx.status === 'PENDING';
+  const allowRefund = tx.vendor?.refund_policy_type !== 'NO_REFUNDS';
 
   return (
     <AppShell>
@@ -763,7 +771,7 @@ export default function TransactionDetailPage() {
                     Confirm Payment
                   </Button>
                 )}
-                {nextAction && !isPending && (
+                {nextAction && !isPending && (allowRefund || !REFUND_NEXT_STATUSES.includes(nextAction.next)) && (
                   <Button
                     colorPalette="primary"
                     size="sm"
@@ -775,7 +783,7 @@ export default function TransactionDetailPage() {
                     {nextAction.label}
                   </Button>
                 )}
-                {nextAction?.secondaryNext && !isPending && (
+                {nextAction?.secondaryNext && !isPending && (allowRefund || !REFUND_NEXT_STATUSES.includes(nextAction.secondaryNext)) && (
                   <Button
                     variant="outline"
                     colorPalette="primary"
