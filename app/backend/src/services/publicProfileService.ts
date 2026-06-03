@@ -18,6 +18,7 @@ export class PublicProfileService {
       where: { slug },
       select: {
         id: true,
+        business_info_complete: true,
         business_name: true,
         slug: true,
         profile_photo_url: true,
@@ -44,20 +45,35 @@ export class PublicProfileService {
       throw new AppError('Vendor not found', 404);
     }
 
+    // Only surface profiles where the vendor has completed business setup
+    if (!vendor.business_info_complete) {
+      publicProfileLogger.warn('Vendor profile not yet public (business info incomplete)', {
+        action: 'getPublicProfile',
+        slug,
+      });
+      throw new AppError('Vendor not found', 404);
+    }
+
+    // Destructure to drop the internal flag before returning to the client
+    const { business_info_complete: _omit, ...vendorPublic } = vendor;
+    void _omit;
+
     const [trustMetrics, reviewsResult, productsResult] = await Promise.all([
-      TrustMetricsService.getVendorTrustMetrics(vendor.id),
-      ReviewService.getVendorReviews(vendor.id, reviewPage, reviewLimit),
-      this.getVendorProducts(vendor.id, productPage, productLimit),
+      TrustMetricsService.getVendorTrustMetrics(vendorPublic.id),
+      ReviewService.getVendorReviews(vendorPublic.id, reviewPage, reviewLimit),
+      this.getVendorProducts(vendorPublic.id, productPage, productLimit),
     ]);
 
     publicProfileLogger.info('Public profile fetched', {
       action: 'getPublicProfile',
       slug,
-      vendorId: vendor.id,
+      vendorId: vendorPublic.id,
     });
 
+    const reviewTotal = reviewsResult.summary.total_reviews;
+
     return {
-      profile: vendor,
+      profile: vendorPublic,
       trustMetrics,
       reviews: {
         data: reviewsResult.reviews,
@@ -65,8 +81,8 @@ export class PublicProfileService {
         meta: {
           page: reviewPage,
           limit: reviewLimit,
-          total: reviewsResult.total,
-          totalPages: Math.ceil(reviewsResult.total / reviewLimit),
+          total: reviewTotal,
+          totalPages: Math.ceil(reviewTotal / reviewLimit),
         },
       },
       products: productsResult,

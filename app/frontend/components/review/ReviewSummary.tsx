@@ -10,8 +10,6 @@ interface ReviewSummaryProps {
 export function ReviewSummary({ summary }: ReviewSummaryProps) {
   const { average_rating, total_reviews, distribution } = summary;
 
-  const maxCount = Math.max(...Object.values(distribution), 1);
-
   return (
     <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
       <Flex gap={6} align="center" mb={4}>
@@ -28,7 +26,8 @@ export function ReviewSummary({ summary }: ReviewSummaryProps) {
         <Box flex={1}>
           {[5, 4, 3, 2, 1].map((star) => {
             const count = distribution[star] || 0;
-            const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+            // Width proportional to total reviews so bars reflect true distribution
+            const pct = total_reviews > 0 ? (count / total_reviews) * 100 : 0;
             return (
               <Flex key={star} align="center" gap={2} mb={1}>
                 <Text textStyle="xs" color="fg.muted" w={3}>

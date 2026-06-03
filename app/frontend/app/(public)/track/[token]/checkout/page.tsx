@@ -64,20 +64,26 @@ export default function CheckoutPage() {
   const hasPaymentDetails = vendor?.bank_name || vendor?.account_number || vendor?.account_name;
 
   const handleSubmit = async () => {
-    let payment_proof_url: string | undefined;
+    if (!receiptFile) {
+      toaster.create({
+        title: 'Receipt required',
+        description: 'Please upload a screenshot of your payment receipt before submitting.',
+        type: 'error',
+      });
+      return;
+    }
 
-    if (receiptFile) {
-      try {
-        const result = await uploadMutation.mutateAsync({ file: receiptFile, setUploadProgress });
-        payment_proof_url = result.url;
-      } catch {
-        toaster.create({
-          title: 'Upload failed',
-          description: 'Could not upload your receipt. You can still submit without it.',
-          type: 'error',
-        });
-        return;
-      }
+    let payment_proof_url: string;
+    try {
+      const result = await uploadMutation.mutateAsync({ file: receiptFile, setUploadProgress });
+      payment_proof_url = result.url;
+    } catch {
+      toaster.create({
+        title: 'Upload failed',
+        description: 'Could not upload your receipt. Please try again.',
+        type: 'error',
+      });
+      return;
     }
 
     try {
@@ -96,6 +102,7 @@ export default function CheckoutPage() {
   };
 
   const isSubmitting = submitMutation.isPending || uploadMutation.isPending;
+  const canSubmit = !!receiptFile && !isSubmitting;
 
   return (
     <Box minH="100dvh" bg="bg">
@@ -284,11 +291,14 @@ export default function CheckoutPage() {
 
           {/* Upload receipt */}
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
-            <Text textStyle="sm" fontWeight="medium" color="fg" mb={0.5}>
-              Payment receipt
-            </Text>
+            <Flex align="center" gap={1} mb={0.5}>
+              <Text textStyle="sm" fontWeight="medium" color="fg">
+                Payment receipt
+              </Text>
+              <Text textStyle="xs" color="red.500" fontWeight="semibold">*</Text>
+            </Flex>
             <Text textStyle="xs" color="fg.muted" mb={3}>
-              Optional — helps the seller confirm faster
+              Required — upload a screenshot or photo of your payment confirmation
             </Text>
             <FileUpload
               accept="image/*"
@@ -339,6 +349,7 @@ export default function CheckoutPage() {
             w="full"
             onClick={() => setShowConfirm(true)}
             loading={isSubmitting}
+            disabled={!canSubmit}
             loadingText={uploadMutation.isPending ? 'Uploading receipt…' : 'Submitting…'}
           >
             {`I've Sent the Money`}

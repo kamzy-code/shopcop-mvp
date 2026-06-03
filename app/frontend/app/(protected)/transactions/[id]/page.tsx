@@ -65,14 +65,13 @@ const NEXT_STATUS_ACTION: Partial<
   IN_PROGRESS: { label: 'Mark Ready for Dispatch', next: 'READY_FOR_DISPATCH' },
   READY_FOR_DISPATCH: { label: 'Mark Shipped', next: 'SHIPPED' },
   SHIPPED: { label: 'Mark Delivered', next: 'DELIVERED' },
+  // COMPLETED is removed from vendor actions — only buyers can complete a
+  // transaction via "I've Received It" or via the 48-hour auto-close.
   DELIVERED: {
-    label: 'Mark Completed',
-    next: 'COMPLETED',
-    secondaryLabel: 'Initiate Refund',
-    secondaryNext: 'REFUND_REQUESTED',
+    label: 'Initiate Refund',
+    next: 'REFUND_REQUESTED',
   },
-  REFUNDED: { label: 'Mark Completed', next: 'COMPLETED' },
-  RESOLVED: { label: 'Mark Completed', next: 'COMPLETED' },
+  // REFUNDED and RESOLVED no longer have a vendor action — the system auto-closes.
   REFUND_REQUESTED: {
     label: 'Begin Refund Process',
     next: 'REFUND_IN_PROGRESS',

@@ -20,7 +20,7 @@ import { ProductController } from '@controllers/productController.js';
 import transactionRouter from '@routes/transactionRoute.js';
 import trackRouter from '@routes/trackRoute.js';
 import trustMetricsRouter from '@routes/trustMetricsRoute.js';
-import reviewRouter, { vendorReviewRouter } from '@routes/reviewRoute.js';
+import reviewRouter from '@routes/reviewRoute.js';
 import publicProfileRouter from '@routes/publicProfileRoute.js';
 
 dotenv.config();
@@ -79,7 +79,6 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/uploads', fileUploadRouter);
-app.use('/api/v1/vendors', vendorReviewRouter);
 app.use('/api/v1/vendors', vendorRouter);
 app.use('/api/v1/verifications', verificationRouter);
 app.use('/api/v1/admin/verifications', adminVerificationRouter);

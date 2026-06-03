@@ -1,10 +1,28 @@
 'use client';
-import { Box, Flex, Text } from '@chakra-ui/react';
-import { LuCircleCheck, LuClock, LuPercent, LuStar, LuRefreshCw } from 'react-icons/lu';
+import { Box, Flex, SimpleGrid, Text } from '@chakra-ui/react';
+import {
+  LuCircleCheck,
+  LuClock,
+  LuRefreshCw,
+  LuSmile,
+  LuStar,
+  LuThumbsUp,
+  LuTruck,
+  LuZap,
+} from 'react-icons/lu';
 import type { TrustMetrics } from '@/app/_types';
 
 interface TrustIndicatorsProps {
   metrics: TrustMetrics;
+}
+
+/** Format a minute value into a human-readable string. */
+function formatMinutes(minutes: number): string {
+  if (minutes <= 0) return 'N/A';
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 function Indicator({
@@ -19,9 +37,17 @@ function Indicator({
   color?: string;
 }) {
   return (
-    <Flex gap={3} align="center" p={3} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="lg">
-      <Box color={color || 'primary.fg'}>
-        <Icon size={20} />
+    <Flex
+      gap={3}
+      align="center"
+      p={3}
+      bg="bg.panel"
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="lg"
+    >
+      <Box color={color || 'primary.fg'} flexShrink={0}>
+        <Icon size={18} />
       </Box>
       <Box>
         <Text textStyle="sm" fontWeight="semibold">
@@ -38,10 +64,11 @@ function Indicator({
 export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
   return (
     <Box>
-      <Text textStyle="sm" fontWeight="semibold" mb={3}>
-        Trust Indicators
+      {/* ── Performance Metrics (system, transaction-derived) ─────────────────── */}
+      <Text textStyle="sm" fontWeight="semibold" mb={2}>
+        Performance
       </Text>
-      <Flex gap={3} flexWrap="wrap">
+      <SimpleGrid columns={{ base: 2, sm: 3 }} gap={2} mb={5}>
         <Indicator
           icon={LuCircleCheck}
           label="Fulfillment Rate"
@@ -49,16 +76,16 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
           color="green.500"
         />
         <Indicator
-          icon={LuPercent}
-          label="Customer Satisfaction"
-          value={`${metrics.customer_satisfaction_rate}%`}
-          color="blue.500"
+          icon={LuTruck}
+          label="On-Time Delivery"
+          value={`${metrics.on_time_delivery_rate}%`}
+          color="teal.500"
         />
         <Indicator
-          icon={LuStar}
-          label="Average Rating"
-          value={metrics.average_rating.toFixed(1)}
-          color="yellow.500"
+          icon={LuClock}
+          label="Avg. Payment Confirmation"
+          value={formatMinutes(metrics.avg_response_time_minutes)}
+          color="purple.500"
         />
         <Indicator
           icon={LuRefreshCw}
@@ -66,19 +93,56 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
           value={`${metrics.refund_rate}%`}
           color={metrics.refund_rate > 10 ? 'red.500' : 'fg.muted'}
         />
-        <Indicator
-          icon={LuClock}
-          label="Avg Response Time"
-          value={metrics.avg_response_time_minutes > 0 ? `${metrics.avg_response_time_minutes}m` : 'N/A'}
-          color="purple.500"
-        />
-        <Indicator
-          icon={LuCircleCheck}
-          label="On-Time Delivery"
-          value={`${metrics.on_time_delivery_rate}%`}
-          color="teal.500"
-        />
-      </Flex>
+      </SimpleGrid>
+
+      {/* ── Customer Feedback (buyer-rated, review-derived) ───────────────────── */}
+      {
+      //metrics.review_count > 0 &&
+       (
+        <>
+          <Text textStyle="sm" fontWeight="semibold" mb={2}>
+            Customer Feedback
+          </Text>
+          <SimpleGrid columns={{ base: 2, sm: 3 }} gap={2}>
+            <Indicator
+              icon={LuStar}
+              label="Overall Rating"
+              value={`${metrics.average_rating.toFixed(1)} / 5`}
+              color="yellow.500"
+            />
+            {
+            //metrics.avg_delivery_rating > 0 &&
+             (
+              <Indicator
+                icon={LuTruck}
+                label="Delivery Experience"
+                value={`${metrics.avg_delivery_rating.toFixed(1)} / 5`}
+                color="blue.500"
+              />
+            )}
+            {
+            //metrics.avg_response_rating > 0 &&
+             (
+              <Indicator
+                icon={LuZap}
+                label="Responsiveness"
+                value={`${metrics.avg_response_rating.toFixed(1)} / 5`}
+                color="orange.500"
+              />
+            )}
+            {
+            //metrics.customer_satisfaction_rating > 0 &&
+             (
+              <Indicator
+                icon={metrics.customer_satisfaction_rating >= 4 ? LuSmile : LuThumbsUp}
+                label="Customer Satisfaction"
+                value={`${metrics.customer_satisfaction_rating.toFixed(1)} / 5`}
+                color="pink.500"
+              />
+            )}
+          </SimpleGrid>
+        </>
+      )}
     </Box>
   );
 }

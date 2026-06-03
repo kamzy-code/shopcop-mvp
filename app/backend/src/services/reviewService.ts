@@ -1,9 +1,9 @@
 import { prisma } from '@config/prisma.js';
 import { reviewLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { TransactionStatus, ModerationStatus } from '../generated/prisma/enums.js';
+import { ModerationStatus, TransactionStatus } from '../generated/prisma/enums.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
-import type { CreateReviewInput, ReviewData, ReviewSummary } from '../types/reviewTypes.js';
+import type { CreateReviewInput, EditReviewTextInput, ReviewData, ReviewSummary } from '../types/reviewTypes.js';
 
 export class ReviewService {
   static async createReview(data: CreateReviewInput): Promise<ReviewData> {
@@ -49,6 +49,7 @@ export class ReviewService {
       data: {
         transaction_id: transaction.id,
         vendor_id: transaction.vendor_id,
+        buyer_id: data.buyer_id ?? null,
         buyer_name: buyerName,
         overall_rating: data.overall_rating,
         delivery_rating: data.delivery_rating ?? null,
@@ -81,17 +82,74 @@ export class ReviewService {
     };
   }
 
+  static async editReviewText(data: EditReviewTextInput): Promise<ReviewData> {
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: data.tracking_token },
+      select: {
+        id: true,
+        review: {
+          select: {
+            id: true,
+            overall_rating: true,
+            delivery_rating: true,
+            response_rating: true,
+            satisfaction_rating: true,
+            buyer_name: true,
+            review_text: true,
+            created_at: true,
+          },
+        },
+      },
+    });
+
+    if (!transaction) {
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (!transaction.review) {
+      throw new AppError('No review found for this transaction', 404);
+    }
+
+    const ageMs = Date.now() - transaction.review.created_at.getTime();
+    if (ageMs > SEVEN_DAYS_MS) {
+      throw new AppError('The 7-day edit window for this review has closed', 403);
+    }
+
+    const updated = await prisma.review.update({
+      where: { id: transaction.review.id },
+      data: { review_text: data.review_text ?? null },
+    });
+
+    reviewLogger.info('Review text edited', {
+      action: 'editReviewText',
+      reviewId: transaction.review.id,
+    });
+
+    return {
+      id: updated.id,
+      overall_rating: updated.overall_rating,
+      delivery_rating: updated.delivery_rating,
+      response_rating: updated.response_rating,
+      satisfaction_rating: updated.satisfaction_rating,
+      buyer_name: updated.buyer_name,
+      review_text: updated.review_text,
+      created_at: updated.created_at,
+    };
+  }
+
   static async getVendorReviews(
     vendorId: string,
     page: number = 1,
     limit: number = 10
-  ): Promise<{ reviews: ReviewData[]; summary: ReviewSummary; total: number }> {
+  ): Promise<{ reviews: ReviewData[]; summary: ReviewSummary }> {
     const where = {
       vendor_id: vendorId,
-      moderation_status: 'APPROVED' as const,
+      moderation_status: ModerationStatus.APPROVED,
     };
 
-    const [reviews, total, aggregation] = await Promise.all([
+    const [reviews, total, aggregation, distributionRows] = await Promise.all([
       prisma.review.findMany({
         where,
         orderBy: { created_at: 'desc' },
@@ -103,15 +161,17 @@ export class ReviewService {
         where,
         _avg: { overall_rating: true },
       }),
+      // groupBy replaces the old full-table findMany scan for distribution
+      prisma.review.groupBy({
+        by: ['overall_rating'],
+        where,
+        _count: { overall_rating: true },
+      }),
     ]);
 
     const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    const allRatings = await prisma.review.findMany({
-      where,
-      select: { overall_rating: true },
-    });
-    for (const r of allRatings) {
-      distribution[r.overall_rating] = (distribution[r.overall_rating] || 0) + 1;
+    for (const row of distributionRows) {
+      distribution[row.overall_rating] = row._count.overall_rating;
     }
 
     return {
@@ -130,7 +190,6 @@ export class ReviewService {
         total_reviews: total,
         distribution,
       },
-      total,
     };
   }
 }

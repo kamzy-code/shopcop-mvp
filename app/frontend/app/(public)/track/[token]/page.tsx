@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
@@ -17,6 +17,16 @@ import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toaster } from '@/components/ui/toaster';
 import { ReviewForm } from '@/components/review/ReviewForm';
+import {
+  DialogBackdrop,
+  DialogBody,
+  DialogCloseTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from '@chakra-ui/react';
 
 // ─── Status timeline for buyer ────────────────────────────────────────────────
 
@@ -296,6 +306,8 @@ export default function TrackingPage() {
   const [showDeliveryConfirm, setShowDeliveryConfirm] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState('');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const reviewModalAutoOpened = useRef(false);
 
   const cancelMutation = useBuyerCancelTransaction(token);
   const confirmDeliveryMutation = useBuyerConfirmDelivery(token);
@@ -309,6 +321,17 @@ export default function TrackingPage() {
       ? `Order ${tx.reference} · ${businessName} · ShopCop`
       : `Order ${tx.reference} · ShopCop`;
   }, [tx]);
+
+  // Auto-open review modal once when tx is COMPLETED with no review,
+  // unless the buyer already dismissed it this session.
+  useEffect(() => {
+    if (!tx || reviewModalAutoOpened.current) return;
+    if (tx.status !== 'COMPLETED' || tx.review) return;
+    const dismissedKey = `review-dismissed-${token}`;
+    if (sessionStorage.getItem(dismissedKey)) return;
+    reviewModalAutoOpened.current = true;
+    setShowReviewModal(true);
+  }, [tx, token]);
 
   if (isLoading) return <FullPageSpinner />;
 
@@ -605,10 +628,53 @@ export default function TrackingPage() {
             </Box>
           )}
 
-          {/* Review CTA — show when COMPLETED and no review exists */}
+          {/* Review CTA — modal trigger shown when COMPLETED with no review */}
           {tx.status === 'COMPLETED' && !tx.review && (
-            <ReviewForm trackingToken={token} />
+            <Box p={4} bg="primary.subtle" borderRadius="xl" borderWidth="1px" borderColor="primary.200">
+              <Text textStyle="sm" fontWeight="semibold" color="primary.fg" mb={2}>
+                How was your experience?
+              </Text>
+              <Text textStyle="xs" color="fg.muted" mb={3}>
+                Share your feedback — it helps other buyers and supports the vendor.
+              </Text>
+              <Button
+                colorPalette="primary"
+                size="sm"
+                onClick={() => setShowReviewModal(true)}
+              >
+                Leave a Review
+              </Button>
+            </Box>
           )}
+
+          {/* Review modal */}
+          <DialogRoot
+            open={showReviewModal}
+            onOpenChange={({ open }) => {
+              if (!open) {
+                sessionStorage.setItem(`review-dismissed-${token}`, '1');
+              }
+              setShowReviewModal(open);
+            }}
+            placement="center"
+            motionPreset="slide-in-bottom"
+          >
+            <DialogBackdrop />
+            <DialogPositioner>
+              <DialogContent maxW="480px" mx={4}>
+                <DialogHeader>
+                  <DialogTitle>Leave a Review</DialogTitle>
+                  <DialogCloseTrigger />
+                </DialogHeader>
+                <DialogBody pb={6}>
+                  <ReviewForm
+                    trackingToken={token}
+                    onSuccess={() => setShowReviewModal(false)}
+                  />
+                </DialogBody>
+              </DialogContent>
+            </DialogPositioner>
+          </DialogRoot>
 
           {/* Status timeline — hide until payment is confirmed */}
           {showTimeline && (

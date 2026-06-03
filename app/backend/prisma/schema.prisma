@@ -313,14 +313,20 @@ model VendorProfile {
   profile_completeness   Int     @default(0) // 0-100%
 
   // ========== CALCULATED METRICS ==========
-  total_transactions       Int   @default(0)
-  successful_transactions  Int   @default(0)
-  fulfillment_rate         Float @default(0)
-  refund_rate              Float @default(0)
-  average_rating           Float @default(0)
-  customer_satisfaction_rate Float @default(0)
-  on_time_delivery_rate    Float @default(0)
+  // Performance (system-calculated from transaction data)
+  total_transactions        Int   @default(0)
+  successful_transactions   Int   @default(0)
+  fulfillment_rate          Float @default(0)
+  refund_rate               Float @default(0)
+  on_time_delivery_rate     Float @default(0)
   avg_response_time_minutes Float @default(0)
+
+  // Customer Feedback (derived from approved review ratings)
+  review_count                 Int   @default(0)
+  average_rating               Float @default(0)
+  avg_delivery_rating          Float @default(0)
+  avg_response_rating          Float @default(0)
+  customer_satisfaction_rating Float @default(0)
 
   // Status
   profile_status String @default("active") // active, inactive, suspended

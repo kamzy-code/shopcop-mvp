@@ -76,11 +76,15 @@ const VALID_TRANSITIONS: Record<string, TransactionStatus[]> = {
   IN_PROGRESS: [TransactionStatus.READY_FOR_DISPATCH, TransactionStatus.CANCELLED],
   READY_FOR_DISPATCH: [TransactionStatus.SHIPPED, TransactionStatus.CANCELLED],
   SHIPPED: [TransactionStatus.DELIVERED],
-  DELIVERED: [TransactionStatus.COMPLETED, TransactionStatus.REFUND_REQUESTED],
+  // COMPLETED is intentionally excluded from DELIVERED — the only path from
+  // DELIVERED → COMPLETED is via buyerConfirmDelivery() (buyer "I've Received It" btn)
+  // or the 48-hour auto-close. Vendors can only push up to DELIVERED.
+  DELIVERED: [TransactionStatus.REFUND_REQUESTED],
   REFUND_REQUESTED: [TransactionStatus.REFUND_IN_PROGRESS, TransactionStatus.RESOLVED],
   REFUND_IN_PROGRESS: [TransactionStatus.REFUNDED, TransactionStatus.RESOLVED],
-  REFUNDED: [TransactionStatus.COMPLETED],
-  RESOLVED: [TransactionStatus.COMPLETED],
+  // COMPLETED is excluded from REFUNDED/RESOLVED for the same reason — auto-close handles it.
+  REFUNDED: [],
+  RESOLVED: [],
   COMPLETED: [], // Terminal — no further transitions
   CANCELLED: [],
 };

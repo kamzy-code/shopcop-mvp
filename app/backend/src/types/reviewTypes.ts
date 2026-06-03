@@ -6,6 +6,7 @@ export interface CreateReviewInput {
   satisfaction_rating?: number;
   buyer_name?: string;
   review_text?: string;
+  buyer_id?: string;
 }
 
 export interface ReviewData {
@@ -17,6 +18,11 @@ export interface ReviewData {
   buyer_name: string | null;
   review_text: string | null;
   created_at: Date;
+}
+
+export interface EditReviewTextInput {
+  tracking_token: string;
+  review_text: string | null;
 }
 
 export interface ReviewSummary {

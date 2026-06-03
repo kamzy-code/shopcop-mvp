@@ -68,7 +68,7 @@ export const confirmPaymentSchema = z.object({
 
 export const submitPaymentProofSchema = z.object({
   buyer_email: z.email('Invalid email address').optional().or(z.literal('')),
-  payment_proof_url: z.url('Invalid URL').optional(),
+  payment_proof_url: z.string().url('Please upload a valid receipt image'),
 });
 
 export const cancelTransactionSchema = z.object({

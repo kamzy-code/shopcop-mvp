@@ -17,7 +17,7 @@ export default function VendorPublicProfilePage() {
   const [reviewPage, setReviewPage] = useState(1);
   const [productPage, setProductPage] = useState(1);
 
-  const { data, isLoading, error } = usePublicVendorProfile(slug);
+  const { data, isLoading, error } = usePublicVendorProfile(slug, reviewPage, productPage);
 
   if (isLoading) {
     return (
@@ -52,6 +52,16 @@ export default function VendorPublicProfilePage() {
           city={profile.city}
           primary_category={profile.primary_category}
           current_tier={profile.current_tier}
+          instagram_handle={profile.instagram_handle}
+          tiktok_handle={profile.tiktok_handle}
+          facebook_url={profile.facebook_url}
+          whatsapp_number={profile.whatsapp_number}
+          primary_contact={profile.primary_contact}
+          refund_policy_type={profile.refund_policy_type}
+          refund_duration_days={profile.refund_duration_days}
+          refund_conditions={profile.refund_conditions}
+          refund_custom_notes={profile.refund_custom_notes}
+          created_at={profile.created_at}
         />
 
         <Flex gap={3} flexWrap="wrap">

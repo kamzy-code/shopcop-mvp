@@ -515,15 +515,20 @@ export interface ReviewListResponse {
 }
 
 export interface TrustMetrics {
+  // Performance — system-calculated from transaction data
   total_transactions: number;
   successful_transactions: number;
   fulfillment_rate: number;
   refund_rate: number;
-  average_rating: number;
-  customer_satisfaction_rate: number;
   on_time_delivery_rate: number;
   avg_response_time_minutes: number;
   last_transaction_at: string | null;
+  // Customer feedback — derived from approved review ratings
+  review_count: number;
+  average_rating: number;
+  avg_delivery_rating: number;
+  avg_response_rating: number;
+  customer_satisfaction_rating: number;
 }
 
 export interface CreateReviewInput {

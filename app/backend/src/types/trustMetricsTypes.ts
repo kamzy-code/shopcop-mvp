@@ -1,17 +1,26 @@
 import { RefundPolicyType } from "generated/prisma/enums.js";
 import { ReviewData, ReviewSummary } from "./reviewTypes.js";
 
-export interface TrustMetrics {
+export interface PerformanceMetrics {
   total_transactions: number;
   successful_transactions: number;
   fulfillment_rate: number;
   refund_rate: number;
-  average_rating: number;
-  customer_satisfaction_rate: number;
   on_time_delivery_rate: number;
   avg_response_time_minutes: number;
   last_transaction_at: Date | null;
 }
+
+export interface FeedbackMetrics {
+  review_count: number;
+  average_rating: number;
+  avg_delivery_rating: number;
+  avg_response_rating: number;
+  customer_satisfaction_rating: number;
+}
+
+/** Combined trust metrics returned by the API — includes both performance and feedback groups. */
+export interface TrustMetrics extends PerformanceMetrics, FeedbackMetrics {}
 
 export interface PublicProfileResult {
   profile: {

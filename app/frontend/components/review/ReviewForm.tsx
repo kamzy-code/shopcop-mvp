@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Box, Button, Field, Flex, Input, Stack, Text, Textarea } from '@chakra-ui/react';
 import { toaster } from '@/components/ui/toaster';
-import { useCreateReview } from '@/app/_hooks/useCreateReview';
+import { useCreateReview } from '@/app/_hooks/reviews';
 import { ReviewStars } from './ReviewStars';
 
 interface ReviewFormProps {
@@ -63,39 +63,43 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   return (
     <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
       <Text textStyle="sm" fontWeight="semibold" mb={4}>
-        How was your experience?
+        Share your experience
       </Text>
 
       <Stack gap={4}>
         <Field.Root required>
-          <Field.Label>Overall Experience</Field.Label>
+          <Field.Label>How was your overall experience?</Field.Label>
           <ReviewStars rating={overallRating} size="lg" interactive onChange={setOverallRating} />
         </Field.Root>
 
         <Field.Root>
           <Field.Label>
-            Delivery Experience <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+            How was the delivery?{' '}
+            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
           </Field.Label>
           <ReviewStars rating={deliveryRating} size="lg" interactive onChange={setDeliveryRating} />
         </Field.Root>
 
         <Field.Root>
           <Field.Label>
-            Vendor Responsiveness <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+            How quickly did the vendor respond?{' '}
+            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
           </Field.Label>
           <ReviewStars rating={responseRating} size="lg" interactive onChange={setResponseRating} />
         </Field.Root>
 
         <Field.Root>
           <Field.Label>
-            Overall Satisfaction <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+            How satisfied are you with your order?{' '}
+            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
           </Field.Label>
           <ReviewStars rating={satisfactionRating} size="lg" interactive onChange={setSatisfactionRating} />
         </Field.Root>
 
         <Field.Root>
           <Field.Label>
-            Your Name <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+            Your name{' '}
+            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
           </Field.Label>
           <Input
             value={buyerName}
@@ -107,12 +111,13 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
 
         <Field.Root>
           <Field.Label>
-            Review <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
+            Tell us more{' '}
+            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
           </Field.Label>
           <Textarea
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
-            placeholder="Share your experience..."
+            placeholder="What would you like others to know?"
             maxLength={2000}
             rows={3}
           />

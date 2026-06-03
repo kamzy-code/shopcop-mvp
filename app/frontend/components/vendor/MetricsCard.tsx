@@ -1,6 +1,6 @@
 'use client';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { LuShoppingCart, LuCircleCheck, LuPercent, LuRefreshCw } from 'react-icons/lu';
+import { LuShoppingCart, LuCircleCheck, LuStar, LuRefreshCw } from 'react-icons/lu';
 
 interface MetricsCardProps {
   label: string;
@@ -11,7 +11,7 @@ interface MetricsCardProps {
 const ICON_MAP = {
   transactions: LuShoppingCart,
   fulfillment: LuCircleCheck,
-  rating: LuPercent,
+  rating: LuStar,
   refund: LuRefreshCw,
 };
 
