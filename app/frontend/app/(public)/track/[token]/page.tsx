@@ -324,13 +324,16 @@ export default function TrackingPage() {
 
   // Auto-open review modal once when tx is COMPLETED with no review,
   // unless the buyer already dismissed it this session.
+  // setTimeout defers the setState out of the effect body to avoid
+  // the cascading-render warning from synchronous setState in effects.
   useEffect(() => {
     if (!tx || reviewModalAutoOpened.current) return;
     if (tx.status !== 'COMPLETED' || tx.review) return;
     const dismissedKey = `review-dismissed-${token}`;
     if (sessionStorage.getItem(dismissedKey)) return;
     reviewModalAutoOpened.current = true;
-    setShowReviewModal(true);
+    const t = setTimeout(() => setShowReviewModal(true), 0);
+    return () => clearTimeout(t);
   }, [tx, token]);
 
   if (isLoading) return <FullPageSpinner />;
