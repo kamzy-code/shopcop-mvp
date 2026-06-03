@@ -16,7 +16,19 @@ export class TrustMetricsService {
         lastTransaction,
         responseTimeRows,
       ] = await Promise.all([
-        prisma.transaction.count({ where: { vendor_id: vendorId } }),
+        // Actionable transactions only — excludes PENDING (buyer hasn't paid,
+        // vendor not yet involved) and buyer-initiated cancellations (buyer
+        // changed mind before vendor took responsibility).
+        prisma.transaction.count({
+          where: {
+            vendor_id: vendorId,
+            status: { not: TransactionStatus.PENDING },
+            NOT: {
+              status: TransactionStatus.CANCELLED,
+              cancelled_by: 'buyer',
+            },
+          },
+        }),
 
         // Fetch completed rows to compute both completedCount and on-time rate,
         // eliminating the second DB trip that existed before.

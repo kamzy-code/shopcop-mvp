@@ -550,6 +550,26 @@ export class TransactionController {
     }
   }
 
+  // ─── Buyer: close a REFUNDED or RESOLVED transaction ─────────────────────────
+
+  static async buyerCloseResolution(req: Request, res: Response, next: NextFunction) {
+    const action = 'buyerCloseResolution';
+    const token = req.params.token as string;
+
+    try {
+      const transaction = await TransactionService.buyerCloseResolution(token);
+      transactionLogger.info('Buyer closed resolution', { action, token });
+      res.status(200).json({
+        success: true,
+        data: transaction,
+        message: 'Order closed successfully.',
+      });
+    } catch (error) {
+      transactionLogger.error('Failed to close resolution as buyer', { action, token, error });
+      next(error);
+    }
+  }
+
   // ─── Buyer: request refund by token ───────────────────────────────────────────
 
   /**

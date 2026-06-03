@@ -72,13 +72,13 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
         <Indicator
           icon={LuCircleCheck}
           label="Fulfillment Rate"
-          value={`${metrics.fulfillment_rate}%`}
+          value={`${Math.round(metrics.fulfillment_rate)}%`}
           color="green.500"
         />
         <Indicator
           icon={LuTruck}
           label="On-Time Delivery"
-          value={`${metrics.on_time_delivery_rate}%`}
+          value={`${Math.round(metrics.on_time_delivery_rate)}%`}
           color="teal.500"
         />
         <Indicator
@@ -90,7 +90,7 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
         <Indicator
           icon={LuRefreshCw}
           label="Refund Rate"
-          value={`${metrics.refund_rate}%`}
+          value={`${Math.round(metrics.refund_rate)}%`}
           color={metrics.refund_rate > 10 ? 'red.500' : 'fg.muted'}
         />
       </SimpleGrid>

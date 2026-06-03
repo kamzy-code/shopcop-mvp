@@ -13,5 +13,7 @@ trackRouter.post('/:token/cancel', TransactionController.buyerCancelTransaction)
 trackRouter.post('/:token/confirm-delivery', TransactionController.buyerConfirmDelivery);
 /** POST /api/v1/track/:token/request-refund — Buyer requests refund (public). */
 trackRouter.post('/:token/request-refund', TransactionController.buyerRequestRefund);
+/** POST /api/v1/track/:token/close — Buyer closes a REFUNDED or RESOLVED order (public). */
+trackRouter.post('/:token/close', TransactionController.buyerCloseResolution);
 
 export default trackRouter;

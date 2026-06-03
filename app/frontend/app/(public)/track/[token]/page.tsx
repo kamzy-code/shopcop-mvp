@@ -1,14 +1,17 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
-import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
+import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuPencil, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
 import {
   useTransactionByToken,
   useBuyerCancelTransaction,
   useBuyerConfirmDelivery,
+  useBuyerCloseResolution,
   useBuyerRequestRefund,
 } from '@/app/_hooks/transaction';
+import { useEditReview } from '@/app/_hooks/reviews';
+import { ReviewStars } from '@/components/review/ReviewStars';
 import { Transaction, TransactionItem, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
 import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
@@ -308,10 +311,15 @@ export default function TrackingPage() {
   const [refundReason, setRefundReason] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const reviewModalAutoOpened = useRef(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isEditingReview, setIsEditingReview] = useState(false);
+  const [editReviewText, setEditReviewText] = useState('');
 
   const cancelMutation = useBuyerCancelTransaction(token);
   const confirmDeliveryMutation = useBuyerConfirmDelivery(token);
+  const closeResolutionMutation = useBuyerCloseResolution(token);
   const refundRequestMutation = useBuyerRequestRefund(token);
+  const editReviewMutation = useEditReview();
 
   // Must be before early returns — React Hooks rule
   useEffect(() => {
@@ -371,6 +379,7 @@ export default function TrackingPage() {
     profile_photo_url?: string | null;
     whatsapp_number?: string | null;
     refund_policy_type?: string | null;
+    refund_duration_days?: number | null;
   };
 
   const isUnpaid = tx.payment_status === 'UNPAID';
@@ -380,7 +389,26 @@ export default function TrackingPage() {
   const isCompletedAfterRefund = tx.status === 'COMPLETED' && tx.refund_status !== 'NONE';
   const isPending = tx.status === 'PENDING';
   const isDelivered = tx.status === 'DELIVERED';
-  const isRefundable = (tx.status === 'DELIVERED' || tx.status === 'COMPLETED') && vendor?.refund_policy_type !== 'NO_REFUNDS';
+  const isAwaitingClose = tx.status === 'REFUNDED' || tx.status === 'RESOLVED';
+
+  // Refund window check: hide button once refund_duration_days has elapsed
+  const refundWindowStart = tx.completed_at ?? tx.delivered_at;
+  const refundCutoffMs = (vendor?.refund_duration_days ?? 0) * 24 * 60 * 60 * 1000;
+  const isWithinRefundWindow =
+    !vendor?.refund_duration_days ||
+    !refundWindowStart ||
+    Date.now() - new Date(refundWindowStart).getTime() <= refundCutoffMs;
+
+  const isRefundable =
+    (tx.status === 'DELIVERED' || tx.status === 'COMPLETED') &&
+    vendor?.refund_policy_type !== 'NO_REFUNDS' &&
+    isWithinRefundWindow;
+
+  // Review edit window: 7 days from creation
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const canEditReview =
+    !!tx.review &&
+    Date.now() - new Date(tx.review.created_at).getTime() < SEVEN_DAYS_MS;
 
   const handleBuyerCancel = async () => {
     try {
@@ -578,6 +606,36 @@ export default function TrackingPage() {
             </Box>
           )}
 
+          {/* Close order CTA — REFUNDED or RESOLVED, awaiting buyer acknowledgment */}
+          {isAwaitingClose && (
+            <Box p={4} bg="teal.subtle" borderRadius="xl" borderWidth="1px" borderColor="teal.200" _dark={{ borderColor: 'teal.800' }}>
+              <Flex align="center" gap={2} mb={3}>
+                <Box color="teal.600" _dark={{ color: 'teal.400' }} display="flex" alignItems="center">
+                  <LuCircleCheck size={18} />
+                </Box>
+                <Box>
+                  <Text textStyle="sm" fontWeight="semibold" color="teal.700" _dark={{ color: 'teal.300' }}>
+                    {tx.status === 'REFUNDED' ? 'Refund Processed' : 'Order Resolved'}
+                  </Text>
+                  <Text textStyle="xs" color="teal.600" _dark={{ color: 'teal.400' }}>
+                    {tx.status === 'REFUNDED'
+                      ? `Your refund${tx.refund_amount != null ? ` of ${formatCurrency(tx.refund_amount)}` : ''} has been processed. Allow 2–5 business days.`
+                      : 'This order has been resolved. Contact the seller if you need further assistance.'}
+                  </Text>
+                </Box>
+              </Flex>
+              <Button
+                w="full"
+                colorPalette="teal"
+                size="sm"
+                onClick={() => setShowCloseConfirm(true)}
+                loading={closeResolutionMutation.isPending}
+              >
+                {tx.status === 'REFUNDED' ? "I've received my refund — close this order" : 'Understood — close this order'}
+              </Button>
+            </Box>
+          )}
+
           {/* Payment submitted banner */}
           {isProofSubmitted && (
             <Box
@@ -647,6 +705,97 @@ export default function TrackingPage() {
               >
                 Leave a Review
               </Button>
+            </Box>
+          )}
+
+          {/* Submitted review display — shown when review exists on COMPLETED tx */}
+          {tx.status === 'COMPLETED' && tx.review && (
+            <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+              <Flex justify="space-between" align="center" mb={3}>
+                <Text textStyle="xs" color="fg.muted" fontWeight="medium">YOUR REVIEW</Text>
+                {canEditReview && !isEditingReview && (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    color="fg.muted"
+                    onClick={() => {
+                      setEditReviewText(tx.review?.review_text ?? '');
+                      setIsEditingReview(true);
+                    }}
+                  >
+                    <LuPencil size={12} />
+                    Edit
+                  </Button>
+                )}
+              </Flex>
+
+              <ReviewStars rating={tx.review.overall_rating} size="sm" />
+
+              {(tx.review.delivery_rating || tx.review.response_rating || tx.review.satisfaction_rating) && (
+                <Flex gap={3} mt={2} flexWrap="wrap">
+                  {tx.review.delivery_rating && (
+                    <Flex align="center" gap={1}>
+                      <Text textStyle="2xs" color="fg.muted">Delivery:</Text>
+                      <ReviewStars rating={tx.review.delivery_rating} size="sm" />
+                    </Flex>
+                  )}
+                  {tx.review.response_rating && (
+                    <Flex align="center" gap={1}>
+                      <Text textStyle="2xs" color="fg.muted">Response:</Text>
+                      <ReviewStars rating={tx.review.response_rating} size="sm" />
+                    </Flex>
+                  )}
+                  {tx.review.satisfaction_rating && (
+                    <Flex align="center" gap={1}>
+                      <Text textStyle="2xs" color="fg.muted">Satisfaction:</Text>
+                      <ReviewStars rating={tx.review.satisfaction_rating} size="sm" />
+                    </Flex>
+                  )}
+                </Flex>
+              )}
+
+              {isEditingReview ? (
+                <Box mt={3}>
+                  <Textarea
+                    value={editReviewText}
+                    onChange={(e) => setEditReviewText(e.target.value)}
+                    placeholder="What would you like others to know?"
+                    maxLength={2000}
+                    rows={3}
+                    mb={2}
+                  />
+                  <Flex gap={2} justify="flex-end">
+                    <Button size="sm" variant="outline" onClick={() => setIsEditingReview(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      colorPalette="primary"
+                      loading={editReviewMutation.isPending}
+                      onClick={() => {
+                        editReviewMutation.mutate(
+                          { tracking_token: token, review_text: editReviewText.trim() || null },
+                          {
+                            onSuccess: () => {
+                              setIsEditingReview(false);
+                              toaster.create({ title: 'Review updated', type: 'success' });
+                            },
+                            onError: (err) => {
+                              toaster.create({ title: err.message || 'Failed to update review', type: 'error' });
+                            },
+                          }
+                        );
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </Flex>
+                </Box>
+              ) : (
+                tx.review.review_text && (
+                  <Text textStyle="sm" color="fg.muted" mt={2}>{tx.review.review_text}</Text>
+                )
+              )}
             </Box>
           )}
 
@@ -927,6 +1076,29 @@ export default function TrackingPage() {
           )}
         </Box>
       </ConfirmDialog>
+
+      <ConfirmDialog
+        open={showCloseConfirm}
+        onClose={() => setShowCloseConfirm(false)}
+        onConfirm={async () => {
+          try {
+            await closeResolutionMutation.mutateAsync();
+            setShowCloseConfirm(false);
+            toaster.create({ title: 'Order closed', type: 'success' });
+          } catch {
+            toaster.create({ title: 'Failed to close order', type: 'error' });
+          }
+        }}
+        title="Close this order?"
+        description={
+          tx.status === 'REFUNDED'
+            ? "Confirm that you've received your refund. This will close the order."
+            : "Confirm that this order has been resolved to your satisfaction. This will close the order."
+        }
+        confirmLabel="Yes, close order"
+        colorPalette="teal"
+        isLoading={closeResolutionMutation.isPending}
+      />
 
       <ItemDetailModal
         open={!!selectedItem}

@@ -82,7 +82,7 @@ export default function VendorPublicProfilePage() {
           />
           <MetricsCard
             label="Refund Rate"
-            value={`${trustMetrics.refund_rate}%`}
+            value={`${Math.round(trustMetrics.refund_rate)}%`}
             icon="refund"
           />
         </Flex>

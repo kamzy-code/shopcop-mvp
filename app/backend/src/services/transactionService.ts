@@ -52,6 +52,7 @@ const BUYER_TRANSACTION_INCLUDE = {
       account_number: true,
       account_name: true,
       refund_policy_type: true,
+      refund_duration_days: true,
     },
   },
   status_history: { orderBy: { created_at: 'asc' as const } },
@@ -874,6 +875,61 @@ export class TransactionService {
     });
 
     transactionLogger.info('Buyer confirmed delivery', { transactionId: transaction.id, token });
+
+    TrustMetricsService.recalculateVendorTrustMetrics(updated.vendor_id);
+
+    const { vendor_notes: _omit, ...buyerSafe } = updated;
+    void _omit;
+    return buyerSafe;
+  }
+
+  // ─── Buyer: close a REFUNDED or RESOLVED transaction ─────────────────────────
+
+  static async buyerCloseResolution(token: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { tracking_token: token },
+    });
+
+    if (!transaction) {
+      transactionLogger.warn('Transaction not found for buyer close resolution', {
+        action: 'buyerCloseResolution',
+        token,
+      });
+      throw new AppError('Transaction not found', 404);
+    }
+
+    if (
+      transaction.status !== TransactionStatus.REFUNDED &&
+      transaction.status !== TransactionStatus.RESOLVED
+    ) {
+      transactionLogger.warn('Cannot close resolution — transaction not REFUNDED or RESOLVED', {
+        action: 'buyerCloseResolution',
+        transactionId: transaction.id,
+        status: transaction.status,
+      });
+      throw new AppError('Only refunded or resolved orders can be closed by the buyer', 400);
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: TransactionStatus.COMPLETED,
+        completed_at: new Date(),
+      },
+      include: BUYER_TRANSACTION_INCLUDE,
+    });
+
+    await prisma.transactionStatusHistory.create({
+      data: {
+        transaction_id: transaction.id,
+        from_status: transaction.status,
+        to_status: TransactionStatus.COMPLETED,
+        changed_by: 'buyer',
+        note: 'Buyer acknowledged refund/resolution and closed the order',
+      },
+    });
+
+    transactionLogger.info('Buyer closed resolution', { transactionId: transaction.id, token });
 
     TrustMetricsService.recalculateVendorTrustMetrics(updated.vendor_id);
 

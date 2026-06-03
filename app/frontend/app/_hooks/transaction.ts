@@ -200,6 +200,20 @@ export const useBuyerRequestRefund = (token: string) => {
   });
 };
 
+export const useBuyerCloseResolution = (token: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch(`/track/${token}/close`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+    },
+  });
+};
+
 export const useUpdateTransactionStatusWithRefund = () => {
   const queryClient = useQueryClient();
   return useMutation({

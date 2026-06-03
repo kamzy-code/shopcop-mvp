@@ -320,6 +320,7 @@ export interface TransactionVendor {
   account_number: string | null;
   account_name: string | null;
   refund_policy_type: RefundPolicyType;
+  refund_duration_days: number | null;
 }
 
 export interface TransactionStatusHistoryEntry {
@@ -389,7 +390,7 @@ export interface Transaction {
   items: TransactionItem[];
   vendor: TransactionVendor;
   status_history: TransactionStatusHistoryEntry[];
-  review: unknown | null;
+  review: Review | null;
 }
 
 export interface TransactionListItem extends Omit<Transaction, 'vendor' | 'status_history' | 'review'> {
