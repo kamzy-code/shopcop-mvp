@@ -27,6 +27,7 @@ export interface EditReviewTextInput {
 
 export interface ReviewSummary {
   average_rating: number;
-  total_reviews: number;
+  total_reviews: number;       // always full unfiltered count
+  filtered_total?: number;     // count matching the active segment filter (if any)
   distribution: Record<number, number>;
 }

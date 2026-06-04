@@ -19,6 +19,7 @@ type ProfileHeaderProps = Pick<
   | 'city'
   | 'primary_category'
   | 'current_tier'
+  | 'payment_models'
   | 'instagram_handle'
   | 'tiktok_handle'
   | 'facebook_url'
@@ -67,6 +68,13 @@ function TikTokIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+const PAYMENT_MODEL_LABELS: Record<string, string> = {
+  FULL_PAYMENT: 'Full Payment',
+  PART_PAYMENT: 'Part Payment',
+  PAY_ON_DELIVERY: 'Pay on Delivery',
+  INSTALLMENT: 'Installment',
+};
+
 export function ProfileHeader({
   business_name,
   profile_photo_url,
@@ -75,6 +83,7 @@ export function ProfileHeader({
   city,
   primary_category,
   current_tier,
+  payment_models,
   instagram_handle,
   tiktok_handle,
   facebook_url,
@@ -194,6 +203,28 @@ export function ProfileHeader({
           {refundLabel}
         </Text>
       </Box>
+
+      {/* Payment models */}
+      {payment_models.length > 0 && (
+        <Flex gap={2} mt={3} flexWrap="wrap">
+          {payment_models.map((model) => (
+            <Box
+              key={model}
+              px={2}
+              py={0.5}
+              borderRadius="full"
+              borderWidth="1px"
+              borderColor="border"
+              bg="bg.subtle"
+              textStyle="2xs"
+              color="fg.muted"
+              fontWeight="medium"
+            >
+              {PAYMENT_MODEL_LABELS[model] ?? model}
+            </Box>
+          ))}
+        </Flex>
+      )}
 
       {/* Social links */}
       {socialLinks.length > 0 && (

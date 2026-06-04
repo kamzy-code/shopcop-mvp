@@ -96,12 +96,8 @@ export class TrustMetricsService {
 
       // ── 2. Customer feedback metrics — derived from approved reviews only ────
 
-      const [overallAgg, deliveryAgg, responseAgg, satisfactionAgg, reviewCount] =
+      const [deliveryAgg, responseAgg, satisfactionAgg, reviewCount] =
         await Promise.all([
-          prisma.review.aggregate({
-            where: { vendor_id: vendorId, moderation_status: ModerationStatus.APPROVED },
-            _avg: { overall_rating: true },
-          }),
           prisma.review.aggregate({
             where: {
               vendor_id: vendorId,
@@ -134,10 +130,19 @@ export class TrustMetricsService {
       const round2 = (n: number | null | undefined): number =>
         n != null ? Math.round(n * 100) / 100 : 0;
 
-      const averageRating = round2(overallAgg._avg.overall_rating);
       const avgDeliveryRating = round2(deliveryAgg._avg.delivery_rating);
       const avgResponseRating = round2(responseAgg._avg.response_rating);
       const customerSatisfactionRating = round2(satisfactionAgg._avg.satisfaction_rating);
+
+      // average_rating = composite of sub-rating averages (excludes zeros so optional
+      // ratings don't pull the score toward 0 when buyers skip them)
+      const subRatingVals = [avgDeliveryRating, avgResponseRating, customerSatisfactionRating].filter(
+        (v) => v > 0
+      );
+      const averageRating =
+        subRatingVals.length > 0
+          ? round2(subRatingVals.reduce((a, b) => a + b, 0) / subRatingVals.length)
+          : 0;
 
       // ── 3. Persist ───────────────────────────────────────────────────────────
 

@@ -27,6 +27,7 @@ import {
   useCancelTransaction,
 } from '@/app/_hooks/transaction';
 import { Transaction, TransactionItem, TransactionStatus } from '@/app/_types';
+import { ReviewStars as ReviewStarsVendor } from '@/components/review/ReviewStars';
 import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import {
@@ -1091,6 +1092,32 @@ export default function TransactionDetailPage() {
             </Text>
             <StatusTimeline tx={tx} />
           </Box>
+
+          {/* ── Buyer Review ─────────────────────────────────────────────── */}
+          {tx.review && (
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4}>
+              <Text textStyle="xs" color="fg.muted" mb={3} fontWeight="medium">
+                BUYER REVIEW
+              </Text>
+              <Flex align="center" gap={3} mb={tx.review.review_text ? 2 : 0}>
+                <ReviewStarsVendor rating={tx.review.overall_rating} />
+                {tx.review.buyer_name && (
+                  <Text textStyle="sm" color="fg.muted">{tx.review.buyer_name}</Text>
+                )}
+                {!tx.review.buyer_name && (
+                  <Text textStyle="sm" color="fg.subtle" fontStyle="italic">Anonymous</Text>
+                )}
+                <Text textStyle="xs" color="fg.subtle" ml="auto">
+                  {new Date(tx.review.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+              </Flex>
+              {tx.review.review_text && (
+                <Text textStyle="sm" color="fg.muted" mt={1}>
+                  {tx.review.review_text}
+                </Text>
+              )}
+            </Box>
+          )}
 
           {/* ── Notes ───────────────────────────────────────────────────── */}
           {(tx.order_notes || tx.vendor_notes) && (

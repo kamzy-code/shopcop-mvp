@@ -29,29 +29,6 @@ function ReviewCard({ review }: { review: ReviewType }) {
         <ReviewStars rating={review.overall_rating} size="sm" />
       </Flex>
 
-      {(review.delivery_rating || review.response_rating || review.satisfaction_rating) && (
-        <Flex gap={4} mb={2} flexWrap="wrap">
-          {review.delivery_rating && (
-            <Flex align="center" gap={1}>
-              <Text textStyle="2xs" color="fg.muted">Delivery:</Text>
-              <ReviewStars rating={review.delivery_rating} size="sm" />
-            </Flex>
-          )}
-          {review.response_rating && (
-            <Flex align="center" gap={1}>
-              <Text textStyle="2xs" color="fg.muted">Response:</Text>
-              <ReviewStars rating={review.response_rating} size="sm" />
-            </Flex>
-          )}
-          {review.satisfaction_rating && (
-            <Flex align="center" gap={1}>
-              <Text textStyle="2xs" color="fg.muted">Satisfaction:</Text>
-              <ReviewStars rating={review.satisfaction_rating} size="sm" />
-            </Flex>
-          )}
-        </Flex>
-      )}
-
       {review.review_text && (
         <Text textStyle="sm" color="fg.muted" mt={1}>
           {review.review_text}

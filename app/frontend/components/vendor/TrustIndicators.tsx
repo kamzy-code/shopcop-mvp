@@ -5,7 +5,6 @@ import {
   LuClock,
   LuRefreshCw,
   LuSmile,
-  LuStar,
   LuThumbsUp,
   LuTruck,
   LuZap,
@@ -96,23 +95,13 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
       </SimpleGrid>
 
       {/* ── Customer Feedback (buyer-rated, review-derived) ───────────────────── */}
-      {
-      //metrics.review_count > 0 &&
-       (
+      {metrics.review_count > 0 && (
         <>
           <Text textStyle="sm" fontWeight="semibold" mb={2}>
             Customer Feedback
           </Text>
           <SimpleGrid columns={{ base: 2, sm: 3 }} gap={2}>
-            <Indicator
-              icon={LuStar}
-              label="Overall Rating"
-              value={`${metrics.average_rating.toFixed(1)} / 5`}
-              color="yellow.500"
-            />
-            {
-            //metrics.avg_delivery_rating > 0 &&
-             (
+            {metrics.avg_delivery_rating > 0 && (
               <Indicator
                 icon={LuTruck}
                 label="Delivery Experience"
@@ -120,9 +109,7 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
                 color="blue.500"
               />
             )}
-            {
-            //metrics.avg_response_rating > 0 &&
-             (
+            {metrics.avg_response_rating > 0 && (
               <Indicator
                 icon={LuZap}
                 label="Responsiveness"
@@ -130,9 +117,7 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
                 color="orange.500"
               />
             )}
-            {
-            //metrics.customer_satisfaction_rating > 0 &&
-             (
+            {metrics.customer_satisfaction_rating > 0 && (
               <Indicator
                 icon={metrics.customer_satisfaction_rating >= 4 ? LuSmile : LuThumbsUp}
                 label="Customer Satisfaction"

@@ -31,6 +31,7 @@ export class PublicProfileService {
         refund_duration_days: true,
         refund_conditions: true,
         refund_custom_notes: true,
+        payment_models: true,
         instagram_handle: true,
         tiktok_handle: true,
         facebook_url: true,

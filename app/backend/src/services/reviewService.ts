@@ -142,29 +142,46 @@ export class ReviewService {
   static async getVendorReviews(
     vendorId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    minRating?: number,
+    maxRating?: number
   ): Promise<{ reviews: ReviewData[]; summary: ReviewSummary }> {
     const where = {
       vendor_id: vendorId,
       moderation_status: ModerationStatus.APPROVED,
+      ...(minRating !== undefined || maxRating !== undefined
+        ? {
+            overall_rating: {
+              ...(minRating !== undefined ? { gte: minRating } : {}),
+              ...(maxRating !== undefined ? { lte: maxRating } : {}),
+            },
+          }
+        : {}),
+    };
+    // Summary (total + distribution + avg) always uses unfiltered data
+    const summaryWhere = {
+      vendor_id: vendorId,
+      moderation_status: ModerationStatus.APPROVED,
     };
 
-    const [reviews, total, aggregation, distributionRows] = await Promise.all([
+    const [reviews, filteredTotal, aggregation, distributionRows] = await Promise.all([
+      // Paginated reviews use the rating-filtered where clause
       prisma.review.findMany({
         where,
         orderBy: { created_at: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
+      // Count also filtered (for pagination of the segment)
       prisma.review.count({ where }),
+      // Summary avg + distribution always use unfiltered data
       prisma.review.aggregate({
-        where,
+        where: summaryWhere,
         _avg: { overall_rating: true },
       }),
-      // groupBy replaces the old full-table findMany scan for distribution
       prisma.review.groupBy({
         by: ['overall_rating'],
-        where,
+        where: summaryWhere,
         _count: { overall_rating: true },
       }),
     ]);
@@ -173,6 +190,8 @@ export class ReviewService {
     for (const row of distributionRows) {
       distribution[row.overall_rating] = row._count.overall_rating;
     }
+
+    const totalReviews = Object.values(distribution).reduce((a, b) => a + b, 0);
 
     return {
       reviews: reviews.map((r) => ({
@@ -187,7 +206,8 @@ export class ReviewService {
       })),
       summary: {
         average_rating: aggregation._avg.overall_rating ?? 0,
-        total_reviews: total,
+        total_reviews: totalReviews,         // always full count for UI segmentation chips
+        filtered_total: filteredTotal,        // count matching the active segment
         distribution,
       },
     };

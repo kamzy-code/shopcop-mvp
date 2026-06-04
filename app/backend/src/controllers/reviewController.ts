@@ -60,9 +60,14 @@ export class ReviewController {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
 
+    const minRatingRaw = parseInt(req.query.min_rating as string);
+    const maxRatingRaw = parseInt(req.query.max_rating as string);
+    const minRating = !isNaN(minRatingRaw) && minRatingRaw >= 1 && minRatingRaw <= 5 ? minRatingRaw : undefined;
+    const maxRating = !isNaN(maxRatingRaw) && maxRatingRaw >= 1 && maxRatingRaw <= 5 ? maxRatingRaw : undefined;
+
     try {
-      const result = await ReviewService.getVendorReviews(vendorId, page, limit);
-      const total = result.summary.total_reviews;
+      const result = await ReviewService.getVendorReviews(vendorId, page, limit, minRating, maxRating);
+      const total = result.summary.filtered_total ?? result.summary.total_reviews;
       res.status(200).json({
         success: true,
         data: result.reviews,

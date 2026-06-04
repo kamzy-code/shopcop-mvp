@@ -59,13 +59,20 @@ export const useEditReview = () => {
 
 // ─── useVendorReviews ─────────────────────────────────────────────────────────
 
-export const useVendorReviews = (vendorId: string, page = 1, limit = 10) =>
+export const useVendorReviews = (
+  vendorId: string,
+  page = 1,
+  limit = 10,
+  minRating?: number,
+  maxRating?: number
+) =>
   useQuery<ReviewListResponse>({
-    queryKey: ['vendor-reviews', vendorId, page, limit],
+    queryKey: ['vendor-reviews', vendorId, page, limit, minRating, maxRating],
     queryFn: async () => {
-      const res = await apiFetch<Review[]>(
-        `/public/vendors/${vendorId}/reviews?page=${page}&limit=${limit}`
-      );
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (minRating !== undefined) params.set('min_rating', String(minRating));
+      if (maxRating !== undefined) params.set('max_rating', String(maxRating));
+      const res = await apiFetch<Review[]>(`/public/vendors/${vendorId}/reviews?${params}`);
       const { data, meta, summary } = res as ReviewsApiResponse;
       return { success: true, data, meta, summary };
     },

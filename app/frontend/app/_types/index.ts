@@ -500,6 +500,7 @@ export interface Review {
 export interface ReviewSummary {
   average_rating: number;
   total_reviews: number;
+  filtered_total?: number;
   distribution: Record<number, number>;
 }
 
@@ -552,6 +553,7 @@ export interface PublicVendorProfileProfile {
   city: string | null;
   primary_category: string | null;
   current_tier: string;
+  payment_models: string[];
   refund_policy_type: string;
   refund_duration_days: number | null;
   refund_conditions: string[];

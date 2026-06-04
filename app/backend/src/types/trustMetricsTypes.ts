@@ -37,6 +37,7 @@ export interface PublicProfileResult {
     refund_duration_days: number | null;
     refund_conditions: string[];
     refund_custom_notes: string | null;
+    payment_models: string[];
     instagram_handle: string | null;
     tiktok_handle: string | null;
     facebook_url: string | null;
