@@ -8,16 +8,12 @@ interface ReviewSummaryProps {
 }
 
 export function ReviewSummary({ summary }: ReviewSummaryProps) {
-  const { average_rating, total_reviews, distribution } = summary;
+  const { total_reviews, distribution } = summary;
 
   return (
     <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
       <Flex gap={6} align="center" mb={4}>
         <Box textAlign="center">
-          <Text textStyle="4xl" fontWeight="bold" lineHeight="1">
-            {average_rating.toFixed(1)}
-          </Text>
-          <ReviewStars rating={Math.round(average_rating)} size="sm" />
           <Text textStyle="xs" color="fg.muted" mt={1}>
             {total_reviews} {total_reviews === 1 ? 'review' : 'reviews'}
           </Text>

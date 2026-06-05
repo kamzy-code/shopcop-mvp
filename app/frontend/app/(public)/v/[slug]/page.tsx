@@ -1,96 +1,58 @@
 'use client';
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  Flex,
-  SimpleGrid,
-  Spinner,
-  Stack,
-  Tabs,
-  Text,
-} from '@chakra-ui/react';
+import { Box, Flex, SimpleGrid, Spinner, Stack, Tabs, Text } from '@chakra-ui/react';
 import { useParams } from 'next/navigation';
 import { usePublicVendorProfile } from '@/app/_hooks/usePublicVendorProfile';
 import { useVendorReviews } from '@/app/_hooks/reviews';
 import { ProfileHeader } from '@/components/vendor/ProfileHeader';
-import { TrustIndicators } from '@/components/vendor/TrustIndicators';
-import { ReviewSummary } from '@/components/review/ReviewSummary';
+import { TrustIndicators, CustomerFeedbackStats } from '@/components/vendor/TrustIndicators';
 import { ReviewList } from '@/components/review/ReviewList';
 import { ProductsSection } from '@/components/vendor/ProductsSection';
 
-// ─── Compact stat card ────────────────────────────────────────────────────────
-
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Box
-      p={3}
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="xl"
-      textAlign="center"
-    >
-      <Text textStyle="xl" fontWeight="bold" color="fg" lineHeight="1.2">
-        {value}
-      </Text>
-      <Text textStyle="2xs" color="fg.muted" mt={0.5} fontWeight="medium">
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-// ─── Review segment chip ──────────────────────────────────────────────────────
+// ─── Review segment pill ──────────────────────────────────────────────────────
 
 type Segment = 'all' | 'good' | 'neutral' | 'bad';
 
-const SEGMENT_COLORS: Record<Segment, { active: string; text: string }> = {
-  all: { active: 'primary', text: 'fg' },
-  good: { active: 'green', text: 'green.700' },
-  neutral: { active: 'warning', text: 'warning.700' },
-  bad: { active: 'red', text: 'red.700' },
+const SEGMENT_COLORS: Record<Segment, string> = {
+  all: 'primary',
+  good: 'success',
+  neutral: 'warning',
+  bad: 'red',
 };
 
-function SegmentChip({
+function SegmentPill({
   label,
   count,
+  segment,
   active,
   onClick,
-  segment,
 }: {
   label: string;
   count: number;
+  segment: Segment;
   active: boolean;
   onClick: () => void;
-  segment: Segment;
 }) {
-  const colors = SEGMENT_COLORS[segment];
+  const palette = SEGMENT_COLORS[segment];
   return (
-    <Button
-      size="sm"
-      variant={active ? 'solid' : 'outline'}
-      colorPalette={active ? colors.active : 'gray'}
+    <Box
+      as="button"
       onClick={onClick}
+      px={3}
+      py={1}
       borderRadius="full"
+      textStyle="xs"
       fontWeight="medium"
+      cursor="pointer"
+      transition="all 0.15s"
+      bg={active ? `${palette}.solid` : 'bg.subtle'}
+      color={active ? 'white' : 'fg.muted'}
+      _hover={{ bg: active ? `${palette}.solid` : 'bg.muted' }}
+      flexShrink={0}
     >
       {label}
-      {count > 0 && (
-        <Box
-          as="span"
-          ml={1}
-          px={1.5}
-          py={0.5}
-          borderRadius="full"
-          bg={active ? 'whiteAlpha.300' : 'bg.subtle'}
-          textStyle="2xs"
-          fontWeight="bold"
-        >
-          {count}
-        </Box>
-      )}
-    </Button>
+      {count > 0 ? ` · ${count}` : ''}
+    </Box>
   );
 }
 
@@ -117,18 +79,16 @@ export default function VendorPublicProfilePage() {
 
   // Reviews fetched separately so segmentation doesn't reload the full profile
   const vendorId = data?.profile.id ?? '';
-  const { data: reviewsData, isLoading: reviewsLoading } = useVendorReviews(
-    vendorId,
-    reviewPage,
-    10,
-    minRating,
-    maxRating
-  );
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+    error: reviewsError,
+  } = useVendorReviews(vendorId, reviewPage, 10, minRating, maxRating);
 
   if (isLoading) {
     return (
       <Flex minH="50dvh" align="center" justify="center">
-        <Spinner size="xl" />
+        <Spinner size="xl" colorPalette="primary" />
       </Flex>
     );
   }
@@ -147,19 +107,24 @@ export default function VendorPublicProfilePage() {
   const reviews = reviewsData ?? data.reviews;
   const summary = reviews.summary;
 
+  //const unfilteredTotal = (summary.distribution[1] ?? 0) + (summary.distribution[2] ?? 0) + (summary.distribution[3] ?? 0) + (summary.distribution[4] ?? 0) + (summary.distribution[5] ?? 0);
+  const unfilteredTotal = Object.values(summary.distribution).reduce(
+    (sum, count) => sum + (count ?? 0),
+    0
+  );
   const goodCount = (summary.distribution[4] ?? 0) + (summary.distribution[5] ?? 0);
   const neutralCount = summary.distribution[3] ?? 0;
   const badCount = (summary.distribution[1] ?? 0) + (summary.distribution[2] ?? 0);
 
-  const filteredTotal = segment === 'all'
-    ? summary.total_reviews
-    : (reviews.summary.filtered_total ?? reviews.meta.total);
+  const filteredTotal = reviews.meta.total;
+
+  const contentMaxW = { base: 'full', md: '2xl', lg: '4xl' };
 
   return (
     <Box bg="bg" minH="100dvh">
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <Box bg="bg.panel" borderBottomWidth="1px" borderColor="border">
-        <Box maxW="lg" mx="auto" px={4} py={6}>
+        <Box maxW={contentMaxW} mx="auto" px={{ base: 4, md: 6 }} py={6}>
           <ProfileHeader
             business_name={profile.business_name}
             profile_photo_url={profile.profile_photo_url}
@@ -184,26 +149,61 @@ export default function VendorPublicProfilePage() {
       </Box>
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <Box maxW="lg" mx="auto" px={4}>
-        <Stack gap={5} py={5} pb={12}>
-          {/* Top 3 stat cards */}
-          <SimpleGrid columns={3} gap={3}>
-            <StatCard label="Completed" value={trustMetrics.successful_transactions} />
-            <StatCard
-              label="Avg Rating"
-              value={trustMetrics.average_rating > 0 ? `${trustMetrics.average_rating.toFixed(1)} ★` : '—'}
-            />
-            <StatCard
-              label="Fulfillment"
-              value={`${Math.round(trustMetrics.fulfillment_rate)}%`}
-            />
-          </SimpleGrid>
+      <Box maxW={contentMaxW} mx="auto" px={{ base: 4, md: 6 }}>
+        <Stack gap={6} py={5} pb={12}>
+          {/* ── Unified stats row ─────────────────────────────────────────── */}
+          <Box
+            bg="bg.panel"
+            borderWidth="1px"
+            borderColor="border"
+            borderRadius="xl"
+            overflow="hidden"
+          >
+            <SimpleGrid columns={3} divideX="1px">
+              {[
+                {
+                  label: 'Completed',
+                  value: String(trustMetrics.successful_transactions),
+                  color: 'success.fg',
+                },
+                {
+                  label: 'Avg Rating',
+                  value:
+                    trustMetrics.average_rating > 0
+                      ? `${trustMetrics.average_rating.toFixed(1)} ★`
+                      : '—',
+                  color: 'rating.500',
+                },
+                {
+                  label: 'Avg Response',
+                  value: (() => {
+                    const m = trustMetrics.avg_response_time_minutes;
+                    if (m <= 0) return 'N/A';
+                    if (m < 60) return `${m}m`;
+                    const h = Math.floor(m / 60);
+                    const rem = m % 60;
+                    return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+                  })(),
+                  color: 'primary.fg',
+                },
+              ].map(({ label, value, color }) => (
+                <Box key={label} textAlign="center" py={4} px={2}>
+                  <Text textStyle="xl" fontWeight="bold" color={color as string} lineHeight="1.2">
+                    {value}
+                  </Text>
+                  <Text textStyle="2xs" color="fg.muted" mt={0.5} fontWeight="medium">
+                    {label}
+                  </Text>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </Box>
 
-          {/* Trust metrics */}
+          {/* ── Trust metrics ─────────────────────────────────────────────── */}
           <TrustIndicators metrics={trustMetrics} />
 
           {/* ── Tabs ──────────────────────────────────────────────────────── */}
-          <Tabs.Root defaultValue="products" variant="line">
+          <Tabs.Root defaultValue="products" variant="line" colorPalette="primary">
             <Tabs.List>
               <Tabs.Trigger value="products">
                 Products
@@ -236,7 +236,7 @@ export default function VendorPublicProfilePage() {
 
             {/* Reviews tab */}
             <Tabs.Content value="reviews" pt={4}>
-              {summary.total_reviews === 0 ? (
+              {unfilteredTotal === 0 ? (
                 <Box py={10} textAlign="center">
                   <Text color="fg.muted" textStyle="sm">
                     No reviews yet
@@ -244,46 +244,70 @@ export default function VendorPublicProfilePage() {
                 </Box>
               ) : (
                 <Stack gap={4}>
-                  {/* Review summary (only in 'all' segment) */}
-                  {segment === 'all' && <ReviewSummary summary={summary} />}
+                  {/* Customer feedback ratings */}
+                  <CustomerFeedbackStats metrics={trustMetrics} />
 
-                  {/* Segmentation chips */}
+                  {/* Segment pills — always visible so user can switch segments */}
                   <Flex gap={2} flexWrap="wrap">
-                    <SegmentChip
+                    <SegmentPill
                       label="All"
-                      count={summary.total_reviews}
-                      active={segment === 'all'}
+                      count={unfilteredTotal}
                       segment="all"
-                      onClick={() => { setSegment('all'); setReviewPage(1); }}
+                      active={segment === 'all'}
+                      onClick={() => {
+                        setSegment('all');
+                        setReviewPage(1);
+                      }}
                     />
-                    <SegmentChip
+                    <SegmentPill
                       label="Good"
                       count={goodCount}
-                      active={segment === 'good'}
                       segment="good"
-                      onClick={() => { setSegment('good'); setReviewPage(1); }}
+                      active={segment === 'good'}
+                      onClick={() => {
+                        setSegment('good');
+                        setReviewPage(1);
+                      }}
                     />
-                    <SegmentChip
+                    <SegmentPill
                       label="Neutral"
                       count={neutralCount}
-                      active={segment === 'neutral'}
                       segment="neutral"
-                      onClick={() => { setSegment('neutral'); setReviewPage(1); }}
+                      active={segment === 'neutral'}
+                      onClick={() => {
+                        setSegment('neutral');
+                        setReviewPage(1);
+                      }}
                     />
-                    <SegmentChip
+                    <SegmentPill
                       label="Bad"
                       count={badCount}
-                      active={segment === 'bad'}
                       segment="bad"
-                      onClick={() => { setSegment('bad'); setReviewPage(1); }}
+                      active={segment === 'bad'}
+                      onClick={() => {
+                        setSegment('bad');
+                        setReviewPage(1);
+                      }}
                     />
                   </Flex>
 
                   {/* Review list */}
                   {reviewsLoading ? (
                     <Flex justify="center" py={6}>
-                      <Spinner size="md" />
+                      <Spinner size="md" colorPalette="primary" />
                     </Flex>
+                  ) : reviewsError ? (
+                    <Box py={6} textAlign="center">
+                      <Text color="fg.muted" textStyle="sm">
+                        Error loading reviews
+                      </Text>
+                    </Box>
+                  ) : filteredTotal === 0 ? (
+                    <Box py={6} textAlign="center">
+                      <Text color="fg.muted" textStyle="sm">
+                        No reviews match this segment
+                      </Text>
+                    </Box>
                   ) : (
                     <ReviewList
                       reviews={reviews.data}

@@ -67,7 +67,7 @@ export class ReviewController {
 
     try {
       const result = await ReviewService.getVendorReviews(vendorId, page, limit, minRating, maxRating);
-      const total = result.summary.filtered_total ?? result.summary.total_reviews;
+      const total = result.summary.total_reviews;
       res.status(200).json({
         success: true,
         data: result.reviews,
