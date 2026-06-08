@@ -5,15 +5,12 @@ import { useRouter } from 'next/navigation';
 import { LuExternalLink, LuLink } from 'react-icons/lu';
 import {
   LuArrowRight,
-  LuBuilding2,
-  LuMapPin,
   LuPackage,
   LuPlus,
   LuShieldAlert,
   LuShieldCheck,
   LuShoppingCart,
   LuStar,
-  LuStore,
   LuTrendingUp,
 } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
@@ -36,6 +33,7 @@ function StatCard({
   sub,
   color = 'primary',
   comingSoon = false,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
@@ -43,9 +41,20 @@ function StatCard({
   sub?: string;
   color?: string;
   comingSoon?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
+    <Box
+      p={5}
+      bg="bg.panel"
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="xl"
+      onClick={onClick}
+      cursor={onClick ? 'pointer' : undefined}
+      _hover={onClick ? { borderColor: 'border.emphasized' } : undefined}
+      transition="border-color 0.15s"
+    >
       <Flex justify="space-between" align="flex-start" mb={4}>
         <Flex
           w={10}
@@ -295,8 +304,7 @@ export default function Dashboard() {
                   Complete your vendor profile
                 </Text>
                 <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                  Verify your identity and business details to get a verified badge and build buyer
-                  trust.
+                  Fill in your personal and business details to make your store visible to buyers.
                 </Text>
                 <Box mt={2}>
                   <ProfileCompletenessBar pct={profileSetupPct} />
@@ -337,10 +345,10 @@ export default function Dashboard() {
               </Flex>
               <Box flex={1} minW="200px">
                 <Text fontWeight="semibold" color="warning.fg" textStyle="sm">
-                  Verify your identity to start selling
+                  Boost trust and unlock higher tiers
                 </Text>
                 <Text color="warning.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                  Add NIN, address, and business verification to build buyer trust and unlock higher tiers.
+                  Complete identity, address, and business verification to earn a verified badge, build buyer confidence, and unlock higher account tiers.
                 </Text>
               </Box>
               <Button
@@ -379,6 +387,7 @@ export default function Dashboard() {
               value={productCount}
               sub={`${inStockCount} in stock`}
               color="primary"
+              onClick={() => router.push('/products')}
             />
             <StatCard
               icon={LuShoppingCart}
@@ -390,6 +399,7 @@ export default function Dashboard() {
                   : 'Loading...'
               }
               color="warning"
+              onClick={() => router.push('/transactions')}
             />
             <StatCard
               icon={LuTrendingUp}
@@ -522,128 +532,37 @@ export default function Dashboard() {
             >
               Quick Actions
             </Text>
-            <Grid templateColumns="1fr 1fr" gap={3}>
+            <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
               <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
-                >
+                <Flex w={10} h={10} borderRadius="lg" bg="primary.subtle" align="center" justify="center" mb={4} color="primary.fg">
                   <LuPackage size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  Add Product
-                </Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>
-                  List a new product in your store.
-                </Text>
-                <Button
-                  mt={4}
-                  size="sm"
-                  colorPalette="primary"
-                  variant="outline"
-                  w="full"
-                  onClick={() => router.push('/products/new')}
-                >
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Add Product</Text>
+                <Text color="fg.muted" textStyle="xs" flex={1}>List a new product in your store.</Text>
+                <Button mt={4} size="sm" colorPalette="primary" variant="outline" w="full" onClick={() => router.push('/products/new')}>
                   Add now
                 </Button>
               </Box>
 
               <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
-                >
-                  <LuBuilding2 size={18} />
+                <Flex w={10} h={10} borderRadius="lg" bg="warning.subtle" align="center" justify="center" mb={4} color="warning.fg">
+                  <LuShoppingCart size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  CAC Verification
-                </Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>
-                  Verify your business registration.
-                </Text>
-                <Button
-                  mt={4}
-                  size="sm"
-                  colorPalette="primary"
-                  variant="outline"
-                  w="full"
-                  onClick={() => router.push('/verifications/cac')}
-                >
-                  Submit
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>New Transaction</Text>
+                <Text color="fg.muted" textStyle="xs" flex={1}>Create and send a new order to a buyer.</Text>
+                <Button mt={4} size="sm" colorPalette="warning" variant="outline" w="full" onClick={() => router.push('/transactions/new')}>
+                  Create
                 </Button>
               </Box>
 
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
-                >
-                  <LuStore size={18} />
+              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column" gridColumn={{ base: '1 / -1', md: 'auto' }}>
+                <Flex w={10} h={10} borderRadius="lg" bg="success.subtle" align="center" justify="center" mb={4} color="success.fg">
+                  <LuShieldCheck size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  SMEDAN
-                </Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>
-                  Register as an SME for higher tiers.
-                </Text>
-                <Button
-                  mt={4}
-                  size="sm"
-                  colorPalette="primary"
-                  variant="outline"
-                  w="full"
-                  onClick={() => router.push('/verifications/smedan')}
-                >
-                  Submit
-                </Button>
-              </Box>
-
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                  color="primary.fg"
-                >
-                  <LuMapPin size={18} />
-                </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                  Address Proof
-                </Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>
-                  Confirm your business location.
-                </Text>
-                <Button
-                  mt={4}
-                  size="sm"
-                  colorPalette="primary"
-                  variant="outline"
-                  w="full"
-                  onClick={() => router.push('/verifications/address')}
-                >
-                  Submit
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Get Verified</Text>
+                <Text color="fg.muted" textStyle="xs" flex={1}>Verify your identity and business to upgrade your tier and increase buyer trust.</Text>
+                <Button mt={4} size="sm" colorPalette="success" variant="outline" w="full" onClick={() => router.push('/verifications')}>
+                  View verifications
                 </Button>
               </Box>
             </Grid>
