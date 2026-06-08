@@ -46,6 +46,7 @@ export interface PublicProfileResult {
     whatsapp_number: string | null;
     primary_contact: string | null;
     created_at: Date;
+    verified_types: string[];
   };
   trustMetrics: TrustMetrics;
   reviews: {

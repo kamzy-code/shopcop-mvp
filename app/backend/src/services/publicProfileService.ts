@@ -3,6 +3,7 @@ import { publicProfileLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
 import { ReviewService } from '@services/reviewService.js';
+import { VerificationStatus } from '../generated/prisma/enums.js';
 import type { PublicProfileResult, } from '../types/trustMetricsTypes.js';
 
 
@@ -61,11 +62,17 @@ export class PublicProfileService {
     const { business_info_complete: _omit, ...vendorPublic } = vendor;
     void _omit;
 
-    const [trustMetrics, reviewsResult, productsResult] = await Promise.all([
+    const [trustMetrics, reviewsResult, productsResult, approvedVerifications] = await Promise.all([
       TrustMetricsService.getVendorTrustMetrics(vendorPublic.id),
       ReviewService.getVendorReviews(vendorPublic.id, reviewPage, reviewLimit),
       this.getVendorProducts(vendorPublic.id, productPage, productLimit),
+      prisma.vendorVerification.findMany({
+        where: { vendor_id: vendorPublic.id, status: VerificationStatus.APPROVED },
+        select: { type: true },
+      }),
     ]);
+
+    const verified_types = [...new Set(approvedVerifications.map((v) => v.type))];
 
     publicProfileLogger.info('Public profile fetched', {
       action: 'getPublicProfile',
@@ -76,7 +83,7 @@ export class PublicProfileService {
     const reviewTotal = reviewsResult.summary.total_reviews;
 
     return {
-      profile: vendorPublic,
+      profile: { ...vendorPublic, verified_types },
       trustMetrics,
       reviews: {
         data: reviewsResult.reviews,

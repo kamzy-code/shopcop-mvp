@@ -6,10 +6,11 @@ const API_BASE_URL =
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const { slug } = await params;
   try {
-    const res = await fetch(`${API_BASE_URL}/public/vendors/${params.slug}`, {
+    const res = await fetch(`${API_BASE_URL}/public/vendors/${slug}`, {
       next: { revalidate: 300 }, // cache for 5 minutes
     });
 

@@ -148,6 +148,7 @@ export default function VendorPublicProfilePage() {
             refund_conditions={profile.refund_conditions}
             refund_custom_notes={profile.refund_custom_notes}
             created_at={profile.created_at}
+            verified_types={profile.verified_types}
             trustMetrics={trustMetrics}
           />
         </Box>
@@ -157,8 +158,9 @@ export default function VendorPublicProfilePage() {
       <Box maxW={contentMaxW} mx="auto" px={{ base: 4, md: 6 }}>
         <Stack gap={6} py={5} pb={12}>
           {/* ── Tabs ──────────────────────────────────────────────────────── */}
-          <Tabs.Root defaultValue="products" variant="line" colorPalette="primary">
+          <Tabs.Root defaultValue="posts" variant="line" colorPalette="primary">
             <Tabs.List>
+              <Tabs.Trigger value="posts">Posts</Tabs.Trigger>
               <Tabs.Trigger value="products">
                 Products
                 {products.meta.total > 0 && (
@@ -176,6 +178,15 @@ export default function VendorPublicProfilePage() {
                 )}
               </Tabs.Trigger>
             </Tabs.List>
+
+            {/* Posts tab */}
+            <Tabs.Content value="posts" pt={4}>
+              <Box py={10} textAlign="center">
+                <Text color="fg.muted" textStyle="sm">
+                  No posts yet
+                </Text>
+              </Box>
+            </Tabs.Content>
 
             {/* Products tab */}
             <Tabs.Content value="products" pt={4}>

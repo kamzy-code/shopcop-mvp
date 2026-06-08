@@ -1,6 +1,15 @@
 'use client';
 import { Avatar, Box, Flex, Link, SimpleGrid, Stack, Text, VStack } from '@chakra-ui/react';
-import { LuCalendar, LuFacebook, LuInstagram, LuMapPin, LuMessageCircle } from 'react-icons/lu';
+import {
+  LuCalendar,
+  LuFacebook,
+  LuInstagram,
+  LuMapPin,
+  LuMessageCircle,
+  LuShieldCheck,
+  LuShieldAlert,
+  LuTriangleAlert,
+} from 'react-icons/lu';
 import type { PublicVendorProfileProfile, TrustMetrics } from '@/app/_types';
 import { TrustIndicators } from '@/components/vendor/TrustIndicators';
 
@@ -26,6 +35,7 @@ type ProfileHeaderProps = Pick<
   | 'refund_conditions'
   | 'refund_custom_notes'
   | 'created_at'
+  | 'verified_types'
 > & { trustMetrics: TrustMetrics };
 
 function formatTier(tier: string): string {
@@ -123,18 +133,119 @@ function BusinessDescription({ description }: { description: string | null }) {
   );
 }
 
+function VerificationBadge({ verified_types }: { verified_types: string[] }) {
+  const hasIdentity = verified_types.includes('NIN');
+  const hasAddress = verified_types.includes('ADDRESS');
+  const hasBusiness = verified_types.includes('CAC') || verified_types.includes('SMEDAN');
+
+  // No identity — danger regardless of anything else
+  if (!hasIdentity) {
+    return (
+      <Flex
+        align="flex-start"
+        gap={2.5}
+        p={3}
+        borderRadius="md"
+        bg="red.subtle"
+        borderWidth="1px"
+        borderColor="red.200"
+        _dark={{ borderColor: 'red.800' }}
+      >
+        <Box color="red.500" flexShrink={0} mt={0.5}>
+          <LuTriangleAlert size={15} />
+        </Box>
+        <Text textStyle="xs" color="red.700" _dark={{ color: 'red.300' }} lineHeight="1.5">
+          This vendor&apos;s identity has not been verified. Proceed with caution and make sure you
+          trust them before transacting.
+        </Text>
+      </Flex>
+    );
+  }
+
+  // Identity confirmed, no location — caution
+  if (!hasAddress) {
+    return (
+      <Flex
+        align="flex-start"
+        gap={2.5}
+        p={3}
+        borderRadius="md"
+        bg="yellow.subtle"
+        borderWidth="1px"
+        borderColor="yellow.200"
+        _dark={{ borderColor: 'yellow.800' }}
+      >
+        <Box color="yellow.600" flexShrink={0} mt={0.5}>
+          <LuShieldAlert size={15} />
+        </Box>
+        <Text textStyle="xs" color="yellow.800" _dark={{ color: 'yellow.200' }} lineHeight="1.5">
+          Identity verified. Location has not been confirmed — we recommend verifying the
+          vendor&apos;s address before transacting.
+        </Text>
+      </Flex>
+    );
+  }
+
+  // Identity + location + registered business — fully verified
+  if (hasBusiness) {
+    return (
+      <Flex
+        align="flex-start"
+        gap={2.5}
+        p={3}
+        borderRadius="md"
+        bg="purple.subtle"
+        borderWidth="1px"
+        borderColor="purple.200"
+        _dark={{ borderColor: 'purple.800' }}
+      >
+        <Box color="purple.600" flexShrink={0} mt={0.5}>
+          <LuShieldCheck size={15} />
+        </Box>
+        <Text textStyle="xs" color="purple.700" _dark={{ color: 'purple.300' }} lineHeight="1.5">
+          Identity, location, and business registration all verified by ShopCop. This is a fully
+          verified vendor.
+        </Text>
+      </Flex>
+    );
+  }
+
+  // Identity + location — safe
+  return (
+    <Flex
+      align="flex-start"
+      gap={2.5}
+      p={3}
+      borderRadius="md"
+      bg="green.subtle"
+      borderWidth="1px"
+      borderColor="green.200"
+      _dark={{ borderColor: 'green.800' }}
+    >
+      <Box color="green.600" flexShrink={0} mt={0.5}>
+        <LuShieldCheck size={15} />
+      </Box>
+      <Text textStyle="xs" color="green.700" _dark={{ color: 'green.300' }} lineHeight="1.5">
+        Identity and location verified by ShopCop. You can transact with confidence.
+      </Text>
+    </Flex>
+  );
+}
+
 function BusinessMeta({
   state,
   city,
   street_address,
   landmark,
   created_at,
+  verified_types,
 }: {
   state: string | null;
   city: string | null;
   street_address: string | null;
   landmark: string | null;
   created_at: string;
+  verified_types: string[];
 }) {
   return (
     <Stack gap={2} p={3} borderWidth="1px" borderRadius="lg" bg="bg.subtle">
@@ -156,6 +267,7 @@ function BusinessMeta({
           Member since {formatMemberSince(created_at)}
         </Text>
       </Flex>
+      <VerificationBadge verified_types={verified_types} />
     </Stack>
   );
 }
@@ -263,6 +375,7 @@ export function ProfileHeader({
   refund_conditions,
   refund_custom_notes,
   created_at,
+  verified_types,
   trustMetrics,
 }: ProfileHeaderProps) {
   const socialLinks = [
@@ -348,6 +461,7 @@ export function ProfileHeader({
         state={state}
         city={city}
         created_at={created_at}
+        verified_types={verified_types}
       />
 
       {/* Stats row */}
