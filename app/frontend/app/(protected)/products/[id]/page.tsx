@@ -221,7 +221,7 @@ export default function ProductDetailPage() {
           <Text color="fg.muted" mb={4}>
             Product not found.
           </Text>
-          <Button onClick={() => router.back()}>Back to Products</Button>
+          <Button onClick={() => router.push('/products')}>Back to Products</Button>
         </Box>
       </AppShell>
     );
@@ -236,7 +236,7 @@ export default function ProductDetailPage() {
             variant="ghost"
             size="sm"
             color="fg.muted"
-            onClick={() => router.back()}
+            onClick={() => router.push('/products')}
           >
             <LuArrowLeft size={14} />
             Back to Products

@@ -79,7 +79,7 @@ export default function SmedanVerificationPage() {
         title="SMEDAN Submitted"
         description="Your SMEDAN certificate has been submitted and is under review. We will notify you once it is approved."
         actionLabel="Back to Dashboard"
-        onAction={() => router.back()}
+        onAction={() => router.push('/verifications')}
       />
     );
   }
@@ -167,7 +167,7 @@ export default function SmedanVerificationPage() {
             variant="ghost"
             size="sm"
             color="fg.muted"
-            onClick={() => router.back()}
+            onClick={() => router.push('/verifications')}
           >
             <LuArrowLeft size={14} />
             Back

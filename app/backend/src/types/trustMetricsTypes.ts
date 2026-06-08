@@ -31,6 +31,8 @@ export interface PublicProfileResult {
     business_description: string | null;
     state: string | null;
     city: string | null;
+    street_address: string | null;
+    landmark: string | null;
     primary_category: string | null;
     current_tier: string;
     refund_policy_type: RefundPolicyType;

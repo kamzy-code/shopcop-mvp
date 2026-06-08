@@ -113,7 +113,18 @@ export class ProductService {
         name: true,
         price: true,
         description: true,
+        category: true,
         media: { orderBy: { position: 'asc' } },
+        vendor: {
+          select: {
+            whatsapp_number: true,
+            primary_contact: true,
+            phone_number: true,
+            instagram_handle: true,
+            tiktok_handle: true,
+            facebook_url: true,
+          },
+        },
       },
     });
 

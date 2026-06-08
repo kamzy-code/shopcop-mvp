@@ -11,7 +11,6 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
-  const [overallRating, setOverallRating] = useState(0);
   const [deliveryRating, setDeliveryRating] = useState(0);
   const [responseRating, setResponseRating] = useState(0);
   const [satisfactionRating, setSatisfactionRating] = useState(0);
@@ -22,10 +21,12 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   const { mutate: createReview, isPending } = useCreateReview();
 
   const handleSubmit = () => {
-    if (overallRating === 0) {
-      toaster.create({ title: 'Please select an overall rating', type: 'error' });
+    const provided = [deliveryRating, responseRating, satisfactionRating].filter((r) => r > 0);
+    if (provided.length === 0) {
+      toaster.create({ title: 'Please rate at least one category', type: 'error' });
       return;
     }
+    const overallRating = Math.round(provided.reduce((a, b) => a + b, 0) / provided.length);
 
     createReview(
       {
@@ -67,32 +68,20 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
       </Text>
 
       <Stack gap={4}>
-        <Field.Root required>
-          <Field.Label>How was your overall experience?</Field.Label>
-          <ReviewStars rating={overallRating} size="lg" interactive onChange={setOverallRating} />
-        </Field.Root>
+        <Text textStyle="xs" color="fg.muted">Rate at least one category below.</Text>
 
         <Field.Root>
-          <Field.Label>
-            How was the delivery?{' '}
-            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
-          </Field.Label>
+          <Field.Label>How was the delivery?</Field.Label>
           <ReviewStars rating={deliveryRating} size="lg" interactive onChange={setDeliveryRating} />
         </Field.Root>
 
         <Field.Root>
-          <Field.Label>
-            How quickly did the vendor respond?{' '}
-            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
-          </Field.Label>
+          <Field.Label>How quickly did the vendor respond?</Field.Label>
           <ReviewStars rating={responseRating} size="lg" interactive onChange={setResponseRating} />
         </Field.Root>
 
         <Field.Root>
-          <Field.Label>
-            How satisfied are you with your order?{' '}
-            <Text as="span" color="fg.muted" textStyle="xs">(optional)</Text>
-          </Field.Label>
+          <Field.Label>How satisfied are you with your order?</Field.Label>
           <ReviewStars rating={satisfactionRating} size="lg" interactive onChange={setSatisfactionRating} />
         </Field.Root>
 
@@ -128,7 +117,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
             colorPalette="primary"
             onClick={handleSubmit}
             loading={isPending}
-            disabled={overallRating === 0}
+            disabled={deliveryRating === 0 && responseRating === 0 && satisfactionRating === 0}
           >
             Submit Review
           </Button>

@@ -79,7 +79,7 @@ export default function CacVerificationPage() {
         title="CAC Submitted"
         description="Your CAC certificate has been submitted and is under review. We will notify you once it is approved."
         actionLabel="Back to Dashboard"
-        onAction={() => router.back()}
+        onAction={() => router.push('/verifications')}
       />
     );
   }
@@ -165,7 +165,7 @@ export default function CacVerificationPage() {
             variant="ghost"
             size="sm"
             color="fg.muted"
-            onClick={() => router.back()}
+            onClick={() => router.push('/verifications')}
           >
             <LuArrowLeft size={14} />
             Back

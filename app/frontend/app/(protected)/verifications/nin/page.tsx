@@ -97,7 +97,7 @@ export default function NinPage() {
             title="Identity Verified"
             description="Your NIN has been submitted for review. We will notify you once approved."
             actionLabel="Back to Verifications"
-            onAction={() => router.back()}
+            onAction={() => router.push('/verifications')}
           />
         ) : (
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -170,7 +170,7 @@ export default function NinPage() {
                 variant="ghost"
                 size="sm"
                 color="fg.muted"
-                onClick={() => router.back()}
+                onClick={() => router.push('/verifications')}
               >
                 <LuArrowLeft size={14} />
                 Back to Verifications

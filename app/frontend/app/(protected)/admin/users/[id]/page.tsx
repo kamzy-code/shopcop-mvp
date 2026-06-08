@@ -145,7 +145,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         color="fg.muted"
         w="fit-content"
         px={0}
-        onClick={() => router.back()}
+        onClick={() => router.push('/admin/users')}
       >
         <LuArrowLeft size={14} /> Back to Users
       </Button>

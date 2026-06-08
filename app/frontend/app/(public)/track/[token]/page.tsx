@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
-import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuPencil, LuShoppingCart, LuStore, LuTruck } from 'react-icons/lu';
+import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuPencil, LuShoppingCart, LuTruck } from 'react-icons/lu';
 import {
   useTransactionByToken,
   useBuyerCancelTransaction,
@@ -11,6 +11,7 @@ import {
   useBuyerRequestRefund,
 } from '@/app/_hooks/transaction';
 import { useEditReview } from '@/app/_hooks/reviews';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
 import { ReviewStars } from '@/components/review/ReviewStars';
 import { Transaction, TransactionItem, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
 import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
@@ -488,32 +489,7 @@ export default function TrackingPage() {
 
   return (
     <Box minH="100dvh" bg="bg">
-      {/* Brand header */}
-      <Box bg="bg.panel" borderBottomWidth="1px" borderColor="border" px={4} py={3}>
-        <Flex align="center" justify="space-between" maxW="520px" mx="auto">
-          <Flex align="center" gap={2}>
-            <Flex
-              w={7}
-              h={7}
-              borderRadius="md"
-              bg="primary.500"
-              align="center"
-              justify="center"
-              flexShrink={0}
-            >
-              <LuStore size={14} color="white" />
-            </Flex>
-            <Text fontWeight="bold" textStyle="sm" color="fg">
-              ShopCop
-            </Text>
-          </Flex>
-          {vendor?.business_name && (
-            <Text textStyle="sm" color="fg.muted">
-              by {vendor.business_name}
-            </Text>
-          )}
-        </Flex>
-      </Box>
+      <PublicNavbar businessName={vendor?.business_name} />
 
       {/* Content */}
       <Box maxW="520px" mx="auto" px={4} py={6}>

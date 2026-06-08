@@ -851,12 +851,12 @@ function BusinessInfoTab() {
         <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
           <Field.Root invalid={!!errors.instagram_handle} flex={1}>
             <Field.Label color="fg">Instagram <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text></Field.Label>
-            <Input {...register('instagram_handle')} placeholder="@handle" size="lg" colorPalette="primary" />
+            <Input {...register('instagram_handle')} placeholder="https://instagram.com/..." size="lg" colorPalette="primary" />
             <Field.ErrorText>{errors.instagram_handle?.message}</Field.ErrorText>
           </Field.Root>
           <Field.Root invalid={!!errors.tiktok_handle} flex={1}>
             <Field.Label color="fg">TikTok <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text></Field.Label>
-            <Input {...register('tiktok_handle')} placeholder="@handle" size="lg" colorPalette="primary" />
+            <Input {...register('tiktok_handle')} placeholder="https://tiktok.com/@..." size="lg" colorPalette="primary" />
             <Field.ErrorText>{errors.tiktok_handle?.message}</Field.ErrorText>
           </Field.Root>
         </Flex>

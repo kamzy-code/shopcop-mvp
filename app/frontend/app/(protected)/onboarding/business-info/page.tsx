@@ -593,7 +593,7 @@ export default function BusinessInfoPage() {
                 </Field.Label>
                 <Input
                   {...register('instagram_handle')}
-                  placeholder="@handle"
+                  placeholder="https://instagram.com/..."
                   size="lg"
                   colorPalette="primary"
                 />
@@ -609,7 +609,7 @@ export default function BusinessInfoPage() {
                 </Field.Label>
                 <Input
                   {...register('tiktok_handle')}
-                  placeholder="@handle"
+                  placeholder="https://tiktok.com/@..."
                   size="lg"
                   colorPalette="primary"
                 />
@@ -688,7 +688,7 @@ export default function BusinessInfoPage() {
               <LuArrowRight />
             </Button>
 
-            <Button variant="ghost" size="sm" color="fg.muted" onClick={() => router.back()}>
+            <Button variant="ghost" size="sm" color="fg.muted" onClick={() => router.push('/onboarding')}>
               <LuArrowLeft size={14} />
               Back
             </Button>

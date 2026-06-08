@@ -549,6 +549,8 @@ export interface PublicVendorProfileProfile {
   business_description: string | null;
   state: string | null;
   city: string | null;
+  street_address: string | null;
+  landmark: string | null;
   primary_category: string | null;
   current_tier: string;
   payment_models: string[];
@@ -588,6 +590,31 @@ export interface PublicVendorProfile {
   trustMetrics: TrustMetrics;
   reviews: ReviewListResponse;
   products: PublicVendorProfileProducts;
+}
+
+export interface PublicProductDetailMedia {
+  id: string;
+  media_url: string;
+  media_type: 'IMAGE' | 'VIDEO';
+  is_primary: boolean;
+  position: number;
+}
+
+export interface PublicProductDetail {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+  category: string;
+  media: PublicProductDetailMedia[];
+  vendor: {
+    whatsapp_number: string | null;
+    primary_contact: PrimaryContactMethod | null;
+    phone_number: string | null;
+    instagram_handle: string | null;
+    tiktok_handle: string | null;
+    facebook_url: string | null;
+  };
 }
 
 export interface ProfileCompletenessSection {

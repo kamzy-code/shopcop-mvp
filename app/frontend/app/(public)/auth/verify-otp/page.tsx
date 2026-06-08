@@ -68,7 +68,7 @@ export default function VerifyOtpPage() {
             size="sm"
             color="primary.fg"
             fontWeight="medium"
-            onClick={() => router.back()}
+            onClick={() => router.push('/auth/signup')}
           >
             <LuArrowLeft />
             Back to sign up
@@ -263,7 +263,7 @@ export default function VerifyOtpPage() {
           size="sm"
           mt={8}
           color="fg.muted"
-          onClick={() => router.back()}
+          onClick={() => router.push('/auth/signup')}
         >
           <LuArrowLeft />
           Back to sign up

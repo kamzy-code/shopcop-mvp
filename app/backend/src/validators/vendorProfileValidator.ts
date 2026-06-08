@@ -23,14 +23,6 @@ function optionalUrl() {
   return z.url().optional().or(z.literal(''));
 }
 
-/**
- * Returns a Zod field for optional social media handles (with or without leading @).
- * Accepts alphanumeric characters, underscores, dots, or empty string.
- */
-function optionalSocialHandle() {
-  return z.string().regex(/^@?[\w.]+$/, 'Invalid handle').optional().or(z.literal(''));
-}
-
 // ============================================
 // PERSONAL INFO VALIDATION
 // ============================================
@@ -105,8 +97,8 @@ export const businessInfoSchema = z.object({
     .max(100, 'Account name must be less than 100 characters'),
   payment_models: z.array(z.enum(PaymentModel)).min(1, 'Select at least one payment model'),
 
-  instagram_handle: optionalSocialHandle(),
-  tiktok_handle: optionalSocialHandle(),
+  instagram_handle: optionalUrl(),
+  tiktok_handle: optionalUrl(),
   facebook_url: optionalUrl(),
 
   whatsapp_number: z

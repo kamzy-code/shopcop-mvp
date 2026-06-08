@@ -60,7 +60,7 @@ export default function OnboardingHubPage() {
           size="sm"
           color="fg.muted"
           alignSelf="flex-start"
-          onClick={() => router.back()}
+          onClick={() => router.push('/dashboard')}
         >
           <LuArrowLeft size={15} />
           Back to Dashboard

@@ -127,16 +127,8 @@ export const businessInfoSchema = z
       .max(10, 'You can add up to 10 conditions')
       .optional(),
     refund_custom_notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
-    instagram_handle: z
-      .string()
-      .regex(/^@?[\w.]+$/, 'Invalid handle')
-      .optional()
-      .or(z.literal('')),
-    tiktok_handle: z
-      .string()
-      .regex(/^@?[\w.]+$/, 'Invalid handle')
-      .optional()
-      .or(z.literal('')),
+    instagram_handle: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+    tiktok_handle: z.string().url('Enter a valid URL').optional().or(z.literal('')),
     facebook_url: z.string().url('Enter a valid URL').optional().or(z.literal('')),
     whatsapp_number: z
       .string()

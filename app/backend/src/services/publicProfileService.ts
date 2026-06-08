@@ -25,6 +25,8 @@ export class PublicProfileService {
         business_description: true,
         state: true,
         city: true,
+        street_address: true,
+        landmark: true,
         primary_category: true,
         current_tier: true,
         refund_policy_type: true,

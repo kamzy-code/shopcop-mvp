@@ -343,7 +343,7 @@ export default function NewProductPage() {
             color="fg.muted"
             alignSelf="flex-start"
             mb={2}
-            onClick={() => router.back()}
+            onClick={() => router.push('/products')}
           >
             <LuArrowLeft size={14} />
             Back to Products
@@ -584,7 +584,7 @@ export default function NewProductPage() {
                 variant="outline"
                 size="lg"
                 colorPalette="navy"
-                onClick={() => router.back()}
+                onClick={() => router.push('/products')}
               >
                 Cancel
               </Button>

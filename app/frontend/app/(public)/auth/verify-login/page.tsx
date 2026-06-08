@@ -110,7 +110,7 @@ export default function VerifyLoginPage() {
             size="sm"
             color="primary.fg"
             fontWeight="medium"
-            onClick={() => router.back()}
+            onClick={() => router.push('/auth/login')}
           >
             <LuArrowLeft />
             Back to login

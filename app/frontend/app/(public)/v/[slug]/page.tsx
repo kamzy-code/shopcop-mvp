@@ -1,13 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { Box, Flex, SimpleGrid, Spinner, Stack, Tabs, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Tabs, Text } from '@chakra-ui/react';
 import { useParams } from 'next/navigation';
 import { usePublicVendorProfile } from '@/app/_hooks/usePublicVendorProfile';
 import { useVendorReviews } from '@/app/_hooks/reviews';
 import { ProfileHeader } from '@/components/vendor/ProfileHeader';
-import { TrustIndicators, CustomerFeedbackStats } from '@/components/vendor/TrustIndicators';
+import { CustomerFeedbackStats } from '@/components/vendor/TrustIndicators';
 import { ReviewList } from '@/components/review/ReviewList';
 import { ProductsSection } from '@/components/vendor/ProductsSection';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
 
 // ─── Review segment pill ──────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ export default function VendorPublicProfilePage() {
 
   return (
     <Box bg="bg" minH="100dvh">
+      <PublicNavbar businessName={profile.business_name} maxW={contentMaxW} />
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <Box bg="bg.panel" borderBottomWidth="1px" borderColor="border">
         <Box maxW={contentMaxW} mx="auto" px={{ base: 4, md: 6 }} py={6}>
@@ -131,6 +133,8 @@ export default function VendorPublicProfilePage() {
             business_description={profile.business_description}
             state={profile.state}
             city={profile.city}
+            street_address={profile.street_address}
+            landmark={profile.landmark}
             primary_category={profile.primary_category}
             current_tier={profile.current_tier}
             payment_models={profile.payment_models}
@@ -144,6 +148,7 @@ export default function VendorPublicProfilePage() {
             refund_conditions={profile.refund_conditions}
             refund_custom_notes={profile.refund_custom_notes}
             created_at={profile.created_at}
+            trustMetrics={trustMetrics}
           />
         </Box>
       </Box>
@@ -151,57 +156,6 @@ export default function VendorPublicProfilePage() {
       {/* ── Body ──────────────────────────────────────────────────────────── */}
       <Box maxW={contentMaxW} mx="auto" px={{ base: 4, md: 6 }}>
         <Stack gap={6} py={5} pb={12}>
-          {/* ── Unified stats row ─────────────────────────────────────────── */}
-          <Box
-            bg="bg.panel"
-            borderWidth="1px"
-            borderColor="border"
-            borderRadius="xl"
-            overflow="hidden"
-          >
-            <SimpleGrid columns={3} divideX="1px">
-              {[
-                {
-                  label: 'Completed',
-                  value: String(trustMetrics.successful_transactions),
-                  color: 'success.fg',
-                },
-                {
-                  label: 'Avg Rating',
-                  value:
-                    trustMetrics.average_rating > 0
-                      ? `${trustMetrics.average_rating.toFixed(1)} ★`
-                      : '—',
-                  color: 'rating.500',
-                },
-                {
-                  label: 'Avg Response',
-                  value: (() => {
-                    const m = trustMetrics.avg_response_time_minutes;
-                    if (m <= 0) return 'N/A';
-                    if (m < 60) return `${m}m`;
-                    const h = Math.floor(m / 60);
-                    const rem = m % 60;
-                    return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
-                  })(),
-                  color: 'primary.fg',
-                },
-              ].map(({ label, value, color }) => (
-                <Box key={label} textAlign="center" py={4} px={2}>
-                  <Text textStyle="xl" fontWeight="bold" color={color as string} lineHeight="1.2">
-                    {value}
-                  </Text>
-                  <Text textStyle="2xs" color="fg.muted" mt={0.5} fontWeight="medium">
-                    {label}
-                  </Text>
-                </Box>
-              ))}
-            </SimpleGrid>
-          </Box>
-
-          {/* ── Trust metrics ─────────────────────────────────────────────── */}
-          <TrustIndicators metrics={trustMetrics} />
-
           {/* ── Tabs ──────────────────────────────────────────────────────── */}
           <Tabs.Root defaultValue="products" variant="line" colorPalette="primary">
             <Tabs.List>
@@ -231,6 +185,7 @@ export default function VendorPublicProfilePage() {
                 page={productPage}
                 totalPages={products.meta.totalPages}
                 onPageChange={setProductPage}
+                slug={slug}
               />
             </Tabs.Content>
 

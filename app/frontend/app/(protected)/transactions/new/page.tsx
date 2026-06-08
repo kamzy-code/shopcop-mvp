@@ -299,7 +299,7 @@ export default function NewTransactionPage() {
       <Box maxW="600px" mx="auto">
         {/* Page header */}
         <Flex align="center" gap={3} mb={6}>
-          <Button variant="ghost" size="sm" onClick={() => router.back()} colorPalette="gray">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/transactions')} colorPalette="gray">
             <LuArrowLeft />
           </Button>
           <Heading textStyle="xl" fontWeight="bold" color="fg">
@@ -694,7 +694,7 @@ export default function NewTransactionPage() {
               ) : (
                 <Button
                   variant="ghost"
-                  onClick={() => router.back()}
+                  onClick={() => router.push('/transactions')}
                   colorPalette="gray"
                   type="button"
                 >

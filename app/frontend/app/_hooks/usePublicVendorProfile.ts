@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import type { PublicVendorProfile } from '../_types';
+import type { PublicProductDetail, PublicVendorProfile } from '../_types';
 
 export const usePublicVendorProfile = (
   slug: string,
@@ -19,4 +19,15 @@ export const usePublicVendorProfile = (
     },
     enabled: !!slug,
     staleTime: 60 * 1000,
+  });
+
+export const usePublicProductDetails = (productId: string) =>
+  useQuery<PublicProductDetail>({
+    queryKey: ['product', productId],
+    queryFn: async () => {
+      const res = await apiFetch<PublicProductDetail>(`/products/public/${productId}`);
+      return res.data;
+    },
+    enabled: !!productId,
+    staleTime: 5 * 60 * 1000,
   });

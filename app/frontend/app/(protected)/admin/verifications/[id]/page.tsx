@@ -161,7 +161,7 @@ export default function AdminVerificationDetailPage({
         color="fg.muted"
         w="fit-content"
         px={0}
-        onClick={() => router.back()}
+        onClick={() => router.push('/admin/verifications')}
       >
         <LuArrowLeft size={14} /> Back to Verifications
       </Button>
