@@ -82,7 +82,7 @@ export interface VendorProfile {
   profile_completeness: number;
 
   // Metrics
-  total_transactions: number;
+  total_orders: number;
   fulfillment_rate: number;
   average_rating: number;
 
@@ -90,7 +90,7 @@ export interface VendorProfile {
   profile_status: string;
   created_at: string;
   updated_at: string;
-  last_transaction_at: string | null;
+  last_order_at: string | null;
 
   // Included relations
   verifications: VerificationRecord[];
@@ -275,10 +275,10 @@ export interface AdminProfile {
 }
 
 // ============================================================
-// TRANSACTION TYPES
+// ORDER TYPES
 // ============================================================
 
-export type TransactionStatus =
+export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'
   | 'IN_PROGRESS'
@@ -296,9 +296,9 @@ export type PaymentStatus = 'UNPAID' | 'PROOF_SUBMITTED' | 'PAID' | 'REFUNDED';
 export type RefundStatus = 'NONE' | 'REQUESTED' | 'IN_PROGRESS' | 'REFUNDED' | 'RESOLVED';
 export type DeliveryMethod = 'PICKUP' | 'DISPATCH' | 'WAYBILL';
 
-export interface TransactionItem {
+export interface OrderItem {
   id: string;
-  transaction_id: string;
+  order_id: string;
   product_id: string | null;
   item_name: string;
   item_price: number;
@@ -310,7 +310,7 @@ export interface TransactionItem {
   stock_restored: number;
 }
 
-export interface TransactionVendor {
+export interface OrderVendor {
   id: string;
   business_name: string | null;
   profile_photo_url: string | null;
@@ -323,17 +323,17 @@ export interface TransactionVendor {
   refund_duration_days: number | null;
 }
 
-export interface TransactionStatusHistoryEntry {
+export interface OrderStatusHistoryEntry {
   id: string;
-  transaction_id: string;
-  from_status: TransactionStatus | null;
-  to_status: TransactionStatus;
+  order_id: string;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
   changed_by: string;
   note: string | null;
   created_at: string;
 }
 
-export interface Transaction {
+export interface Order {
   id: string;
   reference: string;
   tracking_token: string;
@@ -359,7 +359,7 @@ export interface Transaction {
   payment_confirmed_at: string | null;
   payment_notes: string | null;
 
-  status: TransactionStatus;
+  status: OrderStatus;
   refund_status: RefundStatus;
 
   confirmed_at: string | null;
@@ -387,17 +387,17 @@ export interface Transaction {
   created_at: string;
   updated_at: string;
 
-  items: TransactionItem[];
-  vendor: TransactionVendor;
-  status_history: TransactionStatusHistoryEntry[];
+  items: OrderItem[];
+  vendor: OrderVendor;
+  status_history: OrderStatusHistoryEntry[];
   review: Review | null;
 }
 
-export interface TransactionListItem extends Omit<Transaction, 'vendor' | 'status_history' | 'review'> {
-  vendor: Pick<TransactionVendor, 'id' | 'business_name'>;
+export interface OrderListItem extends Omit<Order, 'vendor' | 'status_history' | 'review'> {
+  vendor: Pick<OrderVendor, 'id' | 'business_name'>;
 }
 
-export interface CreateTransactionInput {
+export interface CreateOrderInput {
   buyer_email?: string;
   delivery_method: DeliveryMethod;
   expected_delivery_start?: string;
@@ -415,7 +415,7 @@ export interface CreateTransactionInput {
   vendor_notes?: string;
 }
 
-export interface UpdateTransactionInput {
+export interface UpdateOrderInput {
   buyer_email?: string;
   delivery_method?: DeliveryMethod;
   expected_delivery_start?: string;
@@ -433,7 +433,7 @@ export interface UpdateTransactionInput {
   vendor_notes?: string;
 }
 
-export interface TransactionFilters {
+export interface OrderFilters {
   status?: string;
   refund_status?: string;
   payment_status?: string;
@@ -445,8 +445,8 @@ export interface TransactionFilters {
   to_date?: string;
 }
 
-export interface TransactionListResponse {
-  data: TransactionListItem[];
+export interface OrderListResponse {
+  data: OrderListItem[];
   meta: {
     page: number;
     limit: number;
@@ -455,7 +455,7 @@ export interface TransactionListResponse {
   };
 }
 
-export interface TransactionAnalytics {
+export interface OrderAnalytics {
   all_time_completed: number;
   this_month: {
     total_orders: number;
@@ -515,14 +515,14 @@ export interface ReviewListResponse {
 }
 
 export interface TrustMetrics {
-  // Performance — system-calculated from transaction data
-  total_transactions: number;
-  successful_transactions: number;
+  // Performance — system-calculated from order data
+  total_orders: number;
+  successful_orders: number;
   fulfillment_rate: number;
   refund_rate: number;
   on_time_delivery_rate: number;
   avg_response_time_minutes: number;
-  last_transaction_at: string | null;
+  last_order_at: string | null;
   // Customer feedback — derived from approved review ratings
   review_count: number;
   average_rating: number;

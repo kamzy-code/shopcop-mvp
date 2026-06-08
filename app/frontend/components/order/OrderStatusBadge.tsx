@@ -1,8 +1,8 @@
 import { Box, Text } from '@chakra-ui/react';
-import { TransactionStatus } from '@/app/_types';
+import { OrderStatus } from '@/app/_types';
 
 const STATUS_CONFIG: Record<
-  TransactionStatus,
+  OrderStatus,
   { label: string; bg: string; color: string; darkColor: string }
 > = {
   PENDING:            { label: 'Pending',           bg: 'gray.subtle',    color: 'gray.600',    darkColor: 'gray.300'    },
@@ -19,11 +19,11 @@ const STATUS_CONFIG: Record<
   CANCELLED:          { label: 'Cancelled',          bg: 'red.subtle',     color: 'red.600',     darkColor: 'red.300'     },
 };
 
-export function TransactionStatusBadge({
+export function OrderStatusBadge({
   status,
   size = 'sm',
 }: {
-  status: TransactionStatus;
+  status: OrderStatus;
   size?: 'xs' | 'sm';
 }) {
   const cfg = STATUS_CONFIG[status] ?? {

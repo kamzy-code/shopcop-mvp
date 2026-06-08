@@ -2,13 +2,13 @@ import { RefundPolicyType } from "generated/prisma/enums.js";
 import { ReviewData, ReviewSummary } from "./reviewTypes.js";
 
 export interface PerformanceMetrics {
-  total_transactions: number;
-  successful_transactions: number;
+  total_orders: number;
+  successful_orders: number;
   fulfillment_rate: number;
   refund_rate: number;
   on_time_delivery_rate: number;
   avg_response_time_minutes: number;
-  last_transaction_at: Date | null;
+  last_order_at: Date | null;
 }
 
 export interface FeedbackMetrics {

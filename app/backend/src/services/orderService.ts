@@ -1,27 +1,27 @@
 import { Decimal } from '@prisma/client/runtime/client';
 import { prisma } from '@config/prisma.js';
-import { transactionLogger } from '@utils/logger.js';
+import { orderLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { TransactionStatus, RefundStatus, PaymentStatus } from '../generated/prisma/enums.js';
+import { OrderStatus, RefundStatus, PaymentStatus } from '../generated/prisma/enums.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
 import {
-  CreateTransactionInput,
-  UpdateTransactionInput,
-  TransactionFilters,
+  CreateOrderInput,
+  UpdateOrderInput,
+  OrderFilters,
   PaginationMeta,
-} from '../types/transactionTypes.js';
+} from '../types/orderTypes.js';
 import {
   generateTrackingToken,
-  generateTransactionReference,
+  generateOrderReference,
   calculateSubtotal,
   calculateTotal,
   getStatusTimestampField,
   isTransitionValid,
   NON_CANCELLABLE_STATUSES,
   REFUND_STATUS_SYNC,
-} from '@utils/transactionUtils.js';
+} from '@utils/orderUtils.js';
 
-const TRANSACTION_INCLUDE = {
+const ORDER_INCLUDE = {
   items: true,
   vendor: {
     select: {
@@ -39,7 +39,7 @@ const TRANSACTION_INCLUDE = {
 
 // Buyer-facing include — adds bank details so the checkout page can show payment info.
 // Never used on authenticated vendor endpoints to avoid leaking bank details.
-const BUYER_TRANSACTION_INCLUDE = {
+const BUYER_ORDER_INCLUDE = {
   items: true,
   vendor: {
     select: {
@@ -59,7 +59,7 @@ const BUYER_TRANSACTION_INCLUDE = {
   review: true,
 } as const;
 
-export class TransactionService {
+export class OrderService {
   private static async getVendorByUserId(userId: string) {
     const vendor = await prisma.vendorProfile.findUnique({
       where: { user_id: userId },
@@ -70,7 +70,7 @@ export class TransactionService {
       },
     });
     if (!vendor) {
-      transactionLogger.warn('Vendor profile not found', { action: 'getVendorByUserId', userId });
+      orderLogger.warn('Vendor profile not found', { action: 'getVendorByUserId', userId });
       throw new AppError('Vendor profile not found', 404);
     }
     return vendor;
@@ -78,17 +78,17 @@ export class TransactionService {
 
   // ─── Create ──────────────────────────────────────────────────────────────────
 
-  static async createTransaction(userId: string, data: CreateTransactionInput) {
+  static async createOrder(userId: string, data: CreateOrderInput) {
     const vendor = await this.getVendorByUserId(userId);
 
     if (!vendor.personal_info_complete || !vendor.business_info_complete) {
-      transactionLogger.warn('Vendor profile incomplete, cannot create transaction', {
-        action: 'createTransaction',
+      orderLogger.warn('Vendor profile incomplete, cannot create order', {
+        action: 'createOrder',
         userId,
         vendorId: vendor.id,
       });
       throw new AppError(
-        'Complete your personal and business profile before creating transactions',
+        'Complete your personal and business profile before creating orders',
         400
       );
     }
@@ -102,7 +102,7 @@ export class TransactionService {
     const total = calculateTotal(subtotal, data.delivery_fee, data.discount_amount);
 
     const [reference, tracking_token] = await Promise.all([
-      generateTransactionReference(vendor.id),
+      generateOrderReference(vendor.id),
       generateTrackingToken(),
     ]);
 
@@ -124,8 +124,8 @@ export class TransactionService {
             },
           });
           if (!product) {
-            transactionLogger.warn('Catalog product not found during transaction creation', {
-              action: 'createTransaction',
+            orderLogger.warn('Catalog product not found during order creation', {
+              action: 'createOrder',
               userId,
               vendorId: vendor.id,
               productId: item.product_id,
@@ -158,7 +158,7 @@ export class TransactionService {
       })
     );
 
-    const transaction = await prisma.transaction.create({
+    const order = await prisma.order.create({
       data: {
         reference,
         tracking_token,
@@ -177,21 +177,21 @@ export class TransactionService {
           create: itemsWithSnapshots,
         },
       },
-      include: TRANSACTION_INCLUDE,
+      include: ORDER_INCLUDE,
     });
 
-    transactionLogger.info('Transaction created', {
-      transactionId: transaction.id,
-      reference: transaction.reference,
+    orderLogger.info('Order created', {
+      orderId: order.id,
+      reference: order.reference,
       vendorId: vendor.id,
     });
 
-    return transaction;
+    return order;
   }
 
   // ─── List ─────────────────────────────────────────────────────────────────────
 
-  static async getVendorTransactions(userId: string, filters: TransactionFilters) {
+  static async getVendorOrders(userId: string, filters: OrderFilters) {
     const vendor = await this.getVendorByUserId(userId);
 
     const where: Record<string, unknown> = { vendor_id: vendor.id };
@@ -229,10 +229,10 @@ export class TransactionService {
       }
     })();
 
-    const [total, transactions] = await Promise.all([
-      prisma.transaction.count({ where }),
+    const [total, orders] = await Promise.all([
+      prisma.order.count({ where }),
 
-      prisma.transaction.findMany({
+      prisma.order.findMany({
         where,
         include: {
           items: {
@@ -259,55 +259,55 @@ export class TransactionService {
       totalPages: Math.ceil(total / filters.limit),
     };
 
-    return { transactions, meta };
+    return { orders, meta };
   }
 
   // ─── Get single ───────────────────────────────────────────────────────────────
 
-  static async getTransaction(transactionId: string, userId: string) {
+  static async getOrder(orderId: string, userId: string) {
     const vendor = await this.getVendorByUserId(userId);
 
-    const transaction = await prisma.transaction.findUnique({
-      where: { id: transactionId },
-      include: TRANSACTION_INCLUDE,
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: ORDER_INCLUDE,
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found', {
-        action: 'getTransaction',
+    if (!order) {
+      orderLogger.warn('Order not found', {
+        action: 'getOrder',
         userId,
-        transactionId,
+        orderId,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
-    if (transaction.vendor_id !== vendor.id) {
-      transactionLogger.warn('Unauthorized transaction access attempt', {
-        action: 'getTransaction',
+    if (order.vendor_id !== vendor.id) {
+      orderLogger.warn('Unauthorized order access attempt', {
+        action: 'getOrder',
         userId,
-        transactionId,
+        orderId,
       });
-      throw new AppError('Not authorized to view this transaction', 403);
+      throw new AppError('Not authorized to view this order', 403);
     }
 
-    return transaction;
+    return order;
   }
 
   // ─── Public tracking ──────────────────────────────────────────────────────────
 
-  static async getTransactionByToken(token: string) {
-    const transaction = await prisma.transaction.findUnique({
+  static async getOrderByToken(token: string) {
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
-      include: BUYER_TRANSACTION_INCLUDE,
+      include: BUYER_ORDER_INCLUDE,
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found by tracking token', {
-        action: 'getTransactionByToken',
+    if (!order) {
+      orderLogger.warn('Order not found by tracking token', {
+        action: 'getOrderByToken',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
-    return transaction;
+    return order;
   }
 
   // ─── Buyer: submit payment proof ──────────────────────────────────────────────
@@ -316,28 +316,28 @@ export class TransactionService {
     token: string,
     data: { buyer_email?: string; payment_proof_url?: string }
   ) {
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found for payment proof submission', {
+    if (!order) {
+      orderLogger.warn('Order not found for payment proof submission', {
         action: 'submitPaymentProof',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
-    if (transaction.payment_status !== PaymentStatus.UNPAID) {
-      transactionLogger.warn('Payment proof already submitted for transaction', {
+    if (order.payment_status !== PaymentStatus.UNPAID) {
+      orderLogger.warn('Payment proof already submitted for order', {
         action: 'submitPaymentProof',
-        transactionId: transaction.id,
-        paymentStatus: transaction.payment_status,
+        orderId: order.id,
+        paymentStatus: order.payment_status,
       });
       throw new AppError('Payment proof has already been submitted', 400);
     }
 
-    const updated = await prisma.transaction.update({
+    const updated = await prisma.order.update({
       where: { tracking_token: token },
       data: {
         payment_status: PaymentStatus.PROOF_SUBMITTED,
@@ -345,30 +345,30 @@ export class TransactionService {
         ...(data.buyer_email && { buyer_email: data.buyer_email }),
         ...(data.payment_proof_url && { payment_proof_url: data.payment_proof_url }),
       },
-      include: BUYER_TRANSACTION_INCLUDE,
+      include: BUYER_ORDER_INCLUDE,
     });
 
-    transactionLogger.info('Buyer submitted payment proof', { transactionId: updated.id });
+    orderLogger.info('Buyer submitted payment proof', { orderId: updated.id });
     return updated;
   }
 
   // ─── Update (before CONFIRMED) ────────────────────────────────────────────────
 
-  static async updateTransaction(
-    transactionId: string,
+  static async updateOrder(
+    orderId: string,
     userId: string,
-    data: UpdateTransactionInput
+    data: UpdateOrderInput
   ) {
-    const transaction = await this.getTransaction(transactionId, userId);
+    const order = await this.getOrder(orderId, userId);
 
-    if (transaction.status !== TransactionStatus.PENDING) {
-      transactionLogger.warn('Attempted to edit non-pending transaction', {
-        action: 'updateTransaction',
+    if (order.status !== OrderStatus.PENDING) {
+      orderLogger.warn('Attempted to edit non-pending order', {
+        action: 'updateOrder',
         userId,
-        transactionId,
-        status: transaction.status,
+        orderId,
+        status: order.status,
       });
-      throw new AppError('Transaction can only be edited while PENDING', 400);
+      throw new AppError('Order can only be edited while PENDING', 400);
     }
 
     // ── Metadata-only fields (always applied) ─────────────────────────────────
@@ -416,10 +416,10 @@ export class TransactionService {
               },
             });
             if (!product) {
-              transactionLogger.warn('Catalog product not found during transaction update', {
-                action: 'updateTransaction',
+              orderLogger.warn('Catalog product not found during order update', {
+                action: 'updateOrder',
                 userId,
-                transactionId,
+                orderId,
                 productId: item.product_id,
               });
               throw new AppError(`Product not found: ${item.product_id}`, 404);
@@ -450,77 +450,77 @@ export class TransactionService {
         })
       );
 
-      const existingDeliveryFee = Number(transaction.delivery_fee ?? 0);
-      const existingDiscount = Number(transaction.discount_amount ?? 0);
+      const existingDeliveryFee = Number(order.delivery_fee ?? 0);
+      const existingDiscount = Number(order.discount_amount ?? 0);
       const deliveryFee = data.delivery_fee ?? existingDeliveryFee;
       const discount = data.discount_amount ?? existingDiscount;
       const total = calculateTotal(subtotal, deliveryFee, discount);
 
       const updated = await prisma.$transaction(async (tx) => {
-        await tx.transactionItem.deleteMany({ where: { transaction_id: transactionId } });
-        return tx.transaction.update({
-          where: { id: transactionId },
+        await tx.orderItem.deleteMany({ where: { order_id: orderId } });
+        return tx.order.update({
+          where: { id: orderId },
           data: {
             ...metaUpdate,
             subtotal: new Decimal(subtotal),
             total_amount: new Decimal(total),
             items: { create: itemsWithSnapshots },
           },
-          include: TRANSACTION_INCLUDE,
+          include: ORDER_INCLUDE,
         });
       });
 
-      transactionLogger.info('Transaction updated (with items)', { transactionId });
+      orderLogger.info('Order updated (with items)', { orderId });
       return updated;
     }
 
     // ── Metadata-only path ─────────────────────────────────────────────────────
-    const updated = await prisma.transaction.update({
-      where: { id: transactionId },
+    const updated = await prisma.order.update({
+      where: { id: orderId },
       data: metaUpdate,
-      include: TRANSACTION_INCLUDE,
+      include: ORDER_INCLUDE,
     });
 
-    transactionLogger.info('Transaction updated', { transactionId });
+    orderLogger.info('Order updated', { orderId });
     return updated;
   }
 
   // ─── Confirm payment (stock deduction) ────────────────────────────────────────
 
-  static async confirmPayment(transactionId: string, userId: string, notes?: string) {
+  static async confirmPayment(orderId: string, userId: string, notes?: string) {
     // Unified 404 / 403 check — consistent with all other mutating methods.
-    await this.getTransaction(transactionId, userId);
+    await this.getOrder(orderId, userId);
 
     const result = await prisma.$transaction(async (tx) => {
-      // Re-fetch inside the transaction for atomic consistency (uses tx client, not prisma).
-      const transaction = await tx.transaction.findUnique({
-        where: { id: transactionId },
+      // Re-fetch inside the $transaction for atomic consistency (uses tx client, not prisma).
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
         include: { items: true },
       });
 
       // Safety net: should never fire given the check above, but guards against
-      // race conditions where the transaction was deleted between the two fetches.
-      if (!transaction) {
-        transactionLogger.warn('Transaction not found during payment confirmation (safety net)', {
+      // race conditions where the order was deleted between the two fetches.
+      if (!order) {
+        orderLogger.warn('Order not found during payment confirmation (safety net)', {
           action: 'confirmPayment',
           userId,
-          transactionId,
+          orderId,
         });
-        throw new AppError('Transaction not found', 404);
+        throw new AppError('Order not found', 404);
       }
 
-      if (transaction.status !== TransactionStatus.PENDING) {
-        transactionLogger.warn('Attempted to confirm payment on non-pending transaction', {
+      if (order.status !== OrderStatus.PENDING) {
+        orderLogger.warn('Attempted to confirm payment on non-pending order', {
           action: 'confirmPayment',
           userId,
-          transactionId,
-          status: transaction.status,
+          orderId,
+          status: order.status,
         });
-        throw new AppError('Only PENDING transactions can have payment confirmed', 400);
+        throw new AppError('Only PENDING orders can have payment confirmed', 400);
       }
 
       // Deduct stock for each catalog item with inventory tracking
-      for (const item of transaction.items) {
+      for (const item of order.items) {
         if (!item.product_id) continue;
 
         const product = await tx.product.findUnique({
@@ -540,10 +540,10 @@ export class TransactionService {
 
         const available = product.stock_quantity ?? 0;
         if (available < item.quantity) {
-          transactionLogger.warn('Insufficient stock during payment confirmation', {
+          orderLogger.warn('Insufficient stock during payment confirmation', {
             action: 'confirmPayment',
             userId,
-            transactionId,
+            orderId,
             productId: product.id,
             productName: product.name,
             available,
@@ -560,7 +560,7 @@ export class TransactionService {
           data: { stock_quantity: { decrement: item.quantity } },
         });
 
-        await tx.transactionItem.update({
+        await tx.orderItem.update({
           where: { id: item.id },
           data: { stock_deducted: item.quantity },
         });
@@ -573,7 +573,7 @@ export class TransactionService {
           });
 
           //Send Notification Later
-          transactionLogger.warn('Product out of stock after transaction confirmation', {
+          orderLogger.warn('Product out of stock after order confirmation', {
             productId: product.id,
             productName: product.name,
             vendorId: product.vendor_id,
@@ -581,7 +581,7 @@ export class TransactionService {
         } else if (product.low_stock_threshold && newQty <= product.low_stock_threshold) {
           //Send notification later
 
-          transactionLogger.warn('Product low stock after transaction confirmation', {
+          orderLogger.warn('Product low stock after order confirmation', {
             productId: product.id,
             productName: product.name,
             vendorId: product.vendor_id,
@@ -590,23 +590,23 @@ export class TransactionService {
         }
       }
 
-      const updated = await tx.transaction.update({
-        where: { id: transactionId },
+      const updated = await tx.order.update({
+        where: { id: orderId },
         data: {
-          status: TransactionStatus.CONFIRMED,
+          status: OrderStatus.CONFIRMED,
           payment_status: 'PAID',
           confirmed_at: new Date(),
           payment_confirmed_at: new Date(),
           payment_notes: notes || null,
         },
-        include: TRANSACTION_INCLUDE,
+        include: ORDER_INCLUDE,
       });
 
-      await tx.transactionStatusHistory.create({
+      await tx.orderStatusHistory.create({
         data: {
-          transaction_id: transactionId,
-          from_status: TransactionStatus.PENDING,
-          to_status: TransactionStatus.CONFIRMED,
+          order_id: orderId,
+          from_status: OrderStatus.PENDING,
+          to_status: OrderStatus.CONFIRMED,
           changed_by: userId,
           note: notes || 'Payment confirmed by vendor',
         },
@@ -615,8 +615,8 @@ export class TransactionService {
       return updated;
     });
 
-    transactionLogger.info('Payment confirmed, stock deducted', {
-      transactionId,
+    orderLogger.info('Payment confirmed, stock deducted', {
+      orderId,
       reference: result.reference,
     });
 
@@ -625,23 +625,23 @@ export class TransactionService {
 
   // ─── Update status ────────────────────────────────────────────────────────────
 
-  static async updateTransactionStatus(
-    transactionId: string,
+  static async updateOrderStatus(
+    orderId: string,
     userId: string,
-    newStatus: TransactionStatus,
+    newStatus: OrderStatus,
     note?: string
   ) {
-    const transaction = await this.getTransaction(transactionId, userId);
+    const order = await this.getOrder(orderId, userId);
 
-    if (!isTransitionValid(transaction.status, newStatus)) {
-      transactionLogger.warn('Invalid transaction status transition', {
-        action: 'updateTransactionStatus',
+    if (!isTransitionValid(order.status, newStatus)) {
+      orderLogger.warn('Invalid order status transition', {
+        action: 'updateOrderStatus',
         userId,
-        transactionId,
-        fromStatus: transaction.status,
+        orderId,
+        fromStatus: order.status,
         toStatus: newStatus,
       });
-      throw new AppError(`Cannot transition from ${transaction.status} to ${newStatus}`, 400);
+      throw new AppError(`Cannot transition from ${order.status} to ${newStatus}`, 400);
     }
 
     const timestampField = getStatusTimestampField(newStatus);
@@ -649,7 +649,7 @@ export class TransactionService {
 
     // Set auto_close_at 48 hours after DELIVERED
     const autoCloseData =
-      newStatus === TransactionStatus.DELIVERED
+      newStatus === OrderStatus.DELIVERED
         ? { auto_close_at: new Date(Date.now() + 48 * 60 * 60 * 1000) }
         : {};
 
@@ -659,21 +659,21 @@ export class TransactionService {
       refundStatusSync !== undefined ? { refund_status: refundStatusSync } : {};
 
     const result = await prisma.$transaction(async (tx) => {
-      const updated = await tx.transaction.update({
-        where: { id: transactionId },
+      const updated = await tx.order.update({
+        where: { id: orderId },
         data: {
           status: newStatus,
           ...timestampData,
           ...autoCloseData,
           ...refundStatusData,
         },
-        include: TRANSACTION_INCLUDE,
+        include: ORDER_INCLUDE,
       });
 
-      await tx.transactionStatusHistory.create({
+      await tx.orderStatusHistory.create({
         data: {
-          transaction_id: transactionId,
-          from_status: transaction.status,
+          order_id: orderId,
+          from_status: order.status,
           to_status: newStatus,
           changed_by: userId,
           note: note || null,
@@ -683,54 +683,54 @@ export class TransactionService {
       return updated;
     });
 
-    transactionLogger.info('Transaction status updated', {
-      transactionId,
-      from: transaction.status,
+    orderLogger.info('Order status updated', {
+      orderId,
+      from: order.status,
       to: newStatus,
     });
 
-    if (newStatus === TransactionStatus.COMPLETED || newStatus === TransactionStatus.REFUNDED || newStatus === TransactionStatus.RESOLVED) {
+    if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.REFUNDED || newStatus === OrderStatus.RESOLVED) {
       TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
     }
 
     return result;
   }
 
-  // ─── Cancel transaction (with stock restoration) ──────────────────────────────
+  // ─── Cancel order (with stock restoration) ──────────────────────────────
 
-  static async cancelTransaction(transactionId: string, userId: string, reason: string) {
+  static async cancelOrder(orderId: string, userId: string, reason: string) {
     // Unified 404 / 403 check — consistent with all other mutating methods.
-    await this.getTransaction(transactionId, userId);
+    await this.getOrder(orderId, userId);
 
     const result = await prisma.$transaction(async (tx) => {
-      // Re-fetch inside the transaction for atomic consistency.
-      const transaction = await tx.transaction.findUnique({
-        where: { id: transactionId },
+      // Re-fetch inside the $transaction for atomic consistency.
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
         include: { items: true },
       });
 
       // Safety net only — ownership already verified above.
-      if (!transaction) {
-        transactionLogger.warn('Transaction not found during cancellation (safety net)', {
-          action: 'cancelTransaction',
+      if (!order) {
+        orderLogger.warn('Order not found during cancellation (safety net)', {
+          action: 'cancelOrder',
           userId,
-          transactionId,
+          orderId,
         });
-        throw new AppError('Transaction not found', 404);
+        throw new AppError('Order not found', 404);
       }
 
-      if (NON_CANCELLABLE_STATUSES.includes(transaction.status)) {
-        transactionLogger.warn('Attempted to cancel non-cancellable transaction', {
-          action: 'cancelTransaction',
+      if (NON_CANCELLABLE_STATUSES.includes(order.status)) {
+        orderLogger.warn('Attempted to cancel non-cancellable order', {
+          action: 'cancelOrder',
           userId,
-          transactionId,
-          status: transaction.status,
+          orderId,
+          status: order.status,
         });
-        throw new AppError(`Cannot cancel a transaction in ${transaction.status} status`, 400);
+        throw new AppError(`Cannot cancel an order in ${order.status} status`, 400);
       }
 
       // Restore stock for items that had stock deducted
-      for (const item of transaction.items) {
+      for (const item of order.items) {
         if (item.stock_deducted <= 0 || !item.product_id) continue;
 
         await tx.product.update({
@@ -738,7 +738,7 @@ export class TransactionService {
           data: { stock_quantity: { increment: item.stock_deducted } },
         });
 
-        await tx.transactionItem.update({
+        await tx.orderItem.update({
           where: { id: item.id },
           data: {
             stock_restored: item.stock_deducted,
@@ -747,22 +747,22 @@ export class TransactionService {
         });
       }
 
-      const cancelled = await tx.transaction.update({
-        where: { id: transactionId },
+      const cancelled = await tx.order.update({
+        where: { id: orderId },
         data: {
-          status: TransactionStatus.CANCELLED,
+          status: OrderStatus.CANCELLED,
           cancelled_by: userId,
           cancellation_reason: reason,
           cancelled_at: new Date(),
         },
-        include: TRANSACTION_INCLUDE,
+        include: ORDER_INCLUDE,
       });
 
-      await tx.transactionStatusHistory.create({
+      await tx.orderStatusHistory.create({
         data: {
-          transaction_id: transactionId,
-          from_status: transaction.status,
-          to_status: TransactionStatus.CANCELLED,
+          order_id: orderId,
+          from_status: order.status,
+          to_status: OrderStatus.CANCELLED,
           changed_by: userId,
           note: reason,
         },
@@ -771,60 +771,60 @@ export class TransactionService {
       return cancelled;
     });
 
-    transactionLogger.info('Transaction cancelled, stock restored', {
-      transactionId,
+    orderLogger.info('Order cancelled, stock restored', {
+      orderId,
       reference: result.reference,
     });
 
     return result;
   }
 
-  // ─── Buyer: cancel transaction by token ───────────────────────────────────────
+  // ─── Buyer: cancel order by token ───────────────────────────────────────
 
-  static async buyerCancelTransaction(token: string, reason: string) {
-    const transaction = await prisma.transaction.findUnique({
+  static async buyerCancelOrder(token: string, reason: string) {
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found for buyer cancellation', {
-        action: 'buyerCancelTransaction',
+    if (!order) {
+      orderLogger.warn('Order not found for buyer cancellation', {
+        action: 'buyerCancelOrder',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
-    if (transaction.status !== TransactionStatus.PENDING) {
-      transactionLogger.warn('Cannot cancel non-PENDING transaction as buyer', {
-        action: 'buyerCancelTransaction',
-        transactionId: transaction.id,
-        status: transaction.status,
+    if (order.status !== OrderStatus.PENDING) {
+      orderLogger.warn('Cannot cancel non-PENDING order as buyer', {
+        action: 'buyerCancelOrder',
+        orderId: order.id,
+        status: order.status,
       });
       throw new AppError('Only pending orders can be cancelled', 400);
     }
 
-    const cancelled = await prisma.transaction.update({
-      where: { id: transaction.id },
+    const cancelled = await prisma.order.update({
+      where: { id: order.id },
       data: {
-        status: TransactionStatus.CANCELLED,
+        status: OrderStatus.CANCELLED,
         cancelled_by: 'buyer',
         cancellation_reason: reason,
         cancelled_at: new Date(),
       },
-      include: BUYER_TRANSACTION_INCLUDE,
+      include: BUYER_ORDER_INCLUDE,
     });
 
-    await prisma.transactionStatusHistory.create({
+    await prisma.orderStatusHistory.create({
       data: {
-        transaction_id: transaction.id,
-        from_status: transaction.status,
-        to_status: TransactionStatus.CANCELLED,
+        order_id: order.id,
+        from_status: order.status,
+        to_status: OrderStatus.CANCELLED,
         changed_by: 'buyer',
         note: reason,
       },
     });
 
-    transactionLogger.info('Buyer cancelled transaction', { transactionId: transaction.id, token });
+    orderLogger.info('Buyer cancelled order', { orderId: order.id, token });
 
     const { vendor_notes: _omit, ...buyerSafe } = cancelled;
     void _omit;
@@ -834,47 +834,47 @@ export class TransactionService {
   // ─── Buyer: confirm delivery by token ─────────────────────────────────────────
 
   static async buyerConfirmDelivery(token: string) {
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found for buyer delivery confirmation', {
+    if (!order) {
+      orderLogger.warn('Order not found for buyer delivery confirmation', {
         action: 'buyerConfirmDelivery',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
-    if (transaction.status !== TransactionStatus.DELIVERED) {
-      transactionLogger.warn('Cannot confirm delivery — transaction not DELIVERED', {
+    if (order.status !== OrderStatus.DELIVERED) {
+      orderLogger.warn('Cannot confirm delivery — order not DELIVERED', {
         action: 'buyerConfirmDelivery',
-        transactionId: transaction.id,
-        status: transaction.status,
+        orderId: order.id,
+        status: order.status,
       });
       throw new AppError('Only delivered orders can be confirmed as received', 400);
     }
 
-    const updated = await prisma.transaction.update({
-      where: { id: transaction.id },
+    const updated = await prisma.order.update({
+      where: { id: order.id },
       data: {
-        status: TransactionStatus.COMPLETED,
+        status: OrderStatus.COMPLETED,
         completed_at: new Date(),
       },
-      include: BUYER_TRANSACTION_INCLUDE,
+      include: BUYER_ORDER_INCLUDE,
     });
 
-    await prisma.transactionStatusHistory.create({
+    await prisma.orderStatusHistory.create({
       data: {
-        transaction_id: transaction.id,
-        from_status: transaction.status,
-        to_status: TransactionStatus.COMPLETED,
+        order_id: order.id,
+        from_status: order.status,
+        to_status: OrderStatus.COMPLETED,
         changed_by: 'buyer',
         note: 'Buyer confirmed delivery',
       },
     });
 
-    transactionLogger.info('Buyer confirmed delivery', { transactionId: transaction.id, token });
+    orderLogger.info('Buyer confirmed delivery', { orderId: order.id, token });
 
     TrustMetricsService.recalculateVendorTrustMetrics(updated.vendor_id);
 
@@ -883,53 +883,53 @@ export class TransactionService {
     return buyerSafe;
   }
 
-  // ─── Buyer: close a REFUNDED or RESOLVED transaction ─────────────────────────
+  // ─── Buyer: close a REFUNDED or RESOLVED order ─────────────────────────
 
   static async buyerCloseResolution(token: string) {
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found for buyer close resolution', {
+    if (!order) {
+      orderLogger.warn('Order not found for buyer close resolution', {
         action: 'buyerCloseResolution',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
     if (
-      transaction.status !== TransactionStatus.REFUNDED &&
-      transaction.status !== TransactionStatus.RESOLVED
+      order.status !== OrderStatus.REFUNDED &&
+      order.status !== OrderStatus.RESOLVED
     ) {
-      transactionLogger.warn('Cannot close resolution — transaction not REFUNDED or RESOLVED', {
+      orderLogger.warn('Cannot close resolution — order not REFUNDED or RESOLVED', {
         action: 'buyerCloseResolution',
-        transactionId: transaction.id,
-        status: transaction.status,
+        orderId: order.id,
+        status: order.status,
       });
       throw new AppError('Only refunded or resolved orders can be closed by the buyer', 400);
     }
 
-    const updated = await prisma.transaction.update({
-      where: { id: transaction.id },
+    const updated = await prisma.order.update({
+      where: { id: order.id },
       data: {
-        status: TransactionStatus.COMPLETED,
+        status: OrderStatus.COMPLETED,
         completed_at: new Date(),
       },
-      include: BUYER_TRANSACTION_INCLUDE,
+      include: BUYER_ORDER_INCLUDE,
     });
 
-    await prisma.transactionStatusHistory.create({
+    await prisma.orderStatusHistory.create({
       data: {
-        transaction_id: transaction.id,
-        from_status: transaction.status,
-        to_status: TransactionStatus.COMPLETED,
+        order_id: order.id,
+        from_status: order.status,
+        to_status: OrderStatus.COMPLETED,
         changed_by: 'buyer',
         note: 'Buyer acknowledged refund/resolution and closed the order',
       },
     });
 
-    transactionLogger.info('Buyer closed resolution', { transactionId: transaction.id, token });
+    orderLogger.info('Buyer closed resolution', { orderId: order.id, token });
 
     TrustMetricsService.recalculateVendorTrustMetrics(updated.vendor_id);
 
@@ -941,44 +941,44 @@ export class TransactionService {
   // ─── Buyer: request refund by token ──────────────────────────────────────────
 
   static async buyerRequestRefund(token: string, reason: string) {
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: token },
     });
 
-    if (!transaction) {
-      transactionLogger.warn('Transaction not found for buyer refund request', {
+    if (!order) {
+      orderLogger.warn('Order not found for buyer refund request', {
         action: 'buyerRequestRefund',
         token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
-    if (transaction.status !== TransactionStatus.DELIVERED && transaction.status !== TransactionStatus.COMPLETED) {
-      transactionLogger.warn('Cannot request refund — transaction not DELIVERED or COMPLETED', {
+    if (order.status !== OrderStatus.DELIVERED && order.status !== OrderStatus.COMPLETED) {
+      orderLogger.warn('Cannot request refund — order not DELIVERED or COMPLETED', {
         action: 'buyerRequestRefund',
-        transactionId: transaction.id,
-        status: transaction.status,
+        orderId: order.id,
+        status: order.status,
       });
       throw new AppError('Refund can only be requested for delivered or completed orders', 400);
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.transaction.update({
-        where: { id: transaction.id },
+      const result = await tx.order.update({
+        where: { id: order.id },
         data: {
-          status: TransactionStatus.REFUND_REQUESTED,
+          status: OrderStatus.REFUND_REQUESTED,
           refund_status: RefundStatus.REQUESTED,
           refund_initiated_at: new Date(),
           refund_reason: reason,
         },
-        include: BUYER_TRANSACTION_INCLUDE,
+        include: BUYER_ORDER_INCLUDE,
       });
 
-      await tx.transactionStatusHistory.create({
+      await tx.orderStatusHistory.create({
         data: {
-          transaction_id: transaction.id,
-          from_status: transaction.status,
-          to_status: TransactionStatus.REFUND_REQUESTED,
+          order_id: order.id,
+          from_status: order.status,
+          to_status: OrderStatus.REFUND_REQUESTED,
           changed_by: 'buyer',
           note: reason,
         },
@@ -987,7 +987,7 @@ export class TransactionService {
       return result;
     });
 
-    transactionLogger.info('Buyer requested refund', { transactionId: transaction.id, token });
+    orderLogger.info('Buyer requested refund', { orderId: order.id, token });
 
     const { vendor_notes: _omit, ...buyerSafe } = updated;
     void _omit;
@@ -996,32 +996,32 @@ export class TransactionService {
 
   // ─── Update status with refund data ───────────────────────────────────────────
 
-  static async updateTransactionStatusWithRefund(
-    transactionId: string,
+  static async updateOrderStatusWithRefund(
+    orderId: string,
     userId: string,
-    newStatus: TransactionStatus,
+    newStatus: OrderStatus,
     note?: string,
     refundAmount?: number,
     refundVendorNotes?: string,
   ) {
-    const transaction = await this.getTransaction(transactionId, userId);
+    const order = await this.getOrder(orderId, userId);
 
-    if (!isTransitionValid(transaction.status, newStatus)) {
-      transactionLogger.warn('Invalid transaction status transition', {
-        action: 'updateTransactionStatusWithRefund',
+    if (!isTransitionValid(order.status, newStatus)) {
+      orderLogger.warn('Invalid order status transition', {
+        action: 'updateOrderStatusWithRefund',
         userId,
-        transactionId,
-        fromStatus: transaction.status,
+        orderId,
+        fromStatus: order.status,
         toStatus: newStatus,
       });
-      throw new AppError(`Cannot transition from ${transaction.status} to ${newStatus}`, 400);
+      throw new AppError(`Cannot transition from ${order.status} to ${newStatus}`, 400);
     }
 
     const timestampField = getStatusTimestampField(newStatus);
     const timestampData = timestampField ? { [timestampField]: new Date() } : {};
 
     const autoCloseData =
-      newStatus === TransactionStatus.DELIVERED
+      newStatus === OrderStatus.DELIVERED
         ? { auto_close_at: new Date(Date.now() + 48 * 60 * 60 * 1000) }
         : {};
 
@@ -1035,8 +1035,8 @@ export class TransactionService {
     };
 
     const result = await prisma.$transaction(async (tx) => {
-      const updated = await tx.transaction.update({
-        where: { id: transactionId },
+      const updated = await tx.order.update({
+        where: { id: orderId },
         data: {
           status: newStatus,
           ...timestampData,
@@ -1044,13 +1044,13 @@ export class TransactionService {
           ...refundStatusData,
           ...refundData,
         },
-        include: TRANSACTION_INCLUDE,
+        include: ORDER_INCLUDE,
       });
 
-      await tx.transactionStatusHistory.create({
+      await tx.orderStatusHistory.create({
         data: {
-          transaction_id: transactionId,
-          from_status: transaction.status,
+          order_id: orderId,
+          from_status: order.status,
           to_status: newStatus,
           changed_by: userId,
           note: note || null,
@@ -1060,13 +1060,13 @@ export class TransactionService {
       return updated;
     });
 
-    transactionLogger.info('Transaction status updated with refund info', {
-      transactionId,
-      from: transaction.status,
+    orderLogger.info('Order status updated with refund info', {
+      orderId,
+      from: order.status,
       to: newStatus,
     });
 
-    if (newStatus === TransactionStatus.COMPLETED || newStatus === TransactionStatus.REFUNDED || newStatus === TransactionStatus.RESOLVED) {
+    if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.REFUNDED || newStatus === OrderStatus.RESOLVED) {
       TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
     }
 
@@ -1081,41 +1081,41 @@ export class TransactionService {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [allCompleted, monthTransactions, monthRevenue, refundCount] = await Promise.all([
-      prisma.transaction.count({
-        where: { vendor_id: vendor.id, status: TransactionStatus.COMPLETED },
+    const [allCompleted, monthOrders, monthRevenue, refundCount] = await Promise.all([
+      prisma.order.count({
+        where: { vendor_id: vendor.id, status: OrderStatus.COMPLETED },
       }),
-      prisma.transaction.groupBy({
+      prisma.order.groupBy({
         by: ['status'],
         where: { vendor_id: vendor.id, created_at: { gte: monthStart } },
         _count: { status: true },
       }),
-      prisma.transaction.aggregate({
+      prisma.order.aggregate({
         where: {
           vendor_id: vendor.id,
-          status: TransactionStatus.COMPLETED,
+          status: OrderStatus.COMPLETED,
           completed_at: { gte: monthStart },
         },
         _sum: { total_amount: true },
         _count: { id: true },
       }),
-      prisma.transaction.count({
+      prisma.order.count({
         where: {
           vendor_id: vendor.id,
           refund_status: { in: [RefundStatus.REFUNDED, RefundStatus.RESOLVED] },
-          status: TransactionStatus.COMPLETED,
+          status: OrderStatus.COMPLETED,
           completed_at: { gte: monthStart },
         },
       }),
     ]);
 
-    const monthTotal = monthTransactions.reduce((sum, row) => sum + row._count.status, 0);
+    const monthTotal = monthOrders.reduce((sum, row) => sum + row._count.status, 0);
     const completedThisMonth = monthRevenue._count.id;
     const completionRate = monthTotal > 0 ? (completedThisMonth / monthTotal) * 100 : 0;
     const refundRate = completedThisMonth > 0 ? (refundCount / completedThisMonth) * 100 : 0;
 
     const statusCounts = Object.fromEntries(
-      monthTransactions.map((row) => [row.status, row._count.status])
+      monthOrders.map((row) => [row.status, row._count.status])
     );
 
     return {

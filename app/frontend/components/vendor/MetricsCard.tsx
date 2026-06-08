@@ -5,11 +5,11 @@ import { LuShoppingCart, LuCircleCheck, LuStar, LuRefreshCw } from 'react-icons/
 interface MetricsCardProps {
   label: string;
   value: string | number;
-  icon?: 'transactions' | 'fulfillment' | 'rating' | 'refund';
+  icon?: 'orders' | 'fulfillment' | 'rating' | 'refund';
 }
 
 const ICON_MAP = {
-  transactions: LuShoppingCart,
+  orders: LuShoppingCart,
   fulfillment: LuCircleCheck,
   rating: LuStar,
   refund: LuRefreshCw,

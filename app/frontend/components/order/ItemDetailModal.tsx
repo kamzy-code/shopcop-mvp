@@ -18,14 +18,14 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { LuChevronLeft, LuChevronRight, LuPackage } from 'react-icons/lu';
-import { TransactionItem, Product, ProductMedia } from '@/app/_types';
+import { OrderItem, Product, ProductMedia } from '@/app/_types';
 import { apiFetch } from '@/app/_lib/fetchWrapper';
-import { formatCurrency, isVideoUrl } from '@/app/_lib/transactionHelpers';
+import { formatCurrency, isVideoUrl } from '@/app/_lib/orderHelpers';
 
 interface ItemDetailModalProps {
   open: boolean;
   onClose: () => void;
-  item: TransactionItem;
+  item: OrderItem;
 }
 
 export function ItemDetailModal({ open, onClose, item }: ItemDetailModalProps) {

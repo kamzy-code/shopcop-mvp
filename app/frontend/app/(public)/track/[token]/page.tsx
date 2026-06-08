@@ -4,20 +4,20 @@ import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/re
 import { useParams, useRouter } from 'next/navigation';
 import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuPencil, LuShoppingCart, LuTruck } from 'react-icons/lu';
 import {
-  useTransactionByToken,
-  useBuyerCancelTransaction,
+  useOrderByToken,
+  useBuyerCancelOrder,
   useBuyerConfirmDelivery,
   useBuyerCloseResolution,
   useBuyerRequestRefund,
-} from '@/app/_hooks/transaction';
+} from '@/app/_hooks/order';
 import { useEditReview } from '@/app/_hooks/reviews';
 import { PublicNavbar } from '@/components/shared/PublicNavbar';
 import { ReviewStars } from '@/components/review/ReviewStars';
-import { Transaction, TransactionItem, TransactionStatus, TransactionStatusHistoryEntry } from '@/app/_types';
-import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
+import { Order, OrderItem, OrderStatus, OrderStatusHistoryEntry } from '@/app/_types';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { formatDate, formatCurrency, formatDateTime, isVideoUrl } from '@/app/_lib/transactionHelpers';
-import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
+import { formatDate, formatCurrency, formatDateTime, isVideoUrl } from '@/app/_lib/orderHelpers';
+import { ItemDetailModal } from '@/components/order/ItemDetailModal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toaster } from '@/components/ui/toaster';
 import { ReviewForm } from '@/components/review/ReviewForm';
@@ -34,7 +34,7 @@ import {
 
 // ─── Status timeline for buyer ────────────────────────────────────────────────
 
-const STATUS_ORDER: TransactionStatus[] = [
+const STATUS_ORDER: OrderStatus[] = [
   'PENDING',
   'CONFIRMED',
   'IN_PROGRESS',
@@ -44,7 +44,7 @@ const STATUS_ORDER: TransactionStatus[] = [
   'COMPLETED',
 ];
 
-const STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
+const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Order Placed',
   CONFIRMED: 'Payment Confirmed',
   IN_PROGRESS: 'Being Prepared',
@@ -54,7 +54,7 @@ const STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
   COMPLETED: 'Order Complete',
 };
 
-const STATUS_ICONS: Partial<Record<TransactionStatus, React.ElementType>> = {
+const STATUS_ICONS: Partial<Record<OrderStatus, React.ElementType>> = {
   PENDING: LuClock,
   CONFIRMED: LuCircleCheck,
   IN_PROGRESS: LuPackage,
@@ -87,8 +87,8 @@ function BuyerTimeline({
   status,
   statusHistory = [],
 }: {
-  status: TransactionStatus;
-  statusHistory?: TransactionStatusHistoryEntry[];
+  status: OrderStatus;
+  statusHistory?: OrderStatusHistoryEntry[];
 }) {
   const currentIndex = STATUS_ORDER.indexOf(status);
   const isRefundPath =
@@ -292,7 +292,7 @@ function BuyerTimeline({
 
 // ─── Delivery window banner ────────────────────────────────────────────────────
 
-function DeliveryBanner({ tx }: { tx: Transaction }) {
+function DeliveryBanner({ tx }: { tx: Order }) {
   if (!tx.expected_delivery_start && !tx.expected_delivery_end) return null;
 
   const isLate = tx.expected_delivery_end
@@ -344,9 +344,9 @@ export default function TrackingPage() {
   const params = useParams();
   const token = params?.token as string;
   const router = useRouter();
-  const { data: tx, isLoading, error } = useTransactionByToken(token);
+  const { data: tx, isLoading, error } = useOrderByToken(token);
 
-  const [selectedItem, setSelectedItem] = useState<TransactionItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<OrderItem | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [showDeliveryConfirm, setShowDeliveryConfirm] = useState(false);
@@ -360,7 +360,7 @@ export default function TrackingPage() {
 
   const now = useMemo(() => now, []);
 
-  const cancelMutation = useBuyerCancelTransaction(token);
+  const cancelMutation = useBuyerCancelOrder(token);
   const confirmDeliveryMutation = useBuyerConfirmDelivery(token);
   const closeResolutionMutation = useBuyerCloseResolution(token);
   const refundRequestMutation = useBuyerRequestRefund(token);
@@ -519,7 +519,7 @@ export default function TrackingPage() {
                   {tx.reference}
                 </Text>
               </Box>
-              <TransactionStatusBadge status={tx.status} />
+              <OrderStatusBadge status={tx.status} />
             </Flex>
             <Text textStyle="xs" color="fg.muted" mt={1}>
               {formatDateTime(tx.created_at)}
@@ -533,7 +533,7 @@ export default function TrackingPage() {
             </Text>
 
             <Stack gap={3}>
-              {(tx.items as Transaction['items']).map((item, i) => (
+              {(tx.items as Order['items']).map((item, i) => (
                 <Flex key={i} align="center" gap={3} cursor="pointer" onClick={() => setSelectedItem(item)}>
                   <Box
                     w={9}

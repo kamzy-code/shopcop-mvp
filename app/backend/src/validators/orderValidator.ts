@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { DeliveryMethod } from 'generated/prisma/enums.js';
 
-export const transactionItemSchema = z.object({
+export const orderItemSchema = z.object({
   product_id: z.cuid2('Invalid product ID').optional(),
   item_name: z.string().min(1, 'Item name is required').max(200, 'Item name too long'),
   item_price: z.number().min(1, 'Price must be at least ₦1').max(10_000_000, 'Price too large'),
@@ -10,7 +10,7 @@ export const transactionItemSchema = z.object({
   description: z.string().max(500, 'Item description too long').optional(),
 });
 
-export const createTransactionSchema = z
+export const createOrderSchema = z
   .object({
     buyer_email: z.email('Invalid email address').optional().or(z.literal('')),
     delivery_method: z.enum(DeliveryMethod, {
@@ -18,7 +18,7 @@ export const createTransactionSchema = z
     }),
     expected_delivery_start: z.coerce.date().optional(),
     expected_delivery_end: z.coerce.date().optional(),
-    items: z.array(transactionItemSchema).min(1, 'At least 1 item is required'),
+    items: z.array(orderItemSchema).min(1, 'At least 1 item is required'),
     delivery_fee: z.number().min(0, 'Delivery fee cannot be negative').default(0),
     discount_amount: z.number().min(0, 'Discount cannot be negative').default(0),
     order_notes: z.string().max(1000, 'Notes too long').optional(),
@@ -34,12 +34,12 @@ export const createTransactionSchema = z
     { message: 'Delivery start must be before end time', path: ['expected_delivery_end'] }
   );
 
-export const updateTransactionSchema = z.object({
+export const updateOrderSchema = z.object({
   buyer_email: z.email().optional().or(z.literal('')),
   delivery_method: z.enum(DeliveryMethod).optional(),
   expected_delivery_start: z.coerce.date().optional(),
   expected_delivery_end: z.coerce.date().optional(),
-  items: z.array(transactionItemSchema).min(1, 'At least 1 item is required').optional(),
+  items: z.array(orderItemSchema).min(1, 'At least 1 item is required').optional(),
   delivery_fee: z.number().min(0).optional(),
   discount_amount: z.number().min(0).optional(),
   order_notes: z.string().max(1000).optional(),
@@ -47,7 +47,7 @@ export const updateTransactionSchema = z.object({
 });
 
 // CONFIRMED and CANCELLED are excluded — they have dedicated stock/payment endpoints
-export const updateTransactionStatusSchema = z.object({
+export const updateOrderStatusSchema = z.object({
   status: z.enum([
     'IN_PROGRESS',
     'READY_FOR_DISPATCH',
@@ -71,11 +71,11 @@ export const submitPaymentProofSchema = z.object({
   payment_proof_url: z.string().url('Please upload a valid receipt image'),
 });
 
-export const cancelTransactionSchema = z.object({
+export const cancelOrderSchema = z.object({
   reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500),
 });
 
-export const buyerCancelTransactionSchema = z.object({
+export const buyerCancelOrderSchema = z.object({
   reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500),
 });
 
@@ -102,7 +102,7 @@ export const updateRefundStatusSchema = z.object({
   refund_vendor_notes: z.string().max(1000).optional(),
 });
 
-export const transactionFiltersSchema = z.object({
+export const orderFiltersSchema = z.object({
   status: z.string().optional(),
   refund_status: z.string().optional(),
   payment_status: z.string().optional(),
@@ -114,6 +114,6 @@ export const transactionFiltersSchema = z.object({
   to_date: z.coerce.date().optional(),
 });
 
-export type CreateTransactionSchema = z.infer<typeof createTransactionSchema>;
-export type UpdateTransactionSchema = z.infer<typeof updateTransactionSchema>;
-export type TransactionFiltersSchema = z.infer<typeof transactionFiltersSchema>;
+export type CreateOrderSchema = z.infer<typeof createOrderSchema>;
+export type UpdateOrderSchema = z.infer<typeof updateOrderSchema>;
+export type OrderFiltersSchema = z.infer<typeof orderFiltersSchema>;

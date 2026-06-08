@@ -8,7 +8,7 @@ const itemSchema = z.object({
   description: z.string().optional(),
 });
 
-export const transactionFormSchema = z.object({
+export const orderFormSchema = z.object({
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
   expected_delivery_end: z.string().optional(),
@@ -19,9 +19,9 @@ export const transactionFormSchema = z.object({
   vendor_notes: z.string().optional(),
 });
 
-export type TransactionFormData = z.infer<typeof transactionFormSchema>;
+export type OrderFormData = z.infer<typeof orderFormSchema>;
 
-export const transactionEditSchema = z.object({
+export const orderEditSchema = z.object({
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
   expected_delivery_end: z.string().optional(),
@@ -32,4 +32,4 @@ export const transactionEditSchema = z.object({
   vendor_notes: z.string().optional(),
 });
 
-export type TransactionEditData = z.infer<typeof transactionEditSchema>;
+export type OrderEditData = z.infer<typeof orderEditSchema>;

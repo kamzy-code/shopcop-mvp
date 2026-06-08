@@ -164,10 +164,10 @@ export class TierCalculationService {
 
   /**
    * Get the feature benefits associated with a given tier.
-   * Includes badge, max products, video posting, search visibility, transaction limit, and support priority.
+   * Includes badge, max products, video posting, search visibility, order limit, and support priority.
    *
    * @param tier - The vendor tier to look up
-   * @returns Benefits object with badge, max_products, can_post_videos, featured_in_search, transaction_limit, support_priority
+   * @returns Benefits object with badge, max_products, can_post_videos, featured_in_search, order_limit, support_priority
    */
   private static getTierBenefits(tier: VendorTier) {
     const benefits: Record<
@@ -177,7 +177,7 @@ export class TierCalculationService {
         max_products: number | null;
         can_post_videos: boolean;
         featured_in_search: boolean;
-        transaction_limit: number | null;
+        order_limit: number | null;
         support_priority: string;
       }
     > = {
@@ -186,7 +186,7 @@ export class TierCalculationService {
         max_products: 5,
         can_post_videos: false,
         featured_in_search: false,
-        transaction_limit: 50000,
+        order_limit: 50000,
         support_priority: 'standard',
       },
       [VendorTier.TIER_1]: {
@@ -194,7 +194,7 @@ export class TierCalculationService {
         max_products: 20,
         can_post_videos: true,
         featured_in_search: false,
-        transaction_limit: 200000,
+        order_limit: 200000,
         support_priority: 'standard',
       },
       [VendorTier.TIER_2]: {
@@ -202,7 +202,7 @@ export class TierCalculationService {
         max_products: 50,
         can_post_videos: true,
         featured_in_search: true,
-        transaction_limit: 1000000,
+        order_limit: 1000000,
         support_priority: 'high',
       },
       [VendorTier.TIER_3]: {
@@ -210,7 +210,7 @@ export class TierCalculationService {
         max_products: 100,
         can_post_videos: true,
         featured_in_search: true,
-        transaction_limit: 5000000,
+        order_limit: 5000000,
         support_priority: 'premium',
       },
       [VendorTier.TIER_4]: {
@@ -218,7 +218,7 @@ export class TierCalculationService {
         max_products: null,
         can_post_videos: true,
         featured_in_search: true,
-        transaction_limit: null,
+        order_limit: null,
         support_priority: 'vip',
       },
     };

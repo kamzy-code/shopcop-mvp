@@ -31,7 +31,7 @@ interface NavItemConfig {
 const NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/dashboard' },
   { label: 'Products', icon: LuPackage, href: '/products' },
-  { label: 'Transactions', icon: LuShoppingCart, href: '/transactions' },
+  { label: 'Orders', icon: LuShoppingCart, href: '/orders' },
   { label: 'Profile', icon: LuUser, href: '/vendor/profile' },
   { label: 'Reviews', icon: LuStar, href: '/reviews', disabled: true },
   { label: 'Settings', icon: LuSettings, href: '/settings', disabled: true },

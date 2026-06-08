@@ -17,7 +17,7 @@ import adminProfileRouter from '@routes/admin/adminProfileRoute.js';
 import categoryRouter from '@routes/businessCategoryRoute.js';
 import productRouter from '@routes/productRoute.js';
 import { ProductController } from '@controllers/productController.js';
-import transactionRouter from '@routes/transactionRoute.js';
+import orderRouter from '@routes/orderRoute.js';
 import trackRouter from '@routes/trackRoute.js';
 import trustMetricsRouter from '@routes/trustMetricsRoute.js';
 import reviewRouter from '@routes/reviewRoute.js';
@@ -91,7 +91,7 @@ app.use('/api/v1/products', productRouter);
 app.use('/api/v1/public', publicProfileRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/vendors/trust-metrics', trustMetricsRouter);
-app.use('/api/v1/transactions', transactionRouter);
+app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/track', trackRouter);
 
 // 404 handler

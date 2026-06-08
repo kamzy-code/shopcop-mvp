@@ -1,7 +1,7 @@
 'use client';
 import { Box, Button, Flex, SimpleGrid, Text } from '@chakra-ui/react';
 import Link from 'next/link';
-import { formatCurrency } from '@/app/_lib/transactionHelpers';
+import { formatCurrency } from '@/app/_lib/orderHelpers';
 
 interface ProductItem {
   id: string;

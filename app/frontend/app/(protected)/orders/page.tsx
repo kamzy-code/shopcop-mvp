@@ -4,10 +4,10 @@ import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuChevronLeft, LuChevronRight, LuClipboardList, LuPlus, LuSearch } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
-import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
-import { useTransactions } from '@/app/_hooks/transaction';
-import { PaymentStatus, TransactionFilters, TransactionListItem, TransactionStatus } from '@/app/_types';
-import { formatCurrency, formatDate } from '@/app/_lib/transactionHelpers';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
+import { useOrders } from '@/app/_hooks/order';
+import { PaymentStatus, OrderFilters, OrderListItem, OrderStatus } from '@/app/_types';
+import { formatCurrency, formatDate } from '@/app/_lib/orderHelpers';
 
 
 // ─── Filter chips ──────────────────────────────────────────────────────────────
@@ -27,9 +27,9 @@ const FILTER_CHIPS: { label: string; value: string }[] = [
   { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
-// ─── TransactionCard ──────────────────────────────────────────────────────────
+// ─── OrderCard ──────────────────────────────────────────────────────────
 
-function TransactionCard({ tx }: { tx: TransactionListItem }) {
+function OrderCard({ tx }: { tx: OrderListItem }) {
   const router = useRouter();
   const itemCount = tx.items.length;
   const preview = tx.items
@@ -45,7 +45,7 @@ function TransactionCard({ tx }: { tx: TransactionListItem }) {
       borderRadius="xl"
       p={4}
       cursor="pointer"
-      onClick={() => router.push(`/transactions/${tx.id}`)}
+      onClick={() => router.push(`/orders/${tx.id}`)}
       transition="box-shadow 0.15s"
       _hover={{ shadow: 'md' }}
     >
@@ -62,7 +62,7 @@ function TransactionCard({ tx }: { tx: TransactionListItem }) {
                 : 'Waybill'}
           </Text>
         </Stack>
-        <TransactionStatusBadge status={tx.status as TransactionStatus} />
+        <OrderStatusBadge status={tx.status as OrderStatus} />
       </Flex>
 
       <Text textStyle="xs" color="fg.subtle" truncate>
@@ -105,7 +105,7 @@ function TransactionCard({ tx }: { tx: TransactionListItem }) {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
-function TransactionCardSkeleton() {
+function OrderCardSkeleton() {
   return (
     <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={4} h="140px">
       <Stack gap={2}>
@@ -141,14 +141,14 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         <LuClipboardList size={28} />
       </Flex>
       <Heading as="h3" textStyle="lg" fontWeight="semibold" color="fg" mb={2}>
-        No transactions yet
+        No orders yet
       </Heading>
       <Text color="fg.muted" textStyle="sm" mb={6} maxW="300px" mx="auto">
         Record your first order and share the tracking link with your buyer.
       </Text>
       <Button colorPalette="primary" onClick={onAdd}>
         <LuPlus />
-        New Transaction
+        New Order
       </Button>
     </Box>
   );
@@ -156,12 +156,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function TransactionsPage() {
+export default function OrdersPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [sort, setSort] = useState<TransactionFilters['sort']>('newest');
+  const [sort, setSort] = useState<OrderFilters['sort']>('newest');
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -179,7 +179,7 @@ export default function TransactionsPage() {
     setPage(1);
   }, []);
 
-  const handleSortChange = useCallback((value: TransactionFilters['sort']) => {
+  const handleSortChange = useCallback((value: OrderFilters['sort']) => {
     setSort(value);
     setPage(1);
   }, []);
@@ -187,7 +187,7 @@ export default function TransactionsPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  const filters: TransactionFilters = {
+  const filters: OrderFilters = {
     page,
     limit: 20,
     sort,
@@ -197,8 +197,8 @@ export default function TransactionsPage() {
     ...(toDate && { to_date: toDate }),
   };
 
-  const { data, isLoading } = useTransactions(filters);
-  const transactions = data?.data ?? [];
+  const { data, isLoading } = useOrders(filters);
+  const orders = data?.data ?? [];
   const meta = data?.meta;
 
   return (
@@ -208,17 +208,17 @@ export default function TransactionsPage() {
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
           <Stack gap={0.5}>
             <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-              Transactions
+              Orders
             </Heading>
             {meta && (
               <Text color="fg.muted" textStyle="sm">
-                {meta.total} {meta.total === 1 ? 'transaction' : 'transactions'}
+                {meta.total} {meta.total === 1 ? 'order' : 'orders'}
               </Text>
             )}
           </Stack>
-          <Button colorPalette="primary" size="md" onClick={() => router.push('/transactions/new')}>
+          <Button colorPalette="primary" size="md" onClick={() => router.push('/orders/new')}>
             <LuPlus />
-            New Transaction
+            New Order
           </Button>
         </Flex>
 
@@ -264,7 +264,7 @@ export default function TransactionsPage() {
           >
             <select
               value={sort}
-              onChange={(e) => handleSortChange(e.target.value as TransactionFilters['sort'])}
+              onChange={(e) => handleSortChange(e.target.value as OrderFilters['sort'])}
               style={{
                 border: 'none',
                 outline: 'none',
@@ -359,21 +359,21 @@ export default function TransactionsPage() {
         {isLoading ? (
           <Stack gap={3}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <TransactionCardSkeleton key={i} />
+              <OrderCardSkeleton key={i} />
             ))}
           </Stack>
-        ) : transactions.length === 0 && !statusFilter && !debouncedSearch ? (
-          <EmptyState onAdd={() => router.push('/transactions/new')} />
-        ) : transactions.length === 0 ? (
+        ) : orders.length === 0 && !statusFilter && !debouncedSearch ? (
+          <EmptyState onAdd={() => router.push('/orders/new')} />
+        ) : orders.length === 0 ? (
           <Box textAlign="center" py={12}>
             <Text color="fg.muted" textStyle="sm">
-              No transactions match your filters.
+              No orders match your filters.
             </Text>
           </Box>
         ) : (
           <Stack gap={3}>
-            {transactions.map((tx) => (
-              <TransactionCard key={tx.id} tx={tx} />
+            {orders.map((tx) => (
+              <OrderCard key={tx.id} tx={tx} />
             ))}
           </Stack>
         )}

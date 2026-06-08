@@ -15,27 +15,27 @@ import {
   LuX,
 } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
-import { TransactionStatusBadge } from '@/components/transaction/TransactionStatusBadge';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
 import {
-  useTransaction,
-  useUpdateTransactionStatus,
-  useUpdateTransactionStatusWithRefund,
+  useOrder,
+  useUpdateOrderStatus,
+  useUpdateOrderStatusWithRefund,
   useConfirmPayment,
-  useCancelTransaction,
-} from '@/app/_hooks/transaction';
-import { Transaction, TransactionItem, TransactionStatus } from '@/app/_types';
+  useCancelOrder,
+} from '@/app/_hooks/order';
+import { Order, OrderItem, OrderStatus } from '@/app/_types';
 import { ReviewStars as ReviewStarsVendor } from '@/components/review/ReviewStars';
-import { ItemDetailModal } from '@/components/transaction/ItemDetailModal';
+import { ItemDetailModal } from '@/components/order/ItemDetailModal';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import {
   formatCurrency,
   formatDate,
   formatDateTime,
   isVideoUrl,
-} from '@/app/_lib/transactionHelpers';
+} from '@/app/_lib/orderHelpers';
 
 // ─── Payment status badge config ──────────────────────────────────────────────
 
@@ -53,12 +53,12 @@ const PAYMENT_STATUS_CONFIG: Record<
 
 const NEXT_STATUS_ACTION: Partial<
   Record<
-    TransactionStatus,
+    OrderStatus,
     {
       label: string;
-      next: TransactionStatus;
+      next: OrderStatus;
       secondaryLabel?: string;
-      secondaryNext?: TransactionStatus;
+      secondaryNext?: OrderStatus;
     }
   >
 > = {
@@ -67,7 +67,7 @@ const NEXT_STATUS_ACTION: Partial<
   READY_FOR_DISPATCH: { label: 'Mark Shipped', next: 'SHIPPED' },
   SHIPPED: { label: 'Mark Delivered', next: 'DELIVERED' },
   // COMPLETED is removed from vendor actions — only buyers can complete a
-  // transaction via "I've Received It" or via the 48-hour auto-close.
+  // order via "I've Received It" or via the 48-hour auto-close.
   DELIVERED: {
     label: 'Initiate Refund',
     next: 'REFUND_REQUESTED',
@@ -87,14 +87,14 @@ const NEXT_STATUS_ACTION: Partial<
   },
 };
 
-const CANCELLABLE: TransactionStatus[] = [
+const CANCELLABLE: OrderStatus[] = [
   'PENDING',
   'CONFIRMED',
   'IN_PROGRESS',
   'READY_FOR_DISPATCH',
 ];
 
-const REFUND_NEXT_STATUSES: TransactionStatus[] = [
+const REFUND_NEXT_STATUSES: OrderStatus[] = [
   'REFUND_REQUESTED',
   'REFUND_IN_PROGRESS',
   'REFUNDED',
@@ -127,7 +127,7 @@ function TimelineIcon({ done, active }: { done?: boolean; active?: boolean }) {
 
 // ─── Status timeline ──────────────────────────────────────────────────────────
 
-const STATUS_ORDER: TransactionStatus[] = [
+const STATUS_ORDER: OrderStatus[] = [
   'PENDING',
   'CONFIRMED',
   'IN_PROGRESS',
@@ -137,7 +137,7 @@ const STATUS_ORDER: TransactionStatus[] = [
   'COMPLETED',
 ];
 
-const STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
+const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Order Placed',
   CONFIRMED: 'Payment Confirmed',
   IN_PROGRESS: 'In Progress',
@@ -198,7 +198,7 @@ function TimelineEntry({
   );
 }
 
-const REFUND_STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
+const REFUND_STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
   REFUND_REQUESTED:   'Refund Requested',
   REFUND_IN_PROGRESS: 'Refund In Progress',
   REFUNDED:           'Refund Issued',
@@ -206,7 +206,7 @@ const REFUND_STATUS_LABELS: Partial<Record<TransactionStatus, string>> = {
   COMPLETED:          'Marked as Complete',
 };
 
-function StatusTimeline({ tx }: { tx: Transaction }) {
+function StatusTimeline({ tx }: { tx: Order }) {
   // ── Cancelled ──────────────────────────────────────────────────────────────
   if (tx.status === 'CANCELLED') {
     return (
@@ -315,7 +315,7 @@ function StatusTimeline({ tx }: { tx: Transaction }) {
           {refundJourney.map((entry, i) => (
             <TimelineEntry
               key={i}
-              label={REFUND_STATUS_LABELS[entry.to_status as TransactionStatus] ?? entry.to_status}
+              label={REFUND_STATUS_LABELS[entry.to_status as OrderStatus] ?? entry.to_status}
               ts={entry.created_at}
               note={entry.note}
               done
@@ -374,7 +374,7 @@ function PaymentConfirmModal({
       onClose={onClose}
       onConfirm={() => onConfirm(notes || undefined)}
       title="Confirm Payment"
-      description="Confirming payment will mark this transaction as CONFIRMED and deduct stock from your catalog for linked products. This cannot be undone."
+      description="Confirming payment will mark this order as CONFIRMED and deduct stock from your catalog for linked products. This cannot be undone."
       confirmLabel="Confirm Payment"
       colorPalette="primary"
       isLoading={isLoading}
@@ -417,9 +417,9 @@ function CancelModal({
       onConfirm={() => {
         if (isValid) onConfirm(reason);
       }}
-      title="Cancel Transaction"
-      description="This will cancel the transaction and restore any deducted stock."
-      confirmLabel="Cancel Transaction"
+      title="Cancel Order"
+      description="This will cancel the order and restore any deducted stock."
+      confirmLabel="Cancel Order"
       colorPalette="red"
       isLoading={isLoading}
       confirmDisabled={!isValid}
@@ -431,7 +431,7 @@ function CancelModal({
         <Textarea
           size="sm"
           rows={3}
-          placeholder="Why is this transaction being cancelled?"
+          placeholder="Why is this order being cancelled?"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
         />
@@ -538,7 +538,7 @@ function StatusUpdateModal({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function TransactionDetailPage() {
+export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
@@ -548,19 +548,19 @@ export default function TransactionDetailPage() {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [pendingStatusAction, setPendingStatusAction] = useState<{
     label: string;
-    next: TransactionStatus;
+    next: OrderStatus;
   } | null>(null);
   const [statusUpdateNote, setStatusUpdateNote] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [refundVendorNotes, setRefundVendorNotes] = useState('');
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
-  const [selectedItem, setSelectedItem] = useState<TransactionItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<OrderItem | null>(null);
 
-  const { data: tx, isLoading, error } = useTransaction(id);
-  const statusMutation = useUpdateTransactionStatus();
-  const refundStatusMutation = useUpdateTransactionStatusWithRefund();
+  const { data: tx, isLoading, error } = useOrder(id);
+  const statusMutation = useUpdateOrderStatus();
+  const refundStatusMutation = useUpdateOrderStatusWithRefund();
   const paymentMutation = useConfirmPayment();
-  const cancelMutation = useCancelTransaction();
+  const cancelMutation = useCancelOrder();
 
   // Refund fields (amount + notes) are only collected on the initial REFUND_REQUESTED step
   const isRefundAction = pendingStatusAction?.next === 'REFUND_REQUESTED';
@@ -576,7 +576,7 @@ export default function TransactionDetailPage() {
 
   // ─── Status action ──────────────────────────────────────────────────────────
 
-  const handleStatusUpdate = async (next: TransactionStatus, note?: string) => {
+  const handleStatusUpdate = async (next: OrderStatus, note?: string) => {
     try {
       if (next === 'REFUND_REQUESTED') {
         // Only on the initial refund action: persist refund amount + internal notes
@@ -628,12 +628,12 @@ export default function TransactionDetailPage() {
     try {
       await cancelMutation.mutateAsync({ id, reason });
       setShowCancelModal(false);
-      toaster.create({ title: 'Transaction cancelled', type: 'success' });
+      toaster.create({ title: 'Order cancelled', type: 'success' });
     } catch (err) {
       setShowCancelModal(false);
       setErrorModal({
         open: true,
-        title: 'Failed to cancel transaction',
+        title: 'Failed to cancel order',
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     }
@@ -652,9 +652,9 @@ export default function TransactionDetailPage() {
     return (
       <AppShell>
         <Box textAlign="center" py={16}>
-          <Text color="fg.muted">Transaction not found.</Text>
-          <Button mt={4} variant="outline" onClick={() => router.push('/transactions')}>
-            Back to Transactions
+          <Text color="fg.muted">Order not found.</Text>
+          <Button mt={4} variant="outline" onClick={() => router.push('/orders')}>
+            Back to Orders
           </Button>
         </Box>
       </AppShell>
@@ -717,7 +717,7 @@ export default function TransactionDetailPage() {
             variant="ghost"
             size="sm"
             colorPalette="gray"
-            onClick={() => router.push('/transactions')}
+            onClick={() => router.push('/orders')}
           >
             <LuArrowLeft />
           </Button>
@@ -729,7 +729,7 @@ export default function TransactionDetailPage() {
               <Heading textStyle="xl" fontWeight="bold" color="fg">
                 {tx.reference}
               </Heading>
-              <TransactionStatusBadge status={tx.status} />
+              <OrderStatusBadge status={tx.status} />
             </Flex>
             <Text textStyle="xs" color="fg.muted">
               {formatDateTime(tx.created_at)}
@@ -740,7 +740,7 @@ export default function TransactionDetailPage() {
               variant="outline"
               size="sm"
               colorPalette="gray"
-              onClick={() => router.push(`/transactions/${id}/edit`)}
+              onClick={() => router.push(`/orders/${id}/edit`)}
             >
               <LuPencil size={14} />
               Edit

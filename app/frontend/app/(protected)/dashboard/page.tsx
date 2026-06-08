@@ -23,8 +23,8 @@ import {
   useVendorProfile,
 } from '@/app/_hooks/vendor';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { useTransactionAnalytics } from '@/app/_hooks/transaction';
-import { formatCurrency } from '@/app/_lib/transactionHelpers';
+import { useOrderAnalytics } from '@/app/_hooks/order';
+import { formatCurrency } from '@/app/_lib/orderHelpers';
 
 function StatCard({
   icon: Icon,
@@ -188,7 +188,7 @@ export default function Dashboard() {
   const { data: completeness } = useProfileCompleteness();
   const { data: verifications } = useGetVerifications();
   const { data: profile } = useVendorProfile();
-  const { data: analytics } = useTransactionAnalytics();
+  const { data: analytics } = useOrderAnalytics();
 
   const productCount = products?.length ?? 0;
   const inStockCount = products?.filter((p) => p.stock_status === 'IN_STOCK').length ?? 0;
@@ -399,7 +399,7 @@ export default function Dashboard() {
                   : 'Loading...'
               }
               color="warning"
-              onClick={() => router.push('/transactions')}
+              onClick={() => router.push('/orders')}
             />
             <StatCard
               icon={LuTrendingUp}
@@ -548,9 +548,9 @@ export default function Dashboard() {
                 <Flex w={10} h={10} borderRadius="lg" bg="warning.subtle" align="center" justify="center" mb={4} color="warning.fg">
                   <LuShoppingCart size={18} />
                 </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>New Transaction</Text>
+                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>New Order</Text>
                 <Text color="fg.muted" textStyle="xs" flex={1}>Create and send a new order to a buyer.</Text>
-                <Button mt={4} size="sm" colorPalette="warning" variant="outline" w="full" onClick={() => router.push('/transactions/new')}>
+                <Button mt={4} size="sm" colorPalette="warning" variant="outline" w="full" onClick={() => router.push('/orders/new')}>
                   Create
                 </Button>
               </Box>

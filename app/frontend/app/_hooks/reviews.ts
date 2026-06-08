@@ -33,7 +33,7 @@ export const useCreateReview = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-public'] });
+      queryClient.invalidateQueries({ queryKey: ['order-public'] });
     },
   });
 };
@@ -52,7 +52,7 @@ export const useEditReview = () => {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public'] });
+      queryClient.invalidateQueries({ queryKey: ['order-public'] });
     },
   });
 };

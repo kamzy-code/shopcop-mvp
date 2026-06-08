@@ -1,5 +1,5 @@
 import { prisma } from '@config/prisma.js';
-import { RefundStatus, TransactionStatus } from '../generated/prisma/enums.js';
+import { RefundStatus, OrderStatus } from '../generated/prisma/enums.js';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -11,10 +11,10 @@ export function generateTrackingToken(): string {
   return token;
 }
 
-export async function generateTransactionReference(vendorId: string): Promise<string> {
+export async function generateOrderReference(vendorId: string): Promise<string> {
   const year = new Date().getFullYear();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const count = await prisma.transaction.count({
+    const count = await prisma.order.count({
       where: {
         vendor_id: vendorId,
         created_at: {
@@ -24,7 +24,7 @@ export async function generateTransactionReference(vendorId: string): Promise<st
       },
     });
     const ref = `SC-${year}-${String(count + 1 + attempt).padStart(5, '0')}`;
-    const exists = await prisma.transaction.findUnique({ where: { reference: ref } });
+    const exists = await prisma.order.findUnique({ where: { reference: ref } });
     if (!exists) return ref;
   }
   // Fallback: use timestamp-based suffix to guarantee uniqueness 
@@ -49,9 +49,9 @@ export function calculateTotal(subtotal: number, deliveryFee = 0, discount = 0):
   return Math.max(0, totalKobo) / 100;
 }
 
-const STATUS_TIMESTAMP_MAP: Partial<Record<TransactionStatus, string>> = {
+const STATUS_TIMESTAMP_MAP: Partial<Record<OrderStatus, string>> = {
   // CONFIRMED is intentionally excluded — confirmed_at is only set by confirmPayment,
-  // not by the generic updateTransactionStatus path.
+  // not by the generic updateOrderStatus path.
   IN_PROGRESS: 'in_progress_at',
   READY_FOR_DISPATCH: 'ready_for_dispatch_at',
   SHIPPED: 'shipped_at',
@@ -63,25 +63,25 @@ const STATUS_TIMESTAMP_MAP: Partial<Record<TransactionStatus, string>> = {
   RESOLVED: 'resolved_at',
 };
 
-export function getStatusTimestampField(status: TransactionStatus): string | undefined {
+export function getStatusTimestampField(status: OrderStatus): string | undefined {
   return STATUS_TIMESTAMP_MAP[status];
 }
 
-const VALID_TRANSITIONS: Record<string, TransactionStatus[]> = {
+const VALID_TRANSITIONS: Record<string, OrderStatus[]> = {
   // CONFIRMED is excluded from PENDING — the only path from PENDING → CONFIRMED
   // is via confirmPayment, which also sets payment_status=PAID and deducts stock.
-  // Allowing it here through updateTransactionStatus would corrupt data.
-  PENDING: [TransactionStatus.CANCELLED],
-  CONFIRMED: [TransactionStatus.IN_PROGRESS, TransactionStatus.CANCELLED],
-  IN_PROGRESS: [TransactionStatus.READY_FOR_DISPATCH, TransactionStatus.CANCELLED],
-  READY_FOR_DISPATCH: [TransactionStatus.SHIPPED, TransactionStatus.CANCELLED],
-  SHIPPED: [TransactionStatus.DELIVERED],
+  // Allowing it here through updateOrderStatus would corrupt data.
+  PENDING: [OrderStatus.CANCELLED],
+  CONFIRMED: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED],
+  IN_PROGRESS: [OrderStatus.READY_FOR_DISPATCH, OrderStatus.CANCELLED],
+  READY_FOR_DISPATCH: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+  SHIPPED: [OrderStatus.DELIVERED],
   // COMPLETED is intentionally excluded from DELIVERED — the only path from
   // DELIVERED → COMPLETED is via buyerConfirmDelivery() (buyer "I've Received It" btn)
   // or the 48-hour auto-close. Vendors can only push up to DELIVERED.
-  DELIVERED: [TransactionStatus.REFUND_REQUESTED],
-  REFUND_REQUESTED: [TransactionStatus.REFUND_IN_PROGRESS, TransactionStatus.RESOLVED],
-  REFUND_IN_PROGRESS: [TransactionStatus.REFUNDED, TransactionStatus.RESOLVED],
+  DELIVERED: [OrderStatus.REFUND_REQUESTED],
+  REFUND_REQUESTED: [OrderStatus.REFUND_IN_PROGRESS, OrderStatus.RESOLVED],
+  REFUND_IN_PROGRESS: [OrderStatus.REFUNDED, OrderStatus.RESOLVED],
   // COMPLETED is excluded from REFUNDED/RESOLVED for the same reason — auto-close handles it.
   REFUNDED: [],
   RESOLVED: [],
@@ -89,24 +89,24 @@ const VALID_TRANSITIONS: Record<string, TransactionStatus[]> = {
   CANCELLED: [],
 };
 
-export function isTransitionValid(from: TransactionStatus, to: TransactionStatus): boolean {
+export function isTransitionValid(from: OrderStatus, to: OrderStatus): boolean {
   return VALID_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
-export const NON_CANCELLABLE_STATUSES: TransactionStatus[] = [
-  TransactionStatus.SHIPPED,
-  TransactionStatus.DELIVERED,
-  TransactionStatus.COMPLETED,
-  TransactionStatus.REFUND_REQUESTED,
-  TransactionStatus.REFUND_IN_PROGRESS,
-  TransactionStatus.REFUNDED,
-  TransactionStatus.RESOLVED,
-  TransactionStatus.CANCELLED,
+export const NON_CANCELLABLE_STATUSES: OrderStatus[] = [
+  OrderStatus.SHIPPED,
+  OrderStatus.DELIVERED,
+  OrderStatus.COMPLETED,
+  OrderStatus.REFUND_REQUESTED,
+  OrderStatus.REFUND_IN_PROGRESS,
+  OrderStatus.REFUNDED,
+  OrderStatus.RESOLVED,
+  OrderStatus.CANCELLED,
 ];
 
-export const REFUND_STATUS_SYNC: Partial<Record<TransactionStatus, RefundStatus>> = {
-  [TransactionStatus.REFUND_REQUESTED]: RefundStatus.REQUESTED,
-  [TransactionStatus.REFUND_IN_PROGRESS]: RefundStatus.IN_PROGRESS,
-  [TransactionStatus.REFUNDED]: RefundStatus.REFUNDED,
-  [TransactionStatus.RESOLVED]: RefundStatus.RESOLVED,
+export const REFUND_STATUS_SYNC: Partial<Record<OrderStatus, RefundStatus>> = {
+  [OrderStatus.REFUND_REQUESTED]: RefundStatus.REQUESTED,
+  [OrderStatus.REFUND_IN_PROGRESS]: RefundStatus.IN_PROGRESS,
+  [OrderStatus.REFUNDED]: RefundStatus.REFUNDED,
+  [OrderStatus.RESOLVED]: RefundStatus.RESOLVED,
 } as const;

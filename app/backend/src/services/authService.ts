@@ -91,7 +91,7 @@ export class AuthService {
   /**
    * Verifies the OTP submitted during signup and activates the user account.
    * Enforces a 5-attempt lockout on the OTP record to prevent brute-force.
-   * Creates a role-appropriate empty profile (VendorProfile / BuyerProfile / AdminProfile) in the same transaction.
+   * Creates a role-appropriate empty profile (VendorProfile / BuyerProfile / AdminProfile) in the same DB transaction.
    * Sets the JWT as an httpOnly cookie via the calling controller.
    *
    * @param email - Email address of the user to verify
@@ -302,7 +302,7 @@ export class AuthService {
 
   /**
    * Validates a magic link token and logs the user in.
-   * Marks the token as used (`used_at`) and updates `last_login_at` in a single transaction.
+   * Marks the token as used (`used_at`) and updates `last_login_at` in a single DB transaction.
    *
    * @param token - UUID magic link token from the login URL
    * @returns JWT token and sanitised user object

@@ -20,11 +20,11 @@ import { LuArrowLeft, LuArrowRight, LuPackage, LuPlus, LuTrash2, LuX } from 'rea
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
-import { useCreateTransaction } from '@/app/_hooks/transaction';
+import { useCreateOrder } from '@/app/_hooks/order';
 import { useProducts } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
-import { TransactionFormData, transactionFormSchema } from '@/app/validators/transactionschema';
-import { formatCurrency } from '@/app/_lib/transactionHelpers';
+import { OrderFormData, orderFormSchema } from '@/app/validators/orderSchema';
+import { formatCurrency } from '@/app/_lib/orderHelpers';
 
 const STEPS = ['Order Items', 'Delivery Details', 'Review & Submit'];
 
@@ -182,14 +182,14 @@ function CatalogPickerPanel({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function NewTransactionPage() {
+export default function NewOrderPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [showCatalog, setShowCatalog] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
 
   const { data: products = [] } = useProducts();
-  const createMutation = useCreateTransaction();
+  const createMutation = useCreateOrder();
 
   const {
     register,
@@ -199,8 +199,8 @@ export default function NewTransactionPage() {
     trigger,
     setValue,
     formState: { errors },
-  } = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionFormSchema) as unknown as Resolver<TransactionFormData>,
+  } = useForm<OrderFormData>({
+    resolver: zodResolver(orderFormSchema) as unknown as Resolver<OrderFormData>,
     defaultValues: {
       delivery_method: 'PICKUP',
       items: [],
@@ -223,14 +223,14 @@ export default function NewTransactionPage() {
 
   // ─── Step validation ─────────────────────────────────────────────────────────
 
-  const STEP_FIELDS: (keyof TransactionFormData)[][] = [
+  const STEP_FIELDS: (keyof OrderFormData)[][] = [
     ['items'],
     ['delivery_method', 'expected_delivery_start', 'expected_delivery_end'],
     ['delivery_fee', 'discount_amount', 'order_notes', 'vendor_notes'],
   ];
 
   const goNext = async () => {
-    const valid = await trigger(STEP_FIELDS[step] as (keyof TransactionFormData)[]);
+    const valid = await trigger(STEP_FIELDS[step] as (keyof OrderFormData)[]);
     if (valid) setStep((s) => s + 1);
   };
 
@@ -239,7 +239,7 @@ export default function NewTransactionPage() {
   // ─── Submit ──────────────────────────────────────────────────────────────────
 
   const onSubmit = async (data: unknown) => {
-    const d = data as TransactionFormData;
+    const d = data as OrderFormData;
     try {
       const result = await createMutation.mutateAsync({
         delivery_method: d.delivery_method,
@@ -257,12 +257,12 @@ export default function NewTransactionPage() {
         order_notes: d.order_notes || undefined,
         vendor_notes: d.vendor_notes || undefined,
       });
-      toaster.create({ title: 'Transaction created', type: 'success' });
-      router.push(`/transactions/${result.data.id}`);
+      toaster.create({ title: 'Order created', type: 'success' });
+      router.push(`/orders/${result.data.id}`);
     } catch (err) {
       setErrorModal({
         open: true,
-        title: 'Failed to create transaction',
+        title: 'Failed to create order',
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     }
@@ -299,11 +299,11 @@ export default function NewTransactionPage() {
       <Box maxW="600px" mx="auto">
         {/* Page header */}
         <Flex align="center" gap={3} mb={6}>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/transactions')} colorPalette="gray">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/orders')} colorPalette="gray">
             <LuArrowLeft />
           </Button>
           <Heading textStyle="xl" fontWeight="bold" color="fg">
-            New Transaction
+            New Order
           </Heading>
         </Flex>
 
@@ -694,7 +694,7 @@ export default function NewTransactionPage() {
               ) : (
                 <Button
                   variant="ghost"
-                  onClick={() => router.push('/transactions')}
+                  onClick={() => router.push('/orders')}
                   colorPalette="gray"
                   type="button"
                 >
@@ -716,7 +716,7 @@ export default function NewTransactionPage() {
                   loading={createMutation.isPending}
                   disabled={createMutation.isPending || watchItems.length === 0}
                 >
-                  Create Transaction
+                  Create Order
                 </Button>
               )}
             </Flex>

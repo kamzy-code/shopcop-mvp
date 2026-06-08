@@ -2,7 +2,7 @@
 import { Box, Button, Flex, Stack, Text } from '@chakra-ui/react';
 import { ReviewStars } from './ReviewStars';
 import type { Review as ReviewType } from '@/app/_types';
-import { formatDate } from '@/app/_lib/transactionHelpers';
+import { formatDate } from '@/app/_lib/orderHelpers';
 
 interface ReviewListProps {
   reviews: ReviewType[];

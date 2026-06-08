@@ -1,30 +1,30 @@
 import { prisma } from '@config/prisma.js';
 import { trustMetricsLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { ModerationStatus, RefundStatus, TransactionStatus } from '../generated/prisma/enums.js';
+import { ModerationStatus, RefundStatus, OrderStatus } from '../generated/prisma/enums.js';
 import type { TrustMetrics } from '../types/trustMetricsTypes.js';
 
 export class TrustMetricsService {
   static async recalculateVendorTrustMetrics(vendorId: string): Promise<void> {
     try {
-      // ── 1. Performance metrics — derived from transaction data only ──────────
+      // ── 1. Performance metrics — derived from order data only ──────────
 
       const [
-        totalTransactions,
-        completedTransactions, // fetched once; derive completedCount from .length
+        totalOrders,
+        completedOrders, // fetched once; derive completedCount from .length
         refundedCount,
-        lastTransaction,
+        lastOrder,
         responseTimeRows,
       ] = await Promise.all([
-        // Actionable transactions only — excludes PENDING (buyer hasn't paid,
+        // Actionable orders only — excludes PENDING (buyer hasn't paid,
         // vendor not yet involved) and buyer-initiated cancellations (buyer
         // changed mind before vendor took responsibility).
-        prisma.transaction.count({
+        prisma.order.count({
           where: {
             vendor_id: vendorId,
-            status: { not: TransactionStatus.PENDING },
+            status: { not: OrderStatus.PENDING },
             NOT: {
-              status: TransactionStatus.CANCELLED,
+              status: OrderStatus.CANCELLED,
               cancelled_by: 'buyer',
             },
           },
@@ -32,30 +32,30 @@ export class TrustMetricsService {
 
         // Fetch completed rows to compute both completedCount and on-time rate,
         // eliminating the second DB trip that existed before.
-        prisma.transaction.findMany({
-          where: { vendor_id: vendorId, status: TransactionStatus.COMPLETED },
+        prisma.order.findMany({
+          where: { vendor_id: vendorId, status: OrderStatus.COMPLETED },
           select: { delivered_at: true, expected_delivery_end: true },
         }),
 
         // Refunds are tracked via the separate refund_status field.
-        // TransactionStatus.REFUNDED is never the terminal state — all transactions
+        // OrderStatus.REFUNDED is never the terminal state — all orders
         // close at COMPLETED, with refund_status = REFUNDED for refunded ones.
-        prisma.transaction.count({
+        prisma.order.count({
           where: { vendor_id: vendorId, refund_status: RefundStatus.REFUNDED },
         }),
 
-        // Last activity: most recent completed or refunded transaction (by update time)
-        prisma.transaction.findFirst({
+        // Last activity: most recent completed or refunded order (by update time)
+        prisma.order.findFirst({
           where: {
             vendor_id: vendorId,
-            status: { in: [TransactionStatus.COMPLETED, TransactionStatus.REFUNDED] },
+            status: { in: [OrderStatus.COMPLETED, OrderStatus.REFUNDED] },
           },
           orderBy: { updated_at: 'desc' },
           select: { updated_at: true },
         }),
 
         // Response time: payment proof submitted → vendor confirms payment
-        prisma.transaction.findMany({
+        prisma.order.findMany({
           where: {
             vendor_id: vendorId,
             payment_proof_submitted_at: { not: null },
@@ -65,11 +65,11 @@ export class TrustMetricsService {
         }),
       ]);
 
-      const completedCount = completedTransactions.length;
+      const completedCount = completedOrders.length;
 
       const fulfillmentRate =
-        totalTransactions > 0
-          ? Math.round((completedCount / totalTransactions) * 10000) / 100
+        totalOrders > 0
+          ? Math.round((completedCount / totalOrders) * 10000) / 100
           : 0;
 
       const refundRate =
@@ -77,7 +77,7 @@ export class TrustMetricsService {
           ? Math.round((refundedCount / completedCount) * 10000) / 100
           : 0;
 
-      const onTimeCount = completedTransactions.filter(
+      const onTimeCount = completedOrders.filter(
         (t) =>
           t.delivered_at && t.expected_delivery_end && t.delivered_at <= t.expected_delivery_end
       ).length;
@@ -150,13 +150,13 @@ export class TrustMetricsService {
         where: { id: vendorId },
         data: {
           // Performance
-          total_transactions: totalTransactions,
-          successful_transactions: completedCount,
+          total_orders: totalOrders,
+          successful_orders: completedCount,
           fulfillment_rate: fulfillmentRate,
           refund_rate: refundRate,
           on_time_delivery_rate: onTimeDeliveryRate,
           avg_response_time_minutes: avgResponseTimeMinutes,
-          last_transaction_at: lastTransaction?.updated_at ?? null,
+          last_order_at: lastOrder?.updated_at ?? null,
           // Feedback
           review_count: reviewCount,
           average_rating: averageRating,
@@ -168,7 +168,7 @@ export class TrustMetricsService {
 
       trustMetricsLogger.info('Vendor trust metrics recalculated', {
         vendorId,
-        totalTransactions,
+        totalOrders,
         completedCount,
         fulfillmentRate,
         refundRate,
@@ -189,13 +189,13 @@ export class TrustMetricsService {
     const vendor = await prisma.vendorProfile.findUnique({
       where: { id: vendorId },
       select: {
-        total_transactions: true,
-        successful_transactions: true,
+        total_orders: true,
+        successful_orders: true,
         fulfillment_rate: true,
         refund_rate: true,
         on_time_delivery_rate: true,
         avg_response_time_minutes: true,
-        last_transaction_at: true,
+        last_order_at: true,
         review_count: true,
         average_rating: true,
         avg_delivery_rating: true,

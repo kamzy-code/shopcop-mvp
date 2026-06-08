@@ -86,7 +86,7 @@ enum StockStatus {
   OUT_OF_STOCK
 }
 
-enum OrderStatus {
+enum TransactionStatus {
   PENDING
   CONFIRMED
   IN_PROGRESS
@@ -179,7 +179,7 @@ model User {
   buyer_profile  BuyerProfile[]
   admin_profile  AdminProfile[]
   admin_actions  AdminActivityLog[]
-  orders   Order[]
+  transactions   Transaction[]
 
   @@index([email])
   @@index([google_id])
@@ -313,9 +313,9 @@ model VendorProfile {
   profile_completeness   Int     @default(0) // 0-100%
 
   // ========== CALCULATED METRICS ==========
-  // Performance (system-calculated from order data)
-  total_orders        Int   @default(0)
-  successful_orders   Int   @default(0)
+  // Performance (system-calculated from transaction data)
+  total_transactions        Int   @default(0)
+  successful_transactions   Int   @default(0)
   fulfillment_rate          Float @default(0)
   refund_rate               Float @default(0)
   on_time_delivery_rate     Float @default(0)
@@ -334,12 +334,12 @@ model VendorProfile {
   // Timestamps
   created_at          DateTime  @default(now())
   updated_at          DateTime  @updatedAt
-  last_order_at DateTime?
+  last_transaction_at DateTime?
 
   // Relations
   verifications VendorVerification[]
   products      Product[]
-  orders  Order[]
+  transactions  Transaction[]
   reviews       Review[]
   posts         VendorPost[]
 
@@ -347,7 +347,7 @@ model VendorProfile {
   @@index([state, city])
   @@index([current_tier])
   @@index([verification_points])
-  @@index([total_orders])
+  @@index([total_transactions])
   @@index([created_at])
   //@@fulltext([business_name, business_description])
   @@map("vendor_profiles")
@@ -484,7 +484,7 @@ model Product {
   deleted_at DateTime?
 
   // Relations
-  order_items OrderItem[]
+  transaction_items TransactionItem[]
 
   @@index([vendor_id])
   @@index([category])
@@ -544,7 +544,7 @@ model VendorPost {
 // TRANSACTIONS
 // ============================================
 
-model Order {
+model Transaction {
   id             String @id @default(cuid())
   reference      String @unique // SC-2025-00047
   tracking_token String @unique // 12-char random alphanumeric
@@ -563,7 +563,7 @@ model Order {
   actual_delivery_date    DateTime?
 
   // Items
-  items OrderItem[]
+  items TransactionItem[]
 
   // Financials
   subtotal        Decimal  @db.Decimal(10, 2)
@@ -580,7 +580,7 @@ model Order {
   payment_notes             String?
 
   // Status
-  status OrderStatus @default(PENDING)
+  status TransactionStatus @default(PENDING)
 
   // Status Timestamps
   confirmed_at          DateTime?
@@ -616,7 +616,7 @@ model Order {
   updated_at DateTime @updatedAt
 
   // Relations
-  status_history OrderStatusHistory[]
+  status_history TransactionStatusHistory[]
   review         Review?
 
   @@index([vendor_id, status])
@@ -624,13 +624,13 @@ model Order {
   @@index([reference])
   @@index([buyer_email])
   @@index([refund_status])
-  @@map("orders")
+  @@map("transactions")
 }
 
-model OrderItem {
+model TransactionItem {
   id             String      @id @default(cuid())
-  order_id String
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  transaction_id String
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
 
   // Product reference (optional — null for manual items)
   product_id String?
@@ -648,25 +648,25 @@ model OrderItem {
   stock_deducted Int @default(0)
   stock_restored Int @default(0)
 
-  @@index([order_id])
+  @@index([transaction_id])
   @@index([product_id])
-  @@map("order_items")
+  @@map("transaction_items")
 }
 
-model OrderStatusHistory {
+model TransactionStatusHistory {
   id             String      @id @default(cuid())
-  order_id String
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  transaction_id String
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
 
-  from_status OrderStatus?
-  to_status   OrderStatus
+  from_status TransactionStatus?
+  to_status   TransactionStatus
   changed_by  String
   note        String?
 
   created_at DateTime @default(now())
 
-  @@index([order_id])
-  @@map("order_status_history")
+  @@index([transaction_id])
+  @@map("transaction_status_history")
 }
 
 // ============================================
@@ -677,8 +677,8 @@ model Review {
   id String @id @default(cuid())
 
   // Transaction
-  order_id String      @unique
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  transaction_id String      @unique
+  transaction    Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
 
   // Vendor
   vendor_id String

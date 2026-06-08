@@ -412,8 +412,8 @@ export function ProfileHeader({
 
   const trustMeticsInfo = [
     {
-      label: 'Completed Transactions',
-      value: String(trustMetrics.successful_transactions),
+      label: 'Completed Orders',
+      value: String(trustMetrics.successful_orders),
       color: 'success.fg',
     },
     {

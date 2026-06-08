@@ -15,7 +15,7 @@ export const useCreateReview = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-public'] });
+      queryClient.invalidateQueries({ queryKey: ['order-public'] });
     },
   });
 };

@@ -1,13 +1,13 @@
 import { prisma } from '@config/prisma.js';
 import { reviewLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
-import { ModerationStatus, TransactionStatus } from '../generated/prisma/enums.js';
+import { ModerationStatus, OrderStatus } from '../generated/prisma/enums.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
 import type { CreateReviewInput, EditReviewTextInput, ReviewData, ReviewSummary } from '../types/reviewTypes.js';
 
 export class ReviewService {
   static async createReview(data: CreateReviewInput): Promise<ReviewData> {
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: data.tracking_token },
       select: {
         id: true,
@@ -18,37 +18,37 @@ export class ReviewService {
       },
     });
 
-    if (!transaction) {
-      reviewLogger.warn('Transaction not found for review submission', {
+    if (!order) {
+      reviewLogger.warn('Order not found for review submission', {
         action: 'createReview',
         trackingToken: data.tracking_token,
       });
-      throw new AppError('Transaction not found', 404);
+      throw new AppError('Order not found', 404);
     }
 
-    if (transaction.status !== TransactionStatus.COMPLETED) {
-      reviewLogger.warn('Transaction not completed, cannot review', {
+    if (order.status !== OrderStatus.COMPLETED) {
+      reviewLogger.warn('Order not completed, cannot review', {
         action: 'createReview',
-        transactionId: transaction.id,
-        status: transaction.status,
+        orderId: order.id,
+        status: order.status,
       });
-      throw new AppError('You can only review completed transactions', 400);
+      throw new AppError('You can only review completed orders', 400);
     }
 
-    if (transaction.review) {
-      reviewLogger.warn('Review already exists for transaction', {
+    if (order.review) {
+      reviewLogger.warn('Review already exists for order', {
         action: 'createReview',
-        transactionId: transaction.id,
+        orderId: order.id,
       });
-      throw new AppError('A review already exists for this transaction', 400);
+      throw new AppError('A review already exists for this order', 400);
     }
 
     const buyerName = data.buyer_name?.trim() || null;
 
     const review = await prisma.review.create({
       data: {
-        transaction_id: transaction.id,
-        vendor_id: transaction.vendor_id,
+        order_id: order.id,
+        vendor_id: order.vendor_id,
         buyer_id: data.buyer_id ?? null,
         buyer_name: buyerName,
         overall_rating: data.overall_rating,
@@ -64,11 +64,11 @@ export class ReviewService {
     reviewLogger.info('Review created', {
       action: 'createReview',
       reviewId: review.id,
-      transactionId: transaction.id,
-      vendorId: transaction.vendor_id,
+      orderId: order.id,
+      vendorId: order.vendor_id,
     });
 
-    TrustMetricsService.recalculateVendorTrustMetrics(transaction.vendor_id);
+    TrustMetricsService.recalculateVendorTrustMetrics(order.vendor_id);
 
     return {
       id: review.id,
@@ -85,7 +85,7 @@ export class ReviewService {
   static async editReviewText(data: EditReviewTextInput): Promise<ReviewData> {
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const transaction = await prisma.transaction.findUnique({
+    const order = await prisma.order.findUnique({
       where: { tracking_token: data.tracking_token },
       select: {
         id: true,
@@ -104,27 +104,27 @@ export class ReviewService {
       },
     });
 
-    if (!transaction) {
-      throw new AppError('Transaction not found', 404);
+    if (!order) {
+      throw new AppError('Order not found', 404);
     }
 
-    if (!transaction.review) {
-      throw new AppError('No review found for this transaction', 404);
+    if (!order.review) {
+      throw new AppError('No review found for this order', 404);
     }
 
-    const ageMs = Date.now() - transaction.review.created_at.getTime();
+    const ageMs = Date.now() - order.review.created_at.getTime();
     if (ageMs > SEVEN_DAYS_MS) {
       throw new AppError('The 7-day edit window for this review has closed', 403);
     }
 
     const updated = await prisma.review.update({
-      where: { id: transaction.review.id },
+      where: { id: order.review.id },
       data: { review_text: data.review_text ?? null },
     });
 
     reviewLogger.info('Review text edited', {
       action: 'editReviewText',
-      reviewId: transaction.review.id,
+      reviewId: order.review.id,
     });
 
     return {

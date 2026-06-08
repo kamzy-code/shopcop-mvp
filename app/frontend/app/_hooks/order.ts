@@ -1,25 +1,25 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
 import {
-  CreateTransactionInput,
-  Transaction,
-  TransactionAnalytics,
-  TransactionFilters,
-  TransactionListItem,
-  TransactionListResponse,
-  TransactionStatus,
-  UpdateTransactionInput,
+  CreateOrderInput,
+  Order,
+  OrderAnalytics,
+  OrderFilters,
+  OrderListItem,
+  OrderListResponse,
+  OrderStatus,
+  UpdateOrderInput,
 } from '../_types';
 
-type TransactionListApiResponse = {
+type OrderListApiResponse = {
   success: boolean;
-  data: TransactionListItem[];
-  meta: TransactionListResponse['meta'];
+  data: OrderListItem[];
+  meta: OrderListResponse['meta'];
 };
 
-export const useTransactions = (filters?: TransactionFilters) =>
-  useQuery<TransactionListResponse>({
-    queryKey: ['transactions', filters],
+export const useOrders = (filters?: OrderFilters) =>
+  useQuery<OrderListResponse>({
+    queryKey: ['orders', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters) {
@@ -30,29 +30,29 @@ export const useTransactions = (filters?: TransactionFilters) =>
         });
       }
       const query = params.toString();
-      const res = (await apiFetch<TransactionListItem[]>(`/transactions${query ? `?${query}` : ''}`)) as unknown as TransactionListApiResponse;
+      const res = (await apiFetch<OrderListItem[]>(`/orders${query ? `?${query}` : ''}`)) as unknown as OrderListApiResponse;
       return { data: res.data, meta: res.meta };
     },
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   });
 
-export const useTransaction = (id: string) =>
-  useQuery<Transaction>({
-    queryKey: ['transaction', id],
+export const useOrder = (id: string) =>
+  useQuery<Order>({
+    queryKey: ['order', id],
     queryFn: async () => {
-      const res = await apiFetch<Transaction>(`/transactions/${id}`);
+      const res = await apiFetch<Order>(`/orders/${id}`);
       return res.data;
     },
     enabled: !!id,
     staleTime: 30 * 1000,
   });
 
-export const useTransactionByToken = (token: string) =>
-  useQuery<Transaction>({
-    queryKey: ['transaction-public', token],
+export const useOrderByToken = (token: string) =>
+  useQuery<Order>({
+    queryKey: ['order-public', token],
     queryFn: async () => {
-      const res = await apiFetch<Transaction>(`/track/${token}`);
+      const res = await apiFetch<Order>(`/track/${token}`);
       return res.data;
     },
     enabled: !!token,
@@ -60,46 +60,46 @@ export const useTransactionByToken = (token: string) =>
     retry: 1,
   });
 
-export const useCreateTransaction = () => {
+export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateTransactionInput) =>
-      apiFetch<Transaction>('/transactions', {
+    mutationFn: (data: CreateOrderInput) =>
+      apiFetch<Order>('/orders', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 };
 
-export const useUpdateTransaction = () => {
+export const useUpdateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTransactionInput }) =>
-      apiFetch<Transaction>(`/transactions/${id}`, {
+    mutationFn: ({ id, data }: { id: string; data: UpdateOrderInput }) =>
+      apiFetch<Order>(`/orders/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
     },
   });
 };
 
-export const useUpdateTransactionStatus = () => {
+export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, note }: { id: string; status: TransactionStatus; note?: string }) =>
-      apiFetch<Transaction>(`/transactions/${id}/status`, {
+    mutationFn: ({ id, status, note }: { id: string; status: OrderStatus; note?: string }) =>
+      apiFetch<Order>(`/orders/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status, note }),
       }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
     },
   });
 };
@@ -108,28 +108,28 @@ export const useConfirmPayment = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payment_notes }: { id: string; payment_notes?: string }) =>
-      apiFetch<Transaction>(`/transactions/${id}/confirm-payment`, {
+      apiFetch<Order>(`/orders/${id}/confirm-payment`, {
         method: 'PATCH',
         body: JSON.stringify({ payment_notes }),
       }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 };
 
-export const useCancelTransaction = () => {
+export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      apiFetch<Transaction>(`/transactions/${id}`, {
+      apiFetch<Order>(`/orders/${id}`, {
         method: 'DELETE',
         body: JSON.stringify({ reason }),
       }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
     },
   });
 };
@@ -143,22 +143,22 @@ export const useSubmitPaymentProof = (token: string) => {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+      queryClient.invalidateQueries({ queryKey: ['order-public', token] });
     },
   });
 };
 
-export const useTransactionAnalytics = () =>
-  useQuery<TransactionAnalytics>({
-    queryKey: ['transaction-analytics'],
+export const useOrderAnalytics = () =>
+  useQuery<OrderAnalytics>({
+    queryKey: ['order-analytics'],
     queryFn: async () => {
-      const res = await apiFetch<TransactionAnalytics>('/transactions/analytics/summary');
+      const res = await apiFetch<OrderAnalytics>('/orders/analytics/summary');
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
   });
 
-export const useBuyerCancelTransaction = (token: string) => {
+export const useBuyerCancelOrder = (token: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { reason: string }) =>
@@ -167,7 +167,7 @@ export const useBuyerCancelTransaction = (token: string) => {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+      queryClient.invalidateQueries({ queryKey: ['order-public', token] });
     },
   });
 };
@@ -181,7 +181,7 @@ export const useBuyerConfirmDelivery = (token: string) => {
         body: JSON.stringify({}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+      queryClient.invalidateQueries({ queryKey: ['order-public', token] });
     },
   });
 };
@@ -195,7 +195,7 @@ export const useBuyerRequestRefund = (token: string) => {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+      queryClient.invalidateQueries({ queryKey: ['order-public', token] });
     },
   });
 };
@@ -209,12 +209,12 @@ export const useBuyerCloseResolution = (token: string) => {
         body: JSON.stringify({}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transaction-public', token] });
+      queryClient.invalidateQueries({ queryKey: ['order-public', token] });
     },
   });
 };
 
-export const useUpdateTransactionStatusWithRefund = () => {
+export const useUpdateOrderStatusWithRefund = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -225,18 +225,18 @@ export const useUpdateTransactionStatusWithRefund = () => {
       refund_vendor_notes,
     }: {
       id: string;
-      status: TransactionStatus;
+      status: OrderStatus;
       note?: string;
       refund_amount?: number;
       refund_vendor_notes?: string;
     }) =>
-      apiFetch<Transaction>(`/transactions/${id}/refund-status`, {
+      apiFetch<Order>(`/orders/${id}/refund-status`, {
         method: 'PATCH',
         body: JSON.stringify({ status, note, refund_amount, refund_vendor_notes }),
       }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.id] });
     },
   });
 };

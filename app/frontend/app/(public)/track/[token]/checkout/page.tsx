@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import { Box, Button, Flex, Input, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuCheck, LuCopy, LuPackage, LuStore } from 'react-icons/lu';
-import { useTransactionByToken, useSubmitPaymentProof } from '@/app/_hooks/transaction';
+import { useOrderByToken, useSubmitPaymentProof } from '@/app/_hooks/order';
 import { useUploadPublicMedia } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { formatCurrency, isVideoUrl } from '@/app/_lib/transactionHelpers';
-import { Transaction, TransactionVendor } from '@/app/_types';
+import { formatCurrency, isVideoUrl } from '@/app/_lib/orderHelpers';
+import { Order, OrderVendor } from '@/app/_types';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
@@ -40,7 +40,7 @@ export default function CheckoutPage() {
   const token = params?.token as string;
   const router = useRouter();
 
-  const { data: tx, isLoading } = useTransactionByToken(token);
+  const { data: tx, isLoading } = useOrderByToken(token);
 
   const [email, setEmail] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -60,7 +60,7 @@ export default function CheckoutPage() {
   if (isLoading) return <FullPageSpinner />;
   if (!tx || tx.payment_status !== 'UNPAID') return null;
 
-  const vendor = tx.vendor as TransactionVendor;
+  const vendor = tx.vendor as OrderVendor;
   const hasPaymentDetails = vendor?.bank_name || vendor?.account_number || vendor?.account_name;
 
   const handleSubmit = async () => {
@@ -211,7 +211,7 @@ export default function CheckoutPage() {
               </Text>
             </Flex>
             <Stack gap={2.5}>
-              {(tx.items as Transaction['items']).map((item, i) => (
+              {(tx.items as Order['items']).map((item, i) => (
                 <Flex key={i} align="center" gap={2.5}>
                   <Box
                     w={8}

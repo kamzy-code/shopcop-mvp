@@ -1,31 +1,31 @@
 import { NextFunction, Request, Response } from 'express';
-import { TransactionService } from '@services/transactionService.js';
+import { OrderService } from '@services/orderService.js';
 import {
-  createTransactionSchema,
-  updateTransactionSchema,
-  updateTransactionStatusSchema,
+  createOrderSchema,
+  updateOrderSchema,
+  updateOrderStatusSchema,
   confirmPaymentSchema,
-  cancelTransactionSchema,
-  transactionFiltersSchema,
+  cancelOrderSchema,
+  orderFiltersSchema,
   submitPaymentProofSchema,
-  buyerCancelTransactionSchema,
+  buyerCancelOrderSchema,
   confirmDeliverySchema,
   updateRefundStatusSchema,
   buyerRefundRequestSchema,
-} from '@validators/transactionValidator.js';
-import { transactionLogger } from '@utils/logger.js';
+} from '@validators/orderValidator.js';
+import { orderLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
-import { DeliveryMethod, TransactionStatus } from '../generated/prisma/enums.js';
+import { DeliveryMethod, OrderStatus } from '../generated/prisma/enums.js';
 
-export class TransactionController {
+export class OrderController {
   // ─── Create ──────────────────────────────────────────────────────────────────
 
   /**
-   * Create a new transaction with items.
+   * Create a new order with items.
    * Validates input via Zod, snapshots catalog product details, and generates a reference and tracking token.
    *
-   * @route  POST /api/v1/transactions
+   * @route  POST /api/v1/orders
    * @access Vendor (authenticated)
    * @param req.body.delivery_method - PICKUP | DISPATCH | WAYBILL
    * @param req.body.items - Array of line items (min 1)
@@ -37,17 +37,17 @@ export class TransactionController {
    * @param req.body.order_notes - Notes visible to buyer (optional)
    * @param req.body.vendor_notes - Internal notes (optional)
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 201 `{ success, data: Transaction, message }`
+   * @returns 201 `{ success, data: Order, message }`
    * @throws {AppError} 400 — Invalid input or profile incomplete
    * @throws {AppError} 404 — Vendor profile not found
    */
-  static async createTransaction(req: Request, res: Response, next: NextFunction) {
-    const action = 'createTransaction';
+  static async createOrder(req: Request, res: Response, next: NextFunction) {
+    const action = 'createOrder';
     const userId = req.user!.userId;
 
-    const parsed = createTransactionSchema.safeParse(req.body);
+    const parsed = createOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid transaction input', {
+      orderLogger.warn('Invalid order input', {
         action,
         userId,
         issues: parsed.error.issues,
@@ -56,22 +56,22 @@ export class TransactionController {
     }
 
     try {
-      const transaction = await TransactionService.createTransaction(userId, {
+      const order = await OrderService.createOrder(userId, {
         ...parsed.data,
         buyer_email: parsed.data.buyer_email || undefined,
       });
-      transactionLogger.info('Transaction created', {
+      orderLogger.info('Order created', {
         action,
         userId,
-        transactionId: transaction.id,
+        orderId: order.id,
       });
       res.status(201).json({
         success: true,
-        data: transaction,
-        message: 'Transaction created successfully',
+        data: order,
+        message: 'Order created successfully',
       });
     } catch (error) {
-      transactionLogger.error('Failed to create transaction', { action, userId, error });
+      orderLogger.error('Failed to create order', { action, userId, error });
       next(error);
     }
   }
@@ -79,11 +79,11 @@ export class TransactionController {
   // ─── List ─────────────────────────────────────────────────────────────────────
 
   /**
-   * List the vendor's transactions with filtering, sorting, and pagination.
+   * List the vendor's orders with filtering, sorting, and pagination.
    *
-   * @route  GET /api/v1/transactions
+   * @route  GET /api/v1/orders
    * @access Vendor (authenticated)
-   * @param req.query.status - Filter by transaction status
+   * @param req.query.status - Filter by order status
    * @param req.query.refund_status - Filter by refund status
    * @param req.query.payment_status - Filter by payment status
    * @param req.query.search - Search buyer_email or reference
@@ -93,16 +93,16 @@ export class TransactionController {
    * @param req.query.from_date - Filter from date
    * @param req.query.to_date - Filter to date
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction[], meta: PaginationMeta }`
+   * @returns 200 `{ success, data: Order[], meta: PaginationMeta }`
    * @throws {AppError} 400 — Invalid filter input
    */
-  static async getTransactions(req: Request, res: Response, next: NextFunction) {
-    const action = 'getTransactions';
+  static async getOrders(req: Request, res: Response, next: NextFunction) {
+    const action = 'getOrders';
     const userId = req.user!.userId;
 
-    const parsed = transactionFiltersSchema.safeParse(req.query);
+    const parsed = orderFiltersSchema.safeParse(req.query);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid transaction filters', {
+      orderLogger.warn('Invalid order filters', {
         action,
         userId,
         issues: parsed.error.issues,
@@ -111,13 +111,13 @@ export class TransactionController {
     }
 
     try {
-      const { transactions, meta } = await TransactionService.getVendorTransactions(
+      const { orders, meta } = await OrderService.getVendorOrders(
         userId,
         parsed.data
       );
-      res.status(200).json({ success: true, data: transactions, meta });
+      res.status(200).json({ success: true, data: orders, meta });
     } catch (error) {
-      transactionLogger.error('Failed to fetch transactions', { action, userId, error });
+      orderLogger.error('Failed to fetch orders', { action, userId, error });
       next(error);
     }
   }
@@ -125,29 +125,29 @@ export class TransactionController {
   // ─── Get single ───────────────────────────────────────────────────────────────
 
   /**
-   * Get a single transaction by ID. Verifies vendor ownership.
+   * Get a single order by ID. Verifies vendor ownership.
    *
-   * @route  GET /api/v1/transactions/:id
+   * @route  GET /api/v1/orders/:id
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction }`
-   * @throws {AppError} 404 — Transaction not found
-   * @throws {AppError} 403 — Not authorized to view this transaction
+   * @returns 200 `{ success, data: Order }`
+   * @throws {AppError} 404 — Order not found
+   * @throws {AppError} 403 — Not authorized to view this order
    */
-  static async getTransaction(req: Request, res: Response, next: NextFunction) {
-    const action = 'getTransaction';
+  static async getOrder(req: Request, res: Response, next: NextFunction) {
+    const action = 'getOrder';
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
     try {
-      const transaction = await TransactionService.getTransaction(id, userId);
-      res.status(200).json({ success: true, data: transaction });
+      const order = await OrderService.getOrder(id, userId);
+      res.status(200).json({ success: true, data: order });
     } catch (error) {
-      transactionLogger.error('Failed to fetch transaction', {
+      orderLogger.error('Failed to fetch order', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -157,21 +157,21 @@ export class TransactionController {
   // ─── Public tracking (no auth) ────────────────────────────────────────────────
 
   /**
-   * Get a transaction by tracking token (public). Strips vendor_notes from the response.
+   * Get an order by tracking token (public). Strips vendor_notes from the response.
    *
    * @route  GET /api/v1/track/:token
    * @access Public
    * @param req.params.token - Tracking token from the shareable link
-   * @returns 200 `{ success, data: Transaction (buyer-safe, no vendor_notes) }`
-   * @throws {AppError} 404 — Transaction not found
+   * @returns 200 `{ success, data: Order (buyer-safe, no vendor_notes) }`
+   * @throws {AppError} 404 — Order not found
    */
-  static async getTransactionByToken(req: Request, res: Response, next: NextFunction) {
+  static async getOrderByToken(req: Request, res: Response, next: NextFunction) {
     const token = req.params.token as string;
 
     try {
-      const transaction = await TransactionService.getTransactionByToken(token);
+      const order = await OrderService.getOrderByToken(token);
 
-      const { vendor_notes: _omit, ...buyerSafe } = transaction;
+      const { vendor_notes: _omit, ...buyerSafe } = order;
       void _omit;
 
       res.status(200).json({ success: true, data: buyerSafe });
@@ -183,16 +183,16 @@ export class TransactionController {
   // ─── Buyer: submit payment proof (public) ────────────────────────────────────
 
   /**
-   * Submit payment proof for an UNPAID transaction (public).
+   * Submit payment proof for an UNPAID order (public).
    *
    * @route  POST /api/v1/track/:token/submit-payment
    * @access Public
    * @param req.params.token - Tracking token from the shareable link
    * @param req.body.buyer_email - Buyer's email (optional)
    * @param req.body.payment_proof_url - URL of the payment proof screenshot (optional)
-   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @returns 200 `{ success, data: Order (buyer-safe), message }`
    * @throws {AppError} 400 — Invalid input or proof already submitted
-   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 404 — Order not found
    */
   static async submitPaymentProof(req: Request, res: Response, next: NextFunction) {
     const action = 'submitPaymentProof';
@@ -200,7 +200,7 @@ export class TransactionController {
 
     const parsed = submitPaymentProofSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid payment proof input', {
+      orderLogger.warn('Invalid payment proof input', {
         action,
         token,
         issues: parsed.error.issues,
@@ -209,18 +209,18 @@ export class TransactionController {
     }
 
     try {
-      const transaction = await TransactionService.submitPaymentProof(token, {
+      const order = await OrderService.submitPaymentProof(token, {
         buyer_email: parsed.data.buyer_email || undefined,
         payment_proof_url: parsed.data.payment_proof_url || undefined,
       });
 
-      const { vendor_notes: _omit, ...buyerSafe } = transaction as typeof transaction & { vendor_notes?: unknown };
+      const { vendor_notes: _omit, ...buyerSafe } = order as typeof order & { vendor_notes?: unknown };
       void _omit;
 
-      transactionLogger.info('Payment proof submitted', {
+      orderLogger.info('Payment proof submitted', {
         action,
         token,
-        transactionId: transaction.id,
+        orderId: order.id,
         hasProofUrl: !!parsed.data.payment_proof_url,
         hasBuyerEmail: !!parsed.data.buyer_email,
       });
@@ -231,7 +231,7 @@ export class TransactionController {
         message: 'Payment proof submitted successfully',
       });
     } catch (error) {
-      transactionLogger.error('Failed to submit payment proof', { action, token, error });
+      orderLogger.error('Failed to submit payment proof', { action, token, error });
       next(error);
     }
   }
@@ -239,12 +239,12 @@ export class TransactionController {
   // ─── Update (before CONFIRMED) ────────────────────────────────────────────────
 
   /**
-   * Update transaction metadata, items, or both. Only allowed while PENDING.
+   * Update order metadata, items, or both. Only allowed while PENDING.
    * Providing an items array replaces all existing items.
    *
-   * @route  PATCH /api/v1/transactions/:id
+   * @route  PATCH /api/v1/orders/:id
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.body.buyer_email - Buyer's email (optional)
    * @param req.body.delivery_method - PICKUP | DISPATCH | WAYBILL (optional)
    * @param req.body.items - Replacement items array (optional)
@@ -253,43 +253,43 @@ export class TransactionController {
    * @param req.body.order_notes - Notes visible to buyer (optional)
    * @param req.body.vendor_notes - Internal notes (optional)
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction, message }`
-   * @throws {AppError} 400 — Invalid input or transaction not in PENDING status
-   * @throws {AppError} 404 — Transaction not found
+   * @returns 200 `{ success, data: Order, message }`
+   * @throws {AppError} 400 — Invalid input or order not in PENDING status
+   * @throws {AppError} 404 — Order not found
    * @throws {AppError} 403 — Not authorized
    */
-  static async updateTransaction(req: Request, res: Response, next: NextFunction) {
-    const action = 'updateTransaction';
+  static async updateOrder(req: Request, res: Response, next: NextFunction) {
+    const action = 'updateOrder';
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
-    const parsed = updateTransactionSchema.safeParse(req.body);
+    const parsed = updateOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid transaction update input', {
+      orderLogger.warn('Invalid order update input', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         issues: parsed.error.issues,
       });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const transaction = await TransactionService.updateTransaction(id, userId, {
+      const order = await OrderService.updateOrder(id, userId, {
         ...parsed.data,
         delivery_method: parsed.data.delivery_method as DeliveryMethod | undefined,
       });
-      transactionLogger.info('Transaction updated', { action, userId, transactionId: id });
+      orderLogger.info('Order updated', { action, userId, orderId: id });
       res.status(200).json({
         success: true,
-        data: transaction,
-        message: 'Transaction updated successfully',
+        data: order,
+        message: 'Order updated successfully',
       });
     } catch (error) {
-      transactionLogger.error('Failed to update transaction', {
+      orderLogger.error('Failed to update order', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -299,18 +299,18 @@ export class TransactionController {
   // ─── Status update ────────────────────────────────────────────────────────────
 
   /**
-   * Advance the transaction along the valid state machine.
-   * CONFIRMED and CANCELLED transitions are handled by dedicated endpoints (confirmPayment / cancelTransaction).
+   * Advance the order along the valid state machine.
+   * CONFIRMED and CANCELLED transitions are handled by dedicated endpoints (confirmPayment / cancelOrder).
    *
-   * @route  PATCH /api/v1/transactions/:id/status
+   * @route  PATCH /api/v1/orders/:id/status
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.body.status - Target status (IN_PROGRESS | READY_FOR_DISPATCH | SHIPPED | DELIVERED | COMPLETED | REFUND_REQUESTED | REFUND_IN_PROGRESS | REFUNDED | RESOLVED)
    * @param req.body.note - Optional note for the status history
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction, message }`
+   * @returns 200 `{ success, data: Order, message }`
    * @throws {AppError} 400 — Invalid input or invalid status transition
-   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 404 — Order not found
    * @throws {AppError} 403 — Not authorized
    */
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
@@ -318,40 +318,40 @@ export class TransactionController {
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
-    const parsed = updateTransactionStatusSchema.safeParse(req.body);
+    const parsed = updateOrderStatusSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid status update input', {
+      orderLogger.warn('Invalid status update input', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         issues: parsed.error.issues,
       });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const transaction = await TransactionService.updateTransactionStatus(
+      const order = await OrderService.updateOrderStatus(
         id,
         userId,
-        parsed.data.status as TransactionStatus,
+        parsed.data.status as OrderStatus,
         parsed.data.note
       );
-      transactionLogger.info('Transaction status updated', {
+      orderLogger.info('Order status updated', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         status: parsed.data.status,
       });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: `Status updated to ${parsed.data.status}`,
       });
     } catch (error) {
-      transactionLogger.error('Failed to update status', {
+      orderLogger.error('Failed to update status', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -361,16 +361,16 @@ export class TransactionController {
   // ─── Confirm payment ──────────────────────────────────────────────────────────
 
   /**
-   * Confirm payment for a PENDING transaction. Deducts stock for catalog items and sets status to CONFIRMED.
+   * Confirm payment for a PENDING order. Deducts stock for catalog items and sets status to CONFIRMED.
    *
-   * @route  PATCH /api/v1/transactions/:id/confirm-payment
+   * @route  PATCH /api/v1/orders/:id/confirm-payment
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.body.payment_notes - Optional notes about the payment
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction, message }`
-   * @throws {AppError} 400 — Invalid input, transaction not PENDING, or insufficient stock
-   * @throws {AppError} 404 — Transaction not found
+   * @returns 200 `{ success, data: Order, message }`
+   * @throws {AppError} 400 — Invalid input, order not PENDING, or insufficient stock
+   * @throws {AppError} 404 — Order not found
    * @throws {AppError} 403 — Not authorized
    */
   static async confirmPayment(req: Request, res: Response, next: NextFunction) {
@@ -380,32 +380,32 @@ export class TransactionController {
 
     const parsed = confirmPaymentSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid payment confirmation input', {
+      orderLogger.warn('Invalid payment confirmation input', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         issues: parsed.error.issues,
       });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const transaction = await TransactionService.confirmPayment(
+      const order = await OrderService.confirmPayment(
         id,
         userId,
         parsed.data.payment_notes
       );
-      transactionLogger.info('Payment confirmed', { action, userId, transactionId: id });
+      orderLogger.info('Payment confirmed', { action, userId, orderId: id });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: 'Payment confirmed and stock updated',
       });
     } catch (error) {
-      transactionLogger.error('Failed to confirm payment', {
+      orderLogger.error('Failed to confirm payment', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -415,51 +415,51 @@ export class TransactionController {
   // ─── Cancel ───────────────────────────────────────────────────────────────────
 
   /**
-   * Cancel a cancellable transaction. Restores deducted stock for all items.
+   * Cancel a cancellable order. Restores deducted stock for all items.
    *
-   * @route  DELETE /api/v1/transactions/:id
+   * @route  DELETE /api/v1/orders/:id
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.body.reason - Cancellation reason (min 10 characters)
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
-   * @returns 200 `{ success, data: Transaction, message }`
-   * @throws {AppError} 400 — Invalid input or transaction not cancellable in current status
-   * @throws {AppError} 404 — Transaction not found
+   * @returns 200 `{ success, data: Order, message }`
+   * @throws {AppError} 400 — Invalid input or order not cancellable in current status
+   * @throws {AppError} 404 — Order not found
    * @throws {AppError} 403 — Not authorized
    */
-  static async cancelTransaction(req: Request, res: Response, next: NextFunction) {
-    const action = 'cancelTransaction';
+  static async cancelOrder(req: Request, res: Response, next: NextFunction) {
+    const action = 'cancelOrder';
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
-    const parsed = cancelTransactionSchema.safeParse(req.body);
+    const parsed = cancelOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid cancel transaction input', {
+      orderLogger.warn('Invalid cancel order input', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         issues: parsed.error.issues,
       });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const transaction = await TransactionService.cancelTransaction(
+      const order = await OrderService.cancelOrder(
         id,
         userId,
         parsed.data.reason
       );
-      transactionLogger.info('Transaction cancelled', { action, userId, transactionId: id });
+      orderLogger.info('Order cancelled', { action, userId, orderId: id });
       res.status(200).json({
         success: true,
-        data: transaction,
-        message: 'Transaction cancelled and stock restored',
+        data: order,
+        message: 'Order cancelled and stock restored',
       });
     } catch (error) {
-      transactionLogger.error('Failed to cancel transaction', {
+      orderLogger.error('Failed to cancel order', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -469,23 +469,23 @@ export class TransactionController {
   // ─── Buyer: cancel by token ───────────────────────────────────────────────────
 
   /**
-   * Cancel a PENDING transaction via tracking token (buyer-side).
+   * Cancel a PENDING order via tracking token (buyer-side).
    *
    * @route  POST /api/v1/track/:token/cancel
    * @access Public (token-based)
    * @param req.params.token - Tracking token from the shareable link
    * @param req.body.reason - Cancellation reason (min 10 characters)
-   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @returns 200 `{ success, data: Order (buyer-safe), message }`
    * @throws {AppError} 400 — Invalid input or not PENDING
-   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 404 — Order not found
    */
-  static async buyerCancelTransaction(req: Request, res: Response, next: NextFunction) {
-    const action = 'buyerCancelTransaction';
+  static async buyerCancelOrder(req: Request, res: Response, next: NextFunction) {
+    const action = 'buyerCancelOrder';
     const token = req.params.token as string;
 
-    const parsed = buyerCancelTransactionSchema.safeParse(req.body);
+    const parsed = buyerCancelOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid buyer cancel input', {
+      orderLogger.warn('Invalid buyer cancel input', {
         action,
         token,
         issues: parsed.error.issues,
@@ -494,18 +494,18 @@ export class TransactionController {
     }
 
     try {
-      const transaction = await TransactionService.buyerCancelTransaction(
+      const order = await OrderService.buyerCancelOrder(
         token,
         parsed.data.reason
       );
-      transactionLogger.info('Buyer cancelled transaction', { action, token });
+      orderLogger.info('Buyer cancelled order', { action, token });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: 'Order cancelled successfully',
       });
     } catch (error) {
-      transactionLogger.error('Failed to cancel transaction as buyer', { action, token, error });
+      orderLogger.error('Failed to cancel order as buyer', { action, token, error });
       next(error);
     }
   }
@@ -513,14 +513,14 @@ export class TransactionController {
   // ─── Buyer: confirm delivery by token ─────────────────────────────────────────
 
   /**
-   * Confirm delivery for a DELIVERED transaction via tracking token (buyer-side).
+   * Confirm delivery for a DELIVERED order via tracking token (buyer-side).
    *
    * @route  POST /api/v1/track/:token/confirm-delivery
    * @access Public (token-based)
    * @param req.params.token - Tracking token from the shareable link
-   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @returns 200 `{ success, data: Order (buyer-safe), message }`
    * @throws {AppError} 400 — Invalid input or not DELIVERED
-   * @throws {AppError} 404 — Transaction not found
+   * @throws {AppError} 404 — Order not found
    */
   static async buyerConfirmDelivery(req: Request, res: Response, next: NextFunction) {
     const action = 'buyerConfirmDelivery';
@@ -528,7 +528,7 @@ export class TransactionController {
 
     const parsed = confirmDeliverySchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid confirm delivery input', {
+      orderLogger.warn('Invalid confirm delivery input', {
         action,
         token,
         issues: parsed.error.issues,
@@ -537,35 +537,35 @@ export class TransactionController {
     }
 
     try {
-      const transaction = await TransactionService.buyerConfirmDelivery(token);
-      transactionLogger.info('Buyer confirmed delivery', { action, token });
+      const order = await OrderService.buyerConfirmDelivery(token);
+      orderLogger.info('Buyer confirmed delivery', { action, token });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: 'Delivery confirmed. Order completed!',
       });
     } catch (error) {
-      transactionLogger.error('Failed to confirm delivery as buyer', { action, token, error });
+      orderLogger.error('Failed to confirm delivery as buyer', { action, token, error });
       next(error);
     }
   }
 
-  // ─── Buyer: close a REFUNDED or RESOLVED transaction ─────────────────────────
+  // ─── Buyer: close a REFUNDED or RESOLVED order ─────────────────────────
 
   static async buyerCloseResolution(req: Request, res: Response, next: NextFunction) {
     const action = 'buyerCloseResolution';
     const token = req.params.token as string;
 
     try {
-      const transaction = await TransactionService.buyerCloseResolution(token);
-      transactionLogger.info('Buyer closed resolution', { action, token });
+      const order = await OrderService.buyerCloseResolution(token);
+      orderLogger.info('Buyer closed resolution', { action, token });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: 'Order closed successfully.',
       });
     } catch (error) {
-      transactionLogger.error('Failed to close resolution as buyer', { action, token, error });
+      orderLogger.error('Failed to close resolution as buyer', { action, token, error });
       next(error);
     }
   }
@@ -573,13 +573,13 @@ export class TransactionController {
   // ─── Buyer: request refund by token ───────────────────────────────────────────
 
   /**
-   * Request a refund for a DELIVERED or COMPLETED transaction via tracking token.
+   * Request a refund for a DELIVERED or COMPLETED order via tracking token.
    *
    * @route  POST /api/v1/track/:token/request-refund
    * @access Public (token-based)
    * @param req.params.token - Tracking token
    * @param req.body.reason - Refund reason (min 10 characters)
-   * @returns 200 `{ success, data: Transaction (buyer-safe), message }`
+   * @returns 200 `{ success, data: Order (buyer-safe), message }`
    */
   static async buyerRequestRefund(req: Request, res: Response, next: NextFunction) {
     const action = 'buyerRequestRefund';
@@ -587,7 +587,7 @@ export class TransactionController {
 
     const parsed = buyerRefundRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid buyer refund request input', {
+      orderLogger.warn('Invalid buyer refund request input', {
         action,
         token,
         issues: parsed.error.issues,
@@ -596,18 +596,18 @@ export class TransactionController {
     }
 
     try {
-      const transaction = await TransactionService.buyerRequestRefund(
+      const order = await OrderService.buyerRequestRefund(
         token,
         parsed.data.reason
       );
-      transactionLogger.info('Buyer requested refund', { action, token });
+      orderLogger.info('Buyer requested refund', { action, token });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: 'Refund requested successfully',
       });
     } catch (error) {
-      transactionLogger.error('Failed to request refund as buyer', { action, token, error });
+      orderLogger.error('Failed to request refund as buyer', { action, token, error });
       next(error);
     }
   }
@@ -617,14 +617,14 @@ export class TransactionController {
   /**
    * Advance status with optional refund_amount and refund_vendor_notes.
    *
-   * @route  PATCH /api/v1/transactions/:id/refund-status
+   * @route  PATCH /api/v1/orders/:id/refund-status
    * @access Vendor (authenticated)
-   * @param req.params.id - Transaction ID
+   * @param req.params.id - Order ID
    * @param req.body.status - Target status
    * @param req.body.note - Optional note
    * @param req.body.refund_amount - Optional refund amount
    * @param req.body.refund_vendor_notes - Optional internal notes about refund
-   * @returns 200 `{ success, data: Transaction, message }`
+   * @returns 200 `{ success, data: Order, message }`
    */
   static async updateRefundStatus(req: Request, res: Response, next: NextFunction) {
     const action = 'updateRefundStatus';
@@ -633,40 +633,40 @@ export class TransactionController {
 
     const parsed = updateRefundStatusSchema.safeParse(req.body);
     if (!parsed.success) {
-      transactionLogger.warn('Invalid refund status update input', {
+      orderLogger.warn('Invalid refund status update input', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         issues: parsed.error.issues,
       });
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const transaction = await TransactionService.updateTransactionStatusWithRefund(
+      const order = await OrderService.updateOrderStatusWithRefund(
         id,
         userId,
-        parsed.data.status as TransactionStatus,
+        parsed.data.status as OrderStatus,
         parsed.data.note,
         parsed.data.refund_amount,
         parsed.data.refund_vendor_notes,
       );
-      transactionLogger.info('Refund status updated', {
+      orderLogger.info('Refund status updated', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         status: parsed.data.status,
       });
       res.status(200).json({
         success: true,
-        data: transaction,
+        data: order,
         message: `Status updated to ${parsed.data.status}`,
       });
     } catch (error) {
-      transactionLogger.error('Failed to update refund status', {
+      orderLogger.error('Failed to update refund status', {
         action,
         userId,
-        transactionId: id,
+        orderId: id,
         error,
       });
       next(error);
@@ -676,9 +676,9 @@ export class TransactionController {
   // ─── Analytics ────────────────────────────────────────────────────────────────
 
   /**
-   * Get monthly and all-time analytics for the vendor's transactions.
+   * Get monthly and all-time analytics for the vendor's orders.
    *
-   * @route  GET /api/v1/transactions/analytics/summary
+   * @route  GET /api/v1/orders/analytics/summary
    * @access Vendor (authenticated)
    * @param req.user.userId - Authenticated user's ID (set by auth middleware)
    * @returns 200 `{ success, data: { all_time_completed, this_month: { total_orders, completed, revenue, completion_rate, refund_rate, by_status } } }`
@@ -688,10 +688,10 @@ export class TransactionController {
     const userId = req.user!.userId;
 
     try {
-      const summary = await TransactionService.getAnalyticsSummary(userId);
+      const summary = await OrderService.getAnalyticsSummary(userId);
       res.status(200).json({ success: true, data: summary });
     } catch (error) {
-      transactionLogger.error('Failed to fetch analytics', { action, userId, error });
+      orderLogger.error('Failed to fetch analytics', { action, userId, error });
       next(error);
     }
   }

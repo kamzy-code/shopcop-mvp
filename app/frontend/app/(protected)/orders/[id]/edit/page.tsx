@@ -19,12 +19,12 @@ import { LuArrowLeft, LuPackage, LuPlus, LuTrash2, LuX } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
-import { useTransaction, useUpdateTransaction } from '@/app/_hooks/transaction';
+import { useOrder, useUpdateOrder } from '@/app/_hooks/order';
 import { useProducts } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
-import { TransactionEditData, transactionEditSchema } from '@/app/validators/transactionschema';
+import { OrderEditData, orderEditSchema } from '@/app/validators/orderSchema';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
-import { formatCurrency } from '@/app/_lib/transactionHelpers';
+import { formatCurrency } from '@/app/_lib/orderHelpers';
 
 const DELIVERY_METHODS = [
   { value: 'PICKUP', label: 'Pickup' },
@@ -159,14 +159,14 @@ function CatalogPickerPanel({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function EditTransactionPage() {
+export default function EditOrderPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
 
-  const { data: tx, isLoading } = useTransaction(id);
+  const { data: tx, isLoading } = useOrder(id);
   const { data: products = [] } = useProducts();
-  const updateMutation = useUpdateTransaction();
+  const updateMutation = useUpdateOrder();
   const [showCatalog, setShowCatalog] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
 
@@ -177,8 +177,8 @@ export default function EditTransactionPage() {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<TransactionEditData>({
-    resolver: zodResolver(transactionEditSchema) as unknown as Resolver<TransactionEditData>,
+  } = useForm<OrderEditData>({
+    resolver: zodResolver(orderEditSchema) as unknown as Resolver<OrderEditData>,
     defaultValues: {
       delivery_method: 'PICKUP',
       expected_delivery_start: '',
@@ -202,7 +202,7 @@ export default function EditTransactionPage() {
   );
   const total = Math.max(0, subtotal + Number(watchDeliveryFee) - Number(watchDiscount));
 
-  // Pre-populate form once transaction loads
+  // Pre-populate form once order loads
   useEffect(() => {
     if (tx) {
       reset({
@@ -231,11 +231,11 @@ export default function EditTransactionPage() {
   // Redirect away if not PENDING
   useEffect(() => {
     if (tx && tx.status !== 'PENDING') {
-      router.replace(`/transactions/${id}`);
+      router.replace(`/orders/${id}`);
     }
   }, [tx, id, router]);
 
-  const onSubmit = async (data: TransactionEditData) => {
+  const onSubmit = async (data: OrderEditData) => {
     try {
       await updateMutation.mutateAsync({
         id,
@@ -256,12 +256,12 @@ export default function EditTransactionPage() {
           vendor_notes: data.vendor_notes || undefined,
         },
       });
-      toaster.create({ title: 'Transaction updated', type: 'success' });
-      router.push(`/transactions/${id}`);
+      toaster.create({ title: 'Order updated', type: 'success' });
+      router.push(`/orders/${id}`);
     } catch (err) {
       setErrorModal({
         open: true,
-        title: 'Failed to update transaction',
+        title: 'Failed to update order',
         description: err instanceof Error ? err.message : 'Please try again.',
       });
     }
@@ -279,9 +279,9 @@ export default function EditTransactionPage() {
     return (
       <AppShell>
         <Box textAlign="center" py={16}>
-          <Text color="fg.muted">Transaction not found.</Text>
-          <Button mt={4} variant="outline" onClick={() => router.push('/transactions')}>
-            Back to Transactions
+          <Text color="fg.muted">Order not found.</Text>
+          <Button mt={4} variant="outline" onClick={() => router.push('/orders')}>
+            Back to Orders
           </Button>
         </Box>
       </AppShell>
@@ -321,13 +321,13 @@ export default function EditTransactionPage() {
             variant="ghost"
             size="sm"
             colorPalette="gray"
-            onClick={() => router.push(`/transactions/${id}`)}
+            onClick={() => router.push(`/orders/${id}`)}
           >
             <LuArrowLeft />
           </Button>
           <Box>
             <Heading textStyle="xl" fontWeight="bold" color="fg">
-              Edit Transaction
+              Edit Order
             </Heading>
             <Text textStyle="xs" color="fg.muted">
               {tx.reference}
@@ -655,7 +655,7 @@ export default function EditTransactionPage() {
                 type="button"
                 variant="outline"
                 colorPalette="gray"
-                onClick={() => router.push(`/transactions/${id}`)}
+                onClick={() => router.push(`/orders/${id}`)}
               >
                 Cancel
               </Button>
