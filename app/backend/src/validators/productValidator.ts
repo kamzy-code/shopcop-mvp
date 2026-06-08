@@ -7,8 +7,8 @@ const mediaItemSchema = z.object({
 });
 
 export const createProductSchema = z.object({
-  name: z.string().min(3, 'Product name must be at least 3 characters').max(200, 'Product name must be at most 200 characters'),
-  description: z.string().max(5000, 'Description must be at most 5000 characters').optional(),
+  name: z.string().trim().min(3, 'Product name must be at least 3 characters').max(200, 'Product name must be at most 200 characters'),
+  description: z.string().trim().max(5000, 'Description must be at most 5000 characters').optional(),
   price: z
     .number()
     .min(100, 'Price must be at least ₦100')

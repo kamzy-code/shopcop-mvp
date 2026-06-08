@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuCircleAlert, LuCircleCheck, LuClock, LuPackage, LuPencil, LuShoppingCart, LuTruck } from 'react-icons/lu';
@@ -358,6 +358,8 @@ export default function TrackingPage() {
   const [isEditingReview, setIsEditingReview] = useState(false);
   const [editReviewText, setEditReviewText] = useState('');
 
+  const now = useMemo(() => now, []);
+
   const cancelMutation = useBuyerCancelTransaction(token);
   const confirmDeliveryMutation = useBuyerConfirmDelivery(token);
   const closeResolutionMutation = useBuyerCloseResolution(token);
@@ -442,7 +444,7 @@ export default function TrackingPage() {
   const isWithinRefundWindow =
     vendor?.refund_duration_days == null ||   // no duration set → always within window
     !refundWindowStart ||
-    Date.now() - new Date(refundWindowStart).getTime() <= refundCutoffMs;
+    now - new Date(refundWindowStart).getTime() <= refundCutoffMs;
 
   const isRefundable =
     (tx.status === 'DELIVERED' || tx.status === 'COMPLETED') &&
@@ -453,7 +455,7 @@ export default function TrackingPage() {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   const canEditReview =
     !!tx.review &&
-    Date.now() - new Date(tx.review.created_at).getTime() < SEVEN_DAYS_MS;
+    now - new Date(tx.review.created_at).getTime() < SEVEN_DAYS_MS;
 
   const handleBuyerCancel = async () => {
     try {

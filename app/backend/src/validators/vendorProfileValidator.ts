@@ -31,18 +31,22 @@ function optionalUrl() {
 export const personalInfoSchema = z.object({
   first_name: z
     .string()
+    .trim()
     .min(2, 'First name must be at least 2 characters')
     .max(50, 'First name must be less than 50 characters')
     .regex(NAME_REGEX, `First name ${NAME_REGEX_MSG}`),
 
   middle_name: z
     .string()
+    .trim()
     .max(50, 'Middle name must be less than 50 characters')
     .regex(NAME_REGEX, `Middle name ${NAME_REGEX_MSG}`)
-    .optional(),
+    .optional()
+    .or(z.literal('')),
 
   last_name: z
     .string()
+    .trim()
     .min(2, 'Last name must be at least 2 characters')
     .max(50, 'Last name must be less than 50 characters')
     .regex(NAME_REGEX, `Last name ${NAME_REGEX_MSG}`),
@@ -70,18 +74,20 @@ export const personalInfoSchema = z.object({
 export const businessInfoSchema = z.object({
   business_name: z
     .string()
+    .trim()
     .min(3, 'Business name must be at least 3 characters')
     .max(100, 'Business name must be less than 100 characters'),
 
   business_description: z
     .string()
-    .min(50, 'Business description must be at least 50 characters')
+    .trim()
+    .min(25, 'Business description must be at least 25 characters')
     .max(500, 'Business description must be less than 500 characters'),
 
-  state: z.string().min(2, 'State is required'),
-  city: z.string().min(2, 'City is required'),
-  street_address: z.string().min(5, 'Street address is required'),
-  landmark: z.string().optional(),
+  state: z.string().trim().min(2, 'State is required'),
+  city: z.string().trim().min(2, 'City is required'),
+  street_address: z.string().trim().min(5, 'Street address is required'),
+  landmark: z.string().trim().optional(),
 
   primary_category: z.string().min(1, 'Primary category is required'),
   subcategories: z
@@ -89,10 +95,11 @@ export const businessInfoSchema = z.object({
     .min(1, 'Select at least one subcategory')
     .max(3, 'You can select up to 3 subcategories'),
 
-  bank_name: z.string().min(2, 'Bank name is required'),
-  account_number: z.string().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
+  bank_name: z.string().trim().min(2, 'Bank name is required'),
+  account_number: z.string().trim().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
   account_name: z
     .string()
+    .trim()
     .min(3, 'Account name is required')
     .max(100, 'Account name must be less than 100 characters'),
   payment_models: z.array(z.enum(PaymentModel)).min(1, 'Select at least one payment model'),
@@ -126,6 +133,7 @@ export const businessInfoSchema = z.object({
 
   refund_custom_notes: z
     .string()
+    .trim()
     .max(500, 'Refund notes must be less than 500 characters')
     .optional(),
 });

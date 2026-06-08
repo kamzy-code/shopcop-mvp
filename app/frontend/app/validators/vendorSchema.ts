@@ -86,25 +86,28 @@ export const businessInfoSchema = z
   .object({
     business_name: z
       .string()
+      .trim()
       .min(3, 'Business name must be at least 3 characters')
       .max(100, 'Business name must be less than 100 characters'),
     business_description: z
       .string()
-      .min(50, 'Description must be at least 50 characters')
+      .trim()
+      .min(25, 'Description must be at least 25 characters')
       .max(500, 'Description must be less than 500 characters'),
-    state: z.string().min(2, 'Please select a state'),
-    city: z.string().min(2, 'City is required'),
-    street_address: z.string().min(5, 'Street address is required'),
-    landmark: z.string().optional(),
-    primary_category: z.string().min(1, 'Please select a primary category'),
+    state: z.string().trim().min(2, 'Please select a state'),
+    city: z.string().trim().min(2, 'City is required'),
+    street_address: z.string().trim().min(5, 'Street address is required'),
+    landmark: z.string().trim().optional(),
+    primary_category: z.string().trim().min(1, 'Please select a primary category'),
     subcategories: z
       .array(z.string())
       .min(1, 'Select at least one subcategory')
       .max(3, 'Select up to 3 subcategories'),
-    bank_name: z.string().min(2, 'Bank name is required'),
-    account_number: z.string().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
+    bank_name: z.string().trim().min(2, 'Bank name is required'),
+    account_number: z.string().trim().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
     account_name: z
       .string()
+      .trim()
       .min(3, 'Account name is required')
       .max(100, 'Account name must be less than 100 characters'),
     payment_models: z
@@ -126,7 +129,7 @@ export const businessInfoSchema = z
       .array(z.string().max(200, 'Each condition must be 200 characters or fewer'))
       .max(10, 'You can add up to 10 conditions')
       .optional(),
-    refund_custom_notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
+    refund_custom_notes: z.string().trim().max(500, 'Notes must be less than 500 characters').optional(),
     instagram_handle: z.string().url('Enter a valid URL').optional().or(z.literal('')),
     tiktok_handle: z.string().url('Enter a valid URL').optional().or(z.literal('')),
     facebook_url: z.string().url('Enter a valid URL').optional().or(z.literal('')),
@@ -161,16 +164,20 @@ const NAME_REGEX = /^[a-zA-Z\s'-]+$/;
 export const personalInfoSchema = z.object({
   first_name: z
     .string()
+    .trim()
     .min(2, 'First name must be at least 2 characters')
     .max(50, 'First name must be at most 50 characters')
     .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only'),
   middle_name: z
     .string()
+    .trim()
     .max(50, 'Middle name must be at most 50 characters')
     .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   last_name: z
     .string()
+    .trim()
     .min(2, 'Last name must be at least 2 characters')
     .max(50, 'Last name must be at most 50 characters')
     .regex(NAME_REGEX, 'Letters, spaces, hyphens, and apostrophes only'),
@@ -195,8 +202,8 @@ export const personalInfoSchema = z.object({
 });
 
 export const ninSchema = z.object({
-  nin_full_name: z.string().min(2, 'Full legal name is required'),
-  nin_number: z.string().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
+  nin_full_name: z.string().trim().min(2, 'Full legal name is required'),
+  nin_number: z.string().trim().regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
 });
 
 export const CAC_COMPANY_TYPES = [
@@ -217,6 +224,7 @@ const SUIN_REGEX = /^[A-Z0-9-]+$/i;
 export const cacVerificationSchema = z.object({
   cac_rc_number: z
     .string()
+    .trim()
     .min(2, 'RC number is required')
     .max(20, 'RC number must be less than 20 characters')
     .regex(RC_REGEX, 'RC number can only contain letters, numbers, and hyphens'),
@@ -228,6 +236,7 @@ export const cacVerificationSchema = z.object({
 export const smedanVerificationSchema = z.object({
   smedan_suin: z
     .string()
+    .trim()
     .min(5, 'SUIN must be at least 5 characters')
     .max(50, 'SUIN must be less than 50 characters')
     .regex(SUIN_REGEX, 'SUIN can only contain letters, numbers, and hyphens'),
@@ -239,9 +248,10 @@ export const smedanVerificationSchema = z.object({
 export const productSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(3, 'Product name must be at least 3 characters')
     .max(200, 'Product name must be at most 200 characters'),
-  description: z.string().max(5000, 'Description must be at most 5000 characters').optional(),
+  description: z.string().trim().max(5000, 'Description must be at most 5000 characters').optional(),
   price: z
     .number()
     .min(100, 'Price must be at least ₦100')
