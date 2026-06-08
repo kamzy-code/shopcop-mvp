@@ -211,7 +211,7 @@ export default function VendorPublicProfilePage() {
               ) : (
                 <Stack gap={4}>
                   {/* Customer feedback ratings */}
-                  <CustomerFeedbackStats metrics={trustMetrics} />
+                  {/* <CustomerFeedbackStats metrics={trustMetrics} /> */}
 
                   {/* Segment pills — always visible so user can switch segments */}
                   <Flex gap={2} flexWrap="wrap">
