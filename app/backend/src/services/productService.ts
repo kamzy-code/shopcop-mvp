@@ -74,18 +74,28 @@ export class ProductService {
     return product;
   }
 
-  static async getProducts(userId: string) {
+  static async getProducts(
+    userId: string,
+    { page = 1, limit = 20 }: { page?: number; limit?: number } = {}
+  ) {
     const vendor = await this.getVendorByUserId(userId);
 
-    const products = await prisma.product.findMany({
-      where: { vendor_id: vendor.id, deleted_at: null },
-      orderBy: { created_at: 'desc' },
-      include: {
-        media: { orderBy: { position: 'asc' } },
-      },
-    });
+    const where = { vendor_id: vendor.id, deleted_at: null };
 
-    return products;
+    const [total, data] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          media: { orderBy: { position: 'asc' } },
+        },
+      }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   static async getProductById(productId: string, userId: string) {

@@ -8,6 +8,20 @@ const itemSchema = z.object({
   description: z.string().optional(),
 });
 
+const dateRangeRefine = <T extends { expected_delivery_start?: string; expected_delivery_end?: string }>(
+  data: T,
+  ctx: z.RefinementCtx
+) => {
+  if (!data.expected_delivery_start || !data.expected_delivery_end) return;
+  if (data.expected_delivery_end < data.expected_delivery_start) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Delivery end date must be on or after the start date',
+      path: ['expected_delivery_end'],
+    });
+  }
+};
+
 export const orderFormSchema = z.object({
   delivery_method: z.enum(['PICKUP', 'DISPATCH', 'WAYBILL']),
   expected_delivery_start: z.string().optional(),
@@ -17,7 +31,7 @@ export const orderFormSchema = z.object({
   discount_amount: z.number().min(0).optional(),
   order_notes: z.string().optional(),
   vendor_notes: z.string().optional(),
-});
+}).superRefine(dateRangeRefine);
 
 export type OrderFormData = z.infer<typeof orderFormSchema>;
 
@@ -30,6 +44,6 @@ export const orderEditSchema = z.object({
   discount_amount: z.number().min(0).optional(),
   order_notes: z.string().optional(),
   vendor_notes: z.string().optional(),
-});
+}).superRefine(dateRangeRefine);
 
 export type OrderEditData = z.infer<typeof orderEditSchema>;

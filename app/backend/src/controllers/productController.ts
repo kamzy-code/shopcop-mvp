@@ -32,9 +32,12 @@ export class ProductController {
     const action = 'getProducts';
     const userId = req.user!.userId;
 
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+
     try {
-      const products = await ProductService.getProducts(userId);
-      res.status(200).json({ success: true, data: products });
+      const result = await ProductService.getProducts(userId, { page, limit });
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       productLogger.error('Failed to fetch products', { action, userId, error });
       next(error);

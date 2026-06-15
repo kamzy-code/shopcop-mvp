@@ -1,18 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { Box, Button, Flex, Grid, Heading, Input, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuExternalLink, LuLink } from 'react-icons/lu';
-import {
-  LuArrowRight,
-  LuPackage,
-  LuPlus,
-  LuShieldAlert,
-  LuShieldCheck,
-  LuShoppingCart,
-  LuStar,
-  LuTrendingUp,
-} from 'react-icons/lu';
+import { LuArrowRight, LuPlus, LuShieldAlert } from 'react-icons/lu';
 import { AppShell } from '@/components/shared/appShell';
 import { TierBadge } from '@/components/shared/tierBadge';
 import { useAuthStore } from '@/app/_store/authStore';
@@ -24,174 +13,25 @@ import {
 } from '@/app/_hooks/vendor';
 import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { useOrderAnalytics } from '@/app/_hooks/order';
-import { formatCurrency } from '@/app/_lib/orderHelpers';
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  color = 'primary',
-  comingSoon = false,
-  onClick,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  sub?: string;
-  color?: string;
-  comingSoon?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <Box
-      p={5}
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="xl"
-      onClick={onClick}
-      cursor={onClick ? 'pointer' : undefined}
-      _hover={onClick ? { borderColor: 'border.emphasized' } : undefined}
-      transition="border-color 0.15s"
-    >
-      <Flex justify="space-between" align="flex-start" mb={4}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="lg"
-          bg={`${color}.subtle`}
-          align="center"
-          justify="center"
-          color={`${color}.fg`}
-        >
-          <Icon size={18} />
-        </Flex>
-        {comingSoon && (
-          <Box
-            px={2}
-            py={0.5}
-            borderRadius="full"
-            bg="bg.subtle"
-            borderWidth="1px"
-            borderColor="border"
-          >
-            <Text textStyle="2xs" color="fg.muted" fontWeight="medium">
-              Soon
-            </Text>
-          </Box>
-        )}
-      </Flex>
-      <Text textStyle="2xl" fontWeight="bold" color="fg">
-        {value}
-      </Text>
-      <Text textStyle="sm" color="fg.muted" mt={0.5}>
-        {label}
-      </Text>
-      {sub && (
-        <Text textStyle="xs" color="fg.subtle" mt={1}>
-          {sub}
-        </Text>
-      )}
-    </Box>
-  );
-}
-
-function ProfileCompletenessBar({ pct }: { pct: number }) {
-  const color = pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'primary';
-  return (
-    <Box>
-      <Flex justify="space-between" mb={1}>
-        <Text textStyle="xs" color="fg.muted">
-          Profile completeness
-        </Text>
-        <Text textStyle="xs" fontWeight="semibold" color={`${color}.fg`}>
-          {pct}%
-        </Text>
-      </Flex>
-      <Box h="6px" borderRadius="full" bg="bg.subtle" overflow="hidden">
-        <Box
-          h="full"
-          borderRadius="full"
-          bg={`${color}.500`}
-          w={`${pct}%`}
-          transition="width 0.4s ease"
-        />
-      </Box>
-    </Box>
-  );
-}
-
-// ─── Store link strip ─────────────────────────────────────────────────────────
-
-function StoreLinkStrip({ slug }: { slug: string }) {
-  const [copied, setCopied] = useState(false);
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://getshopcop.com';
-  const profileUrl = `${origin}/v/${slug}`;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(profileUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard API unavailable
-    }
-  };
-
-  return (
-    <Box
-      px={4}
-      py={3}
-      bg="bg.panel"
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="xl"
-    >
-      <Flex align="center" gap={2} flexWrap="wrap">
-        <Box color="primary.fg" display="flex" alignItems="center" flexShrink={0}>
-          <LuLink size={14} />
-        </Box>
-        <Text textStyle="xs" color="fg.muted" flexShrink={0}>
-          Your store:
-        </Text>
-        <Text
-          textStyle="xs"
-          fontFamily="mono"
-          color="fg"
-          flex={1}
-          truncate
-          minW="0"
-        >
-          {profileUrl}
-        </Text>
-        <Flex gap={2} flexShrink={0}>
-          <Button size="xs" variant="outline" onClick={handleCopy}>
-            {copied ? 'Copied!' : 'Copy link'}
-          </Button>
-          <a href={`/v/${slug}`} target="_blank" rel="noopener noreferrer">
-            <Button size="xs" colorPalette="primary" variant="outline">
-              <LuExternalLink size={11} />
-              View profile
-            </Button>
-          </a>
-        </Flex>
-      </Flex>
-    </Box>
-  );
-}
+import { ProfileCompletenessBar } from '@/components/dashboard/ProfileCompletenessBar';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
+import { DashboardVerificationStatus } from '@/components/dashboard/DashboardVerificationStatus';
+import { DashboardRecentProducts } from '@/components/dashboard/DashboardRecentProducts';
+import { StoreLinkStrip } from '@/components/dashboard/StoreLinkStrip';
 
 export default function Dashboard() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const { data: products } = useProducts();
+  const { data: productsPage } = useProducts();
+  const products = productsPage?.data ?? [];
+  const productCount = productsPage?.total ?? 0;
   const { data: completeness } = useProfileCompleteness();
   const { data: verifications } = useGetVerifications();
   const { data: profile } = useVendorProfile();
   const { data: analytics } = useOrderAnalytics();
 
-  const productCount = products?.length ?? 0;
-  const inStockCount = products?.filter((p) => p.stock_status === 'IN_STOCK').length ?? 0;
+  const inStockCount = products.filter((p) => p.stock_status === 'IN_STOCK').length;
   const firstName = user?.name?.split(' ')[0] || profile?.first_name || 'Vendor';
   const profileSetupPct =
     [
@@ -259,7 +99,6 @@ export default function Dashboard() {
   return (
     <AppShell>
       <Stack gap={8}>
-        {/* Welcome header */}
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
           <Stack gap={1}>
             <Flex align="center" gap={3}>
@@ -278,7 +117,6 @@ export default function Dashboard() {
           </Button>
         </Flex>
 
-        {/* Onboarding banner — only shown when profile setup is incomplete */}
         {!isProfileSetupComplete && (
           <Box
             p={5}
@@ -322,7 +160,6 @@ export default function Dashboard() {
           </Box>
         )}
 
-        {/* Verification nudge banner */}
         {showVerificationBanner && (
           <Box
             p={5}
@@ -348,7 +185,8 @@ export default function Dashboard() {
                   Boost trust and unlock higher tiers
                 </Text>
                 <Text color="warning.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                  Complete identity, address, and business verification to earn a verified badge, build buyer confidence, and unlock higher account tiers.
+                  Complete identity, address, and business verification to earn a verified badge,
+                  build buyer confidence, and unlock higher account tiers.
                 </Text>
               </Box>
               <Button
@@ -363,341 +201,22 @@ export default function Dashboard() {
           </Box>
         )}
 
-        {/* Store link strip — only when profile is complete */}
         {profile?.business_info_complete && profile?.slug && (
           <StoreLinkStrip slug={profile.slug} />
         )}
 
-        {/* Stats */}
-        <Box>
-          <Text
-            textStyle="xs"
-            fontWeight="semibold"
-            color="fg.muted"
-            textTransform="uppercase"
-            letterSpacing="wider"
-            mb={4}
-          >
-            Overview
-          </Text>
-          <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
-            <StatCard
-              icon={LuPackage}
-              label="Total Products"
-              value={productCount}
-              sub={`${inStockCount} in stock`}
-              color="primary"
-              onClick={() => router.push('/products')}
-            />
-            <StatCard
-              icon={LuShoppingCart}
-              label="Orders This Month"
-              value={analytics?.this_month.total_orders ?? '—'}
-              sub={
-                analytics
-                  ? `${formatCurrency(analytics.this_month.revenue)} revenue`
-                  : 'Loading...'
-              }
-              color="warning"
-              onClick={() => router.push('/orders')}
-            />
-            <StatCard
-              icon={LuTrendingUp}
-              label="Profile Views"
-              value="—"
-              sub="Analytics soon"
-              color="success"
-              comingSoon
-            />
-            <StatCard
-              icon={LuStar}
-              label="Reviews"
-              value="—"
-              sub="Reviews soon"
-              color="rating"
-              comingSoon
-            />
-          </Grid>
-        </Box>
+        <DashboardStats
+          productCount={productCount}
+          inStockCount={inStockCount}
+          analytics={analytics}
+        />
 
-        {/* Bottom grid */}
         <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          {/* Verification status */}
-          <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
-            <Flex align="center" justify="space-between" mb={4}>
-              <Flex align="center" gap={3}>
-                <LuShieldCheck size={18} color="var(--chakra-colors-primary-600)" />
-                <Text fontWeight="semibold" color="fg" textStyle="sm">
-                  Verification Status
-                </Text>
-              </Flex>
-              <Button
-                variant="ghost"
-                size="xs"
-                color="primary.fg"
-                px={2}
-                h="auto"
-                py={0.5}
-                onClick={() => router.push('/verifications')}
-              >
-                View all
-              </Button>
-            </Flex>
-            <Stack gap={3}>
-              {verificationItems.map((item) => (
-                <Flex key={item.label} align="center" gap={3}>
-                  <Flex
-                    w={5}
-                    h={5}
-                    borderRadius="full"
-                    bg={
-                      item.done
-                        ? 'success.500'
-                        : item.status === 'REJECTED'
-                          ? 'red.500'
-                          : item.status === 'PENDING'
-                            ? 'warning.400'
-                            : 'bg.subtle'
-                    }
-                    borderWidth={item.done || item.status ? 0 : '2px'}
-                    borderColor="border"
-                    align="center"
-                    justify="center"
-                    flexShrink={0}
-                  >
-                    {item.done && <LuShieldCheck size={10} color="white" />}
-                    {!item.done && item.status === 'PENDING' && (
-                      <LuShieldAlert size={10} color="white" />
-                    )}
-                    {!item.done && item.status === 'REJECTED' && (
-                      <LuShieldAlert size={10} color="white" />
-                    )}
-                  </Flex>
-                  <Text textStyle="sm" color={item.done ? 'fg' : 'fg.muted'} flex={1}>
-                    {item.label}
-                  </Text>
-                  <Box>
-                    {item.done ? (
-                      <Text textStyle="xs" fontWeight="medium" color="success.fg">
-                        Done
-                      </Text>
-                    ) : item.status === 'PENDING' ? (
-                      <Text textStyle="xs" fontWeight="medium" color="warning.fg">
-                        Pending
-                      </Text>
-                    ) : item.status === 'REJECTED' ? (
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        color="red.600"
-                        px={2}
-                        h="auto"
-                        py={0.5}
-                        onClick={() => item.href && router.push(item.href)}
-                      >
-                        Resubmit
-                      </Button>
-                    ) : item.href ? (
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        color="primary.fg"
-                        px={2}
-                        h="auto"
-                        py={0.5}
-                        onClick={() => router.push(item.href!)}
-                      >
-                        Start
-                      </Button>
-                    ) : (
-                      <Text textStyle="xs" fontWeight="medium" color="fg.subtle">
-                        —
-                      </Text>
-                    )}
-                  </Box>
-                </Flex>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* Quick actions */}
-          <Box>
-            <Text
-              textStyle="xs"
-              fontWeight="semibold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              mb={4}
-            >
-              Quick Actions
-            </Text>
-            <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex w={10} h={10} borderRadius="lg" bg="primary.subtle" align="center" justify="center" mb={4} color="primary.fg">
-                  <LuPackage size={18} />
-                </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Add Product</Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>List a new product in your store.</Text>
-                <Button mt={4} size="sm" colorPalette="primary" variant="outline" w="full" onClick={() => router.push('/products/new')}>
-                  Add now
-                </Button>
-              </Box>
-
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column">
-                <Flex w={10} h={10} borderRadius="lg" bg="warning.subtle" align="center" justify="center" mb={4} color="warning.fg">
-                  <LuShoppingCart size={18} />
-                </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>New Order</Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>Create and send a new order to a buyer.</Text>
-                <Button mt={4} size="sm" colorPalette="warning" variant="outline" w="full" onClick={() => router.push('/orders/new')}>
-                  Create
-                </Button>
-              </Box>
-
-              <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" display="flex" flexDirection="column" gridColumn={{ base: '1 / -1', md: 'auto' }}>
-                <Flex w={10} h={10} borderRadius="lg" bg="success.subtle" align="center" justify="center" mb={4} color="success.fg">
-                  <LuShieldCheck size={18} />
-                </Flex>
-                <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Get Verified</Text>
-                <Text color="fg.muted" textStyle="xs" flex={1}>Verify your identity and business to upgrade your tier and increase buyer trust.</Text>
-                <Button mt={4} size="sm" colorPalette="success" variant="outline" w="full" onClick={() => router.push('/verifications')}>
-                  View verifications
-                </Button>
-              </Box>
-            </Grid>
-          </Box>
+          <DashboardVerificationStatus items={verificationItems} />
+          <DashboardQuickActions />
         </Grid>
 
-        {/* Recent products */}
-        <Box>
-          <Flex align="center" justify="space-between" mb={4}>
-            <Text
-              textStyle="xs"
-              fontWeight="semibold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-            >
-              Recent Products
-            </Text>
-            {productCount > 0 && (
-              <Button
-                variant="ghost"
-                size="xs"
-                color="primary.fg"
-                onClick={() => router.push('/products')}
-              >
-                View all <LuArrowRight size={12} />
-              </Button>
-            )}
-          </Flex>
-
-          {productCount === 0 ? (
-            <Box
-              p={10}
-              bg="bg.panel"
-              borderWidth="1px"
-              borderColor="border"
-              borderRadius="xl"
-              textAlign="center"
-            >
-              <Flex
-                w={14}
-                h={14}
-                borderRadius="full"
-                bg="primary.subtle"
-                align="center"
-                justify="center"
-                mx="auto"
-                mb={4}
-                color="primary.fg"
-              >
-                <LuPackage size={24} />
-              </Flex>
-              <Text fontWeight="semibold" color="fg" mb={1}>
-                No products yet
-              </Text>
-              <Text color="fg.muted" textStyle="sm" mb={4}>
-                Add your first product to start selling on ShopCop.
-              </Text>
-              <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
-                <LuPlus />
-                Add Your First Product
-              </Button>
-            </Box>
-          ) : (
-            <Grid
-              templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
-              gap={4}
-            >
-              {products?.slice(0, 6).map((product) => (
-                <Box
-                  key={product.id}
-                  p={4}
-                  bg="bg.panel"
-                  borderWidth="1px"
-                  borderColor="border"
-                  borderRadius="xl"
-                  cursor="pointer"
-                  transition="box-shadow 0.15s"
-                  _hover={{ shadow: 'md' }}
-                  onClick={() => router.push(`/products/${product.id}`)}
-                >
-                  <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
-                    {product.media?.[0] ? (
-                      product.media[0].media_type === 'VIDEO' ? (
-                        <Box position="relative" w="full" h="full">
-                          <video
-                            src={product.media[0].media_url}
-                            muted
-                            playsInline
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                          />
-                          <Box position="absolute" bottom={1} left={1} px={1} py={0.5} borderRadius="md" bg="blackAlpha.600">
-                            <Text textStyle="2xs" color="white">▶ Video</Text>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <img
-                          src={product.media[0].media_url}
-                          alt={product.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      )
-                    ) : (
-                      <Flex h="full" align="center" justify="center" color="fg.subtle">
-                        <LuPackage size={32} />
-                      </Flex>
-                    )}
-                  </Box>
-                  <Text fontWeight="medium" color="fg" textStyle="sm" truncate>
-                    {product.name}
-                  </Text>
-                  <Flex align="center" justify="space-between" mt={1}>
-                    <Text color="primary.fg" fontWeight="bold" textStyle="sm">
-                      ₦{product.price.toLocaleString()}
-                    </Text>
-                    <Box
-                      px={2}
-                      py={0.5}
-                      borderRadius="full"
-                      bg={product.stock_status === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
-                    >
-                      <Text
-                        textStyle="2xs"
-                        fontWeight="medium"
-                        color={product.stock_status === 'IN_STOCK' ? 'success.fg' : 'red.600'}
-                      >
-                        {product.stock_status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
-                      </Text>
-                    </Box>
-                  </Flex>
-                </Box>
-              ))}
-            </Grid>
-          )}
-        </Box>
+        <DashboardRecentProducts products={products} productCount={productCount} />
       </Stack>
     </AppShell>
   );

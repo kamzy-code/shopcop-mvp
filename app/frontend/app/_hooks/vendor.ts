@@ -143,11 +143,13 @@ export const useProfileCompleteness = () =>
     gcTime: 30 * 60 * 1000,
   });
 
-export const useProducts = () =>
-  useQuery<Product[]>({
-    queryKey: ['products'],
+export const useProducts = ({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) =>
+  useQuery<{ data: Product[]; total: number; page: number; limit: number }>({
+    queryKey: ['products', { page, limit }],
     queryFn: async () => {
-      const res = await apiFetch<Product[]>('/products');
+      const res = await apiFetch<{ data: Product[]; total: number; page: number; limit: number }>(
+        `/products?page=${page}&limit=${limit}`
+      );
       return res.data;
     },
     staleTime: 5 * 60 * 1000,

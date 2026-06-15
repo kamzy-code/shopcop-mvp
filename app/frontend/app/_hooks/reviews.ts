@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import type { ApiResponse, CreateReviewInput, Review, ReviewListResponse, ReviewSummary } from '../_types';
+import type {
+  ApiResponse,
+  CreateReviewInput,
+  Review,
+  ReviewListResponse,
+  ReviewSummary,
+} from '../_types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,11 +76,18 @@ export const useVendorReviews = (
     queryKey: ['vendor-reviews', vendorId, page, limit, minRating, maxRating],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (minRating !== undefined) params.set('min_rating', String(minRating));
-      if (maxRating !== undefined) params.set('max_rating', String(maxRating));
-      const res = await apiFetch<Review[]>(`/public/vendors/${vendorId}/reviews?${params}`);
-      const { data, meta, summary } = res as ReviewsApiResponse;
-      return { success: true, data, meta, summary };
+      if (minRating != null) params.set('min_rating', String(minRating));
+      if (maxRating != null) params.set('max_rating', String(maxRating));
+      const res = await apiFetch<ReviewsApiResponse>(
+        `/public/vendors/${vendorId}/reviews?${params}`
+      );
+      const response = res as unknown as ReviewsApiResponse;
+      return {
+        success: true,
+        data: response.data,
+        meta: response.meta,
+        summary: response.summary,
+      };
     },
     enabled: !!vendorId,
     staleTime: 30 * 1000,

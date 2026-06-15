@@ -67,9 +67,6 @@ export const useVerifyAccountViaOTP = () => {
   });
 };
 
-/** @deprecated Use useVerifyAccountViaOTP */
-export const useVerifyAccounViaOTP = useVerifyAccountViaOTP;
-
 export const useLoginWithMagicLink = () => {
   return useMutation({
     mutationFn: (params: MagicLinkLoginParams) =>
@@ -79,9 +76,6 @@ export const useLoginWithMagicLink = () => {
       }),
   });
 };
-
-/** @deprecated Use useLoginWithMagicLink */
-export const useLogiWithMagicLink = useLoginWithMagicLink;
 
 export const useVerifyLoginLink = () => {
   return useMutation({

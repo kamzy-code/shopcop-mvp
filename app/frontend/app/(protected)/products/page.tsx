@@ -206,7 +206,8 @@ export default function ProductsPage() {
   const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
     open: false, title: '', description: '',
   });
-  const { data: products = [], isLoading } = useProducts();
+  const { data: productsPage, isLoading } = useProducts();
+  const products = productsPage?.data ?? [];
   const deleteMutation = useDeleteProduct();
   const duplicateMutation = useDuplicateProduct();
 

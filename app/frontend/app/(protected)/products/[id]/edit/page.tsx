@@ -2,21 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Box,
-  Button,
-  Field,
-  Flex,
-  Grid,
-  Heading,
-  Input,
-  Spinner,
-  Stack,
-  Text,
-  Textarea,
-} from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
-import { LuArrowLeft, LuImage, LuPackage, LuX } from 'react-icons/lu';
+import { LuArrowLeft, LuPackage } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
 import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
@@ -24,130 +12,10 @@ import { AlertModal } from '@/components/ui/alert-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useGetCategories, useProduct, useUpdateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
-
-function ImageSlot({
-  index,
-  file,
-  localUrl,
-  isUploading,
-  onAdd,
-  onRemove,
-  isPrimary,
-}: {
-  index: number;
-  file: UploadResult | null;
-  localUrl?: string;
-  isUploading?: boolean;
-  onAdd: (index: number, file: File) => void;
-  onRemove: (index: number) => void;
-  isPrimary: boolean;
-}) {
-  const preview = localUrl || file?.url || null;
-  const hasContent = !!preview;
-
-  const handleClick = () => {
-    if (isUploading || hasContent) return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/jpeg,image/jpg,image/png,image/webp';
-    input.onchange = (e) => {
-      const f = (e.target as HTMLInputElement).files?.[0];
-      if (!f) return;
-      if (f.size > 10 * 1024 * 1024) {
-        toaster.create({ title: 'Image must be under 10MB', type: 'error' });
-        return;
-      }
-      onAdd(index, f);
-    };
-    input.click();
-  };
-
-  return (
-    <Box
-      w="full"
-      aspectRatio={1}
-      borderRadius="xl"
-      borderWidth="2px"
-      borderStyle={hasContent ? 'solid' : 'dashed'}
-      borderColor={hasContent ? 'primary.300' : 'border'}
-      bg={hasContent ? 'transparent' : 'bg.subtle'}
-      position="relative"
-      overflow="hidden"
-      cursor={isUploading || hasContent ? 'default' : 'pointer'}
-      transition="all 0.15s"
-      onClick={handleClick}
-      _hover={isUploading || hasContent ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
-    >
-      {preview ? (
-        <>
-          {file?.resourceType === 'video' ? (
-            <video
-              src={preview}
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <img
-              src={preview}
-              alt={`Product image ${index + 1}`}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          )}
-          {isPrimary && (
-            <Box position="absolute" bottom={1} left={1} px={1.5} py={0.5} borderRadius="md" bg="primary.500">
-              <Text textStyle="2xs" color="white" fontWeight="bold">
-                Primary
-              </Text>
-            </Box>
-          )}
-          <Button
-            position="absolute"
-            top={1}
-            right={1}
-            size="xs"
-            colorPalette="red"
-            borderRadius="full"
-            w={5}
-            h={5}
-            minW={5}
-            p={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove(index);
-            }}
-            aria-label="Remove image"
-          >
-            <LuX size={10} />
-          </Button>
-        </>
-      ) : (
-        <Flex direction="column" align="center" justify="center" h="full" gap={1} p={3}>
-          <LuImage size={20} color="var(--chakra-colors-fg-subtle)" />
-          {index === 0 && (
-            <Text textStyle="2xs" color="fg.muted" textAlign="center">
-              Primary
-            </Text>
-          )}
-        </Flex>
-      )}
-      {isUploading && (
-        <Box
-          position="absolute"
-          inset={0}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bg="blackAlpha.400"
-          borderRadius="xl"
-          zIndex={1}
-        >
-          <Spinner size="lg" color="white" />
-        </Box>
-      )}
-    </Box>
-  );
-}
+import { ProductMediaUpload } from '@/components/product/ProductMediaUpload';
+import { ProductBasicInfo } from '@/components/product/ProductBasicInfo';
+import { ProductPricingForm } from '@/components/product/ProductPricingForm';
+import { ProductCategorySelect } from '@/components/product/ProductCategorySelect';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -156,7 +24,7 @@ export default function EditProductPage() {
 
   const { data: product, isLoading: productLoading } = useProduct(productId);
   const updateMutation = useUpdateProduct();
-  const { data: categories = [], isLoading: categoriesLoading } = useGetCategories();
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
   const uploadMutation = useUploadPublicMedia();
   const deleteMutation = useDeleteMedia();
 
@@ -165,19 +33,9 @@ export default function EditProductPage() {
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
   const [initialised, setInitialised] = useState(false);
   const [removingIndex, setRemovingIndex] = useState<number | null>(null);
-  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
-    open: false, title: '', description: '',
-  });
+  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({ open: false, title: '', description: '' });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setValue,
-    watch,
-    clearErrors,
-    reset,
-  } = useForm<ProductFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch, clearErrors, reset } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { stock_status: 'IN_STOCK', category: '' },
   });
@@ -186,7 +44,6 @@ export default function EditProductPage() {
   const selectedStock = watch('stock_status');
   const anyUploading = Object.values(uploadingSlots).some(Boolean);
 
-  // Pre-fill form once product data loads
   useEffect(() => {
     if (product && !initialised) {
       reset({
@@ -226,16 +83,8 @@ export default function EditProductPage() {
       URL.revokeObjectURL(localUrl);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setUploadingSlots((prev) => ({ ...prev, [index]: false }));
-      toaster.create({
-        title: 'Failed to upload image',
-        description: error instanceof Error ? error.message : 'Try again',
-        type: 'error',
-      });
+      toaster.create({ title: 'Failed to upload image', description: error instanceof Error ? error.message : 'Try again', type: 'error' });
     }
-  };
-
-  const handleRemoveImage = (index: number) => {
-    setRemovingIndex(index);
   };
 
   const handleConfirmRemove = async () => {
@@ -253,10 +102,7 @@ export default function EditProductPage() {
   };
 
   const onSubmit = async (data: ProductFormData) => {
-    if (Object.values(uploadingSlots).some(Boolean)) {
-      toaster.create({ title: 'Please wait for uploads to complete', type: 'warning' });
-      return;
-    }
+    if (anyUploading) { toaster.create({ title: 'Please wait for uploads to complete', type: 'warning' }); return; }
 
     const uploadedFiles = mediaFiles.filter(Boolean) as UploadResult[];
     const media = uploadedFiles.map((m) => ({
@@ -270,20 +116,14 @@ export default function EditProductPage() {
       toaster.create({ title: 'Product updated successfully!', type: 'success' });
       router.push('/products');
     } catch (error) {
-      setErrorModal({
-        open: true,
-        title: 'Failed to update product',
-        description: error instanceof Error ? error.message : 'Please try again.',
-      });
+      setErrorModal({ open: true, title: 'Failed to update product', description: error instanceof Error ? error.message : 'Please try again.' });
     }
   };
 
   if (productLoading) {
     return (
       <AppShell>
-        <Flex justify="center" py={16}>
-          <Spinner size="xl" colorPalette="primary" />
-        </Flex>
+        <Flex justify="center" py={16}><Spinner size="xl" colorPalette="primary" /></Flex>
       </AppShell>
     );
   }
@@ -301,23 +141,13 @@ export default function EditProductPage() {
 
   return (
     <AppShell>
-      <AlertModal
-        open={errorModal.open}
-        onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
-        title={errorModal.title}
-        description={errorModal.description}
-        type="error"
-      />
+      <AlertModal open={errorModal.open} onClose={() => setErrorModal((s) => ({ ...s, open: false }))} title={errorModal.title} description={errorModal.description} type="error" />
       <ConfirmDialog
         open={removingIndex !== null}
         onClose={() => setRemovingIndex(null)}
         onConfirm={handleConfirmRemove}
         title="Remove Image"
-        description={
-          removingIndex !== null && mediaFiles[removingIndex]
-            ? 'This will permanently delete this file. Continue?'
-            : 'Remove this image?'
-        }
+        description={removingIndex !== null && mediaFiles[removingIndex] ? 'This will permanently delete this file. Continue?' : 'Remove this image?'}
         confirmLabel="Remove"
         colorPalette="red"
         isLoading={deleteMutation.isPending}
@@ -328,182 +158,41 @@ export default function EditProductPage() {
             <LuArrowLeft size={14} />
             Back to Products
           </Button>
-          <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-            Edit Product
-          </Heading>
-          <Text color="fg.muted" textStyle="sm">
-            Update your product details below.
-          </Text>
+          <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">Edit Product</Heading>
+          <Text color="fg.muted" textStyle="sm">Update your product details below.</Text>
         </Stack>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack gap={5}>
-            {/* Images */}
-            <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
-              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>
-                Product Images
-              </Text>
-              <Text color="fg.muted" textStyle="xs" mb={4}>
-                Up to 5 images. The first image is the primary display image.
-              </Text>
-              <Grid templateColumns="repeat(5, 1fr)" gap={3}>
-                {mediaFiles.map((file, index) => (
-                  <ImageSlot
-                    key={index}
-                    index={index}
-                    file={file}
-                    localUrl={localPreviews[index]}
-                    isUploading={uploadingSlots[index]}
-                    onAdd={handleAddImage}
-                    onRemove={handleRemoveImage}
-                    isPrimary={index === 0 && !!file}
-                  />
-                ))}
-              </Grid>
-            </Box>
+            <ProductMediaUpload
+              mediaFiles={mediaFiles}
+              localPreviews={localPreviews}
+              uploadingSlots={uploadingSlots}
+              onAdd={handleAddImage}
+              onRemove={(index) => setRemovingIndex(index)}
+              label="Product Images"
+              description="Up to 5 images. The first image is the primary display image."
+            />
 
-            {/* Details */}
             <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
-              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
-                Product Details
-              </Text>
+              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>Product Details</Text>
               <Stack gap={5}>
-                <Field.Root invalid={!!errors.name} required>
-                  <Field.Label color="fg">Product Name</Field.Label>
-                  <Input {...register('name')} placeholder="e.g. Samsung Galaxy A55" size="lg" colorPalette="primary" />
-                  <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
-                </Field.Root>
-
-                <Field.Root invalid={!!errors.description}>
-                  <Field.Label color="fg">
-                    Description{' '}
-                    <Text as="span" color="fg.muted" fontWeight="normal">(optional)</Text>
-                  </Field.Label>
-                  <Textarea {...register('description')} placeholder="Describe your product..." size="lg" colorPalette="primary" rows={4} resize="none" />
-                  <Field.ErrorText>{errors.description?.message}</Field.ErrorText>
-                </Field.Root>
-
-                <Field.Root invalid={!!errors.price} required>
-                  <Field.Label color="fg">Price (₦)</Field.Label>
-                  <Flex align="center" borderWidth="1px" borderColor="border" borderRadius="lg" px={4} h="48px" gap={2}>
-                    <Text color="fg.muted" fontWeight="medium" flexShrink={0}>₦</Text>
-                    <input
-                      {...register('price', { valueAsNumber: true })}
-                      type="number"
-                      placeholder="0"
-                      min={0}
-                      step="0.01"
-                      style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', color: 'inherit' }}
-                    />
-                  </Flex>
-                  <Field.ErrorText>{errors.price?.message}</Field.ErrorText>
-                </Field.Root>
-
-                <Field.Root invalid={!!errors.category} required>
-                  <Field.Label color="fg">Category</Field.Label>
-                  {categoriesLoading && <Spinner size="sm" colorPalette="primary" />}
-                  {!categoriesLoading && (
-                    <Flex gap={2} flexWrap="wrap" pt={1}>
-                      {categories.map((cat) => {
-                        const isSelected = selectedCategory === cat.name;
-                        return (
-                          <Flex
-                            key={cat.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => { setValue('category', cat.name, { shouldValidate: true }); clearErrors('category'); }}
-                            onKeyDown={(e) => e.key === 'Enter' && setValue('category', cat.name, { shouldValidate: true })}
-                            align="center"
-                            px={3}
-                            py={1.5}
-                            borderRadius="full"
-                            borderWidth="1.5px"
-                            borderColor={isSelected ? 'primary.500' : 'border'}
-                            bg={isSelected ? 'primary.subtle' : 'transparent'}
-                            color={isSelected ? 'primary.fg' : 'fg.muted'}
-                            cursor="pointer"
-                            fontWeight={isSelected ? 'medium' : 'normal'}
-                            transition="all 0.15s"
-                            userSelect="none"
-                            _hover={isSelected ? {} : { borderColor: 'primary.400', color: 'fg' }}
-                          >
-                            <Text textStyle="xs">{cat.name}</Text>
-                          </Flex>
-                        );
-                      })}
-                    </Flex>
-                  )}
-                  <Field.ErrorText>{errors.category?.message}</Field.ErrorText>
-                </Field.Root>
-
-                <Field.Root required>
-                  <Field.Label color="fg">Stock Status</Field.Label>
-                  <Flex gap={3}>
-                    {[
-                      { value: 'IN_STOCK', label: 'In Stock', color: 'success' },
-                      { value: 'OUT_OF_STOCK', label: 'Out of Stock', color: 'red' },
-                    ].map((option) => {
-                      const isSelected = selectedStock === option.value;
-                      return (
-                        <Flex
-                          key={option.value}
-                          role="button"
-                          tabIndex={0}
-                          flex={1}
-                          px={4}
-                          py={3}
-                          borderRadius="lg"
-                          borderWidth="1.5px"
-                          borderColor={isSelected ? `${option.color}.400` : 'border'}
-                          bg={isSelected ? `${option.color}.subtle` : 'transparent'}
-                          cursor="pointer"
-                          align="center"
-                          justify="center"
-                          transition="all 0.15s"
-                          userSelect="none"
-                          onClick={() => setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK', { shouldValidate: true })}
-                          onKeyDown={(e) => e.key === 'Enter' && setValue('stock_status', option.value as 'IN_STOCK' | 'OUT_OF_STOCK')}
-                          _hover={{ borderColor: `${option.color}.300` }}
-                        >
-                          <Text textStyle="sm" fontWeight={isSelected ? 'semibold' : 'normal'} color={isSelected ? `${option.color}.fg` : 'fg.muted'}>
-                            {option.label}
-                          </Text>
-                        </Flex>
-                      );
-                    })}
-                  </Flex>
-                </Field.Root>
-
-                {/* Stock quantity */}
-                <Field.Root invalid={!!errors.stock_quantity}>
-                  <Field.Label color="fg">
-                    Stock Quantity{' '}
-                    <Text as="span" color="fg.muted" fontWeight="normal">
-                      (optional)
-                    </Text>
-                  </Field.Label>
-                  <Input
-                    {...register('stock_quantity', {
-                      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
-                    })}
-                    type="number"
-                    min={0}
-                    placeholder="e.g. 50"
-                    size="lg"
-                    colorPalette="primary"
-                  />
-                  <Field.HelperText color="fg.subtle" textStyle="xs">
-                    Leave blank if you are not tracking exact stock count.
-                  </Field.HelperText>
-                  <Field.ErrorText>{errors.stock_quantity?.message}</Field.ErrorText>
-                </Field.Root>
+                <ProductBasicInfo register={register} errors={errors} />
+                <ProductPricingForm register={register} errors={errors} setValue={setValue} selectedStock={selectedStock} />
+                <ProductCategorySelect
+                  categories={categories}
+                  categoriesLoading={categoriesLoading}
+                  categoriesError={categoriesError}
+                  selectedCategory={selectedCategory}
+                  errors={errors}
+                  setValue={setValue}
+                  clearErrors={clearErrors}
+                />
               </Stack>
             </Box>
 
             <Flex gap={3} justify="flex-end">
-              <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.push(`/products/${productId}`)}>
-                Cancel
-              </Button>
+              <Button variant="outline" size="lg" colorPalette="navy" onClick={() => router.push('/products')}>Cancel</Button>
               <Button type="submit" colorPalette="primary" size="lg" loading={isSubmitting || updateMutation.isPending} disabled={isSubmitting || anyUploading}>
                 <LuPackage />
                 Save Changes

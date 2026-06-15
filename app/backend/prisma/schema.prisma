@@ -490,6 +490,7 @@ model Product {
   @@index([category])
   @@index([created_at])
   @@index([deleted_at])
+  @@index([vendor_id, created_at])
   //@@fulltext([name, description])
   @@map("products")
 }
@@ -624,6 +625,8 @@ model Order {
   @@index([reference])
   @@index([buyer_email])
   @@index([refund_status])
+  @@index([payment_status])
+  @@index([created_at])
   @@map("orders")
 }
 

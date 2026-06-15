@@ -1,6 +1,6 @@
 'use client';
 
-import { useLogiWithMagicLink } from '@/app/_hooks/auth';
+import { useLoginWithMagicLink } from '@/app/_hooks/auth';
 import { toaster } from '@/components/ui/toaster';
 import { emailSchema } from '@/app/validators/authSchema';
 import { Button, Center, Field, Flex, Heading, Input, Link, Stack, Text } from '@chakra-ui/react';
@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const router = useRouter();
 
-  const loginMutation = useLogiWithMagicLink();
+  const loginMutation = useLoginWithMagicLink();
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;

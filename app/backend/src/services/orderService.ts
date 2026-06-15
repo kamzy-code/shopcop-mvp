@@ -106,57 +106,65 @@ export class OrderService {
       generateTrackingToken(),
     ]);
 
-    // Snapshot product details for catalog items
-    const itemsWithSnapshots = await Promise.all(
-      itemSubtotals.map(async (item) => {
-        if (item.product_id) {
-          const product = await prisma.product.findFirst({
-            where: { id: item.product_id, vendor_id: vendor.id, deleted_at: null },
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              description: true,
-              media: {
-                orderBy: { is_primary: 'desc' },
-                select: { media_url: true, media_type: true },
-              },
+    // Snapshot product details for catalog items — batch fetch to avoid N+1
+    const catalogProductIds = itemSubtotals
+      .map((item) => item.product_id)
+      .filter((id): id is string => id != null);
+
+    const catalogProducts = catalogProductIds.length
+      ? await prisma.product.findMany({
+          where: { id: { in: catalogProductIds }, vendor_id: vendor.id, deleted_at: null },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            description: true,
+            media: {
+              orderBy: { is_primary: 'desc' },
+              select: { media_url: true, media_type: true },
             },
+          },
+        })
+      : [];
+
+    const productMap = new Map(catalogProducts.map((p) => [p.id, p]));
+
+    const itemsWithSnapshots = itemSubtotals.map((item) => {
+      if (item.product_id) {
+        const product = productMap.get(item.product_id);
+        if (!product) {
+          orderLogger.warn('Catalog product not found during order creation', {
+            action: 'createOrder',
+            userId,
+            vendorId: vendor.id,
+            productId: item.product_id,
           });
-          if (!product) {
-            orderLogger.warn('Catalog product not found during order creation', {
-              action: 'createOrder',
-              userId,
-              vendorId: vendor.id,
-              productId: item.product_id,
-            });
-            throw new AppError(`Product not found: ${item.product_id}`, 404);
-          }
-          return {
-            product_id: item.product_id,
-            item_name: item.item_name || product.name,
-            item_price: new Decimal(item.item_price),
-            quantity: item.quantity,
-            subtotal: new Decimal(item.subtotal),
-            item_image_url:
-              (
-                product.media.find((m) => m.media_type === 'IMAGE') ??
-                product.media.find((m) => m.media_type === 'VIDEO')
-              )?.media_url ?? null,
-            description: item.description || product.description || null,
-          };
+          throw new AppError(`Product not found: ${item.product_id}`, 404);
         }
         return {
-          product_id: null,
-          item_name: item.item_name,
+          product_id: item.product_id,
+          item_name: item.item_name || product.name,
           item_price: new Decimal(item.item_price),
           quantity: item.quantity,
           subtotal: new Decimal(item.subtotal),
-          item_image_url: null,
-          description: item.description ?? null,
+          item_image_url:
+            (
+              product.media.find((m) => m.media_type === 'IMAGE') ??
+              product.media.find((m) => m.media_type === 'VIDEO')
+            )?.media_url ?? null,
+          description: item.description || product.description || null,
         };
-      })
-    );
+      }
+      return {
+        product_id: null,
+        item_name: item.item_name,
+        item_price: new Decimal(item.item_price),
+        quantity: item.quantity,
+        subtotal: new Decimal(item.subtotal),
+        item_image_url: null,
+        description: item.description ?? null,
+      };
+    });
 
     const order = await prisma.order.create({
       data: {
@@ -236,6 +244,7 @@ export class OrderService {
         where,
         include: {
           items: {
+            take: 5,
             select: {
               item_name: true,
               quantity: true,
@@ -399,56 +408,64 @@ export class OrderService {
       }));
       const subtotal = calculateSubtotal(data.items);
 
-      const itemsWithSnapshots = await Promise.all(
-        itemSubtotals.map(async (item) => {
-          if (item.product_id) {
-            const product = await prisma.product.findFirst({
-              where: { id: item.product_id, vendor_id: vendor.id, deleted_at: null },
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                description: true,
-                media: {
-                  orderBy: { is_primary: 'desc' as const },
-                  select: { media_url: true, media_type: true },
-                },
+      const updateCatalogIds = itemSubtotals
+        .map((item) => item.product_id)
+        .filter((id): id is string => id != null);
+
+      const updateCatalogProducts = updateCatalogIds.length
+        ? await prisma.product.findMany({
+            where: { id: { in: updateCatalogIds }, vendor_id: vendor.id, deleted_at: null },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              description: true,
+              media: {
+                orderBy: { is_primary: 'desc' as const },
+                select: { media_url: true, media_type: true },
               },
+            },
+          })
+        : [];
+
+      const updateProductMap = new Map(updateCatalogProducts.map((p) => [p.id, p]));
+
+      const itemsWithSnapshots = itemSubtotals.map((item) => {
+        if (item.product_id) {
+          const product = updateProductMap.get(item.product_id);
+          if (!product) {
+            orderLogger.warn('Catalog product not found during order update', {
+              action: 'updateOrder',
+              userId,
+              orderId,
+              productId: item.product_id,
             });
-            if (!product) {
-              orderLogger.warn('Catalog product not found during order update', {
-                action: 'updateOrder',
-                userId,
-                orderId,
-                productId: item.product_id,
-              });
-              throw new AppError(`Product not found: ${item.product_id}`, 404);
-            }
-            return {
-              product_id: item.product_id,
-              item_name: item.item_name || product.name,
-              item_price: new Decimal(item.item_price),
-              quantity: item.quantity,
-              subtotal: new Decimal(item.subtotal),
-              item_image_url:
-                (
-                  product.media.find((m) => m.media_type === 'IMAGE') ??
-                  product.media.find((m) => m.media_type === 'VIDEO')
-                )?.media_url ?? null,
-              description: item.description || product.description || null,
-            };
+            throw new AppError(`Product not found: ${item.product_id}`, 404);
           }
           return {
-            product_id: null,
-            item_name: item.item_name,
+            product_id: item.product_id,
+            item_name: item.item_name || product.name,
             item_price: new Decimal(item.item_price),
             quantity: item.quantity,
             subtotal: new Decimal(item.subtotal),
-            item_image_url: null,
-            description: item.description ?? null,
+            item_image_url:
+              (
+                product.media.find((m) => m.media_type === 'IMAGE') ??
+                product.media.find((m) => m.media_type === 'VIDEO')
+              )?.media_url ?? null,
+            description: item.description || product.description || null,
           };
-        })
-      );
+        }
+        return {
+          product_id: null,
+          item_name: item.item_name,
+          item_price: new Decimal(item.item_price),
+          quantity: item.quantity,
+          subtotal: new Decimal(item.subtotal),
+          item_image_url: null,
+          description: item.description ?? null,
+        };
+      });
 
       const existingDeliveryFee = Number(order.delivery_fee ?? 0);
       const existingDiscount = Number(order.discount_amount ?? 0);
