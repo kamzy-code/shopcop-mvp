@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuCopy, LuPackage, LuPencil, LuPlus, LuSearch, LuTrash2 } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
+
 import { useDeleteProduct, useDuplicateProduct, useProducts } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -252,7 +252,7 @@ export default function ProductsPage() {
   const deleteTargetProduct = products.find((p) => p.id === deleteTarget);
 
   return (
-    <AppShell>
+    <>
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -352,6 +352,6 @@ export default function ProductsPage() {
           </Grid>
         )}
       </Stack>
-    </AppShell>
+    </>
   );
 }

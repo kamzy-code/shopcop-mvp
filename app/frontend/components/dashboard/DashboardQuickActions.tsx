@@ -46,7 +46,7 @@ export function DashboardQuickActions() {
           </Flex>
           <Text fontWeight="semibold" color="fg" textStyle="sm" mb={1}>Get Verified</Text>
           <Text color="fg.muted" textStyle="xs" flex={1}>Verify your identity and business to upgrade your tier and increase buyer trust.</Text>
-          <Button mt={4} size="sm" colorPalette="success" variant="outline" w="full" onClick={() => router.push('/verifications')}>
+          <Button mt={4} size="sm" colorPalette="success" variant="outline" w="full" onClick={() => router.push('/vendor/profile?tab=verifications')}>
             View verifications
           </Button>
         </Box>

@@ -6,7 +6,7 @@ import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuPackage } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
-import { AppShell } from '@/components/shared/appShell';
+
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -93,7 +93,7 @@ export default function NewProductPage() {
   };
 
   return (
-    <AppShell>
+    <>
       <AlertModal open={errorModal.open} onClose={() => setErrorModal((s) => ({ ...s, open: false }))} title={errorModal.title} description={errorModal.description} type="error" />
       <ConfirmDialog
         open={removingIndex !== null}
@@ -152,6 +152,6 @@ export default function NewProductPage() {
           </Stack>
         </form>
       </Stack>
-    </AppShell>
+    </>
   );
 }

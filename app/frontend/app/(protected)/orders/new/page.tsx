@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Flex, Heading } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuArrowRight } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
+
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { useCreateOrder } from '@/app/_hooks/order';
@@ -96,7 +96,7 @@ export default function NewOrderPage() {
   };
 
   return (
-    <AppShell>
+    <>
       <AlertModal
         open={errorModal.open}
         onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
@@ -207,6 +207,6 @@ export default function NewOrderPage() {
           </form>
         </Box>
       </Box>
-    </AppShell>
+    </>
   );
 }

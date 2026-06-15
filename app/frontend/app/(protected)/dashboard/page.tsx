@@ -2,7 +2,6 @@
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuArrowRight, LuPlus, LuShieldAlert } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
 import { TierBadge } from '@/components/shared/tierBadge';
 import { useAuthStore } from '@/app/_store/authStore';
 import {
@@ -11,7 +10,6 @@ import {
   useGetVerifications,
   useVendorProfile,
 } from '@/app/_hooks/vendor';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { useOrderAnalytics } from '@/app/_hooks/order';
 import { ProfileCompletenessBar } from '@/components/dashboard/ProfileCompletenessBar';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
@@ -94,10 +92,37 @@ export default function Dashboard() {
     },
   ];
 
-  if (!profile) return <FullPageSpinner />;
+  if (!profile) {
+    return (
+      
+        <Stack gap={8}>
+          <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
+            <Stack gap={1.5}>
+              <Box w="220px" h={7} bg="bg.subtle" borderRadius="md" />
+              <Box w="160px" h={4} bg="bg.subtle" borderRadius="md" />
+            </Stack>
+            <Box w="130px" h="40px" bg="bg.subtle" borderRadius="lg" />
+          </Flex>
+          <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Box key={i} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
+                <Flex justify="space-between" align="flex-start" mb={4}>
+                  <Box w={10} h={10} borderRadius="lg" bg="bg.subtle" />
+                  <Box w={3} h={3} bg="bg.subtle" borderRadius="full" />
+                </Flex>
+                <Box w="60px" h={3} bg="bg.subtle" borderRadius="md" mb={2} />
+                <Box w="100px" h={6} bg="bg.subtle" borderRadius="md" mb={1.5} />
+                <Box w="80px" h={2.5} bg="bg.subtle" borderRadius="md" />
+              </Box>
+            ))}
+          </Grid>
+        </Stack>
+      
+    );
+  }
 
   return (
-    <AppShell>
+    
       <Stack gap={8}>
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
           <Stack gap={1}>
@@ -218,6 +243,6 @@ export default function Dashboard() {
 
         <DashboardRecentProducts products={products} productCount={productCount} />
       </Stack>
-    </AppShell>
+    
   );
 }

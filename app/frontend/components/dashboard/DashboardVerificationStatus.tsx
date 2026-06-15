@@ -32,7 +32,7 @@ export function DashboardVerificationStatus({ items }: DashboardVerificationStat
           px={2}
           h="auto"
           py={0.5}
-          onClick={() => router.push('/verifications')}
+          onClick={() => router.push('/vendor/profile?tab=verifications')}
         >
           View all
         </Button>

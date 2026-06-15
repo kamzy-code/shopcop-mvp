@@ -17,12 +17,16 @@ import { useOrderByToken } from '@/app/_hooks/order';
 import { useEditReview } from '@/app/_hooks/reviews';
 import { OrderItem } from '@/app/_types';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { formatCurrency, formatDateTime } from '@/app/_lib/orderHelpers';
 import { ItemDetailModal } from '@/components/order/ItemDetailModal';
 import { ReviewStars } from '@/components/review/ReviewStars';
-import { ReviewForm } from '@/components/review/ReviewForm';
+import dynamic from 'next/dynamic';
 import { toaster } from '@/components/ui/toaster';
+
+const ReviewForm = dynamic(
+  () => import('@/components/review/ReviewForm').then(m => ({ default: m.ReviewForm })),
+  { loading: () => <Box h="200px" bg="bg.subtle" borderRadius="xl" /> }
+);
 import { BuyerTimeline } from '@/components/track/BuyerTimeline';
 import { DeliveryBanner } from '@/components/track/DeliveryBanner';
 import { TrackingOrderSummary } from '@/components/track/TrackingOrderSummary';
@@ -57,7 +61,17 @@ export default function TrackingPage() {
     return () => clearTimeout(t);
   }, [tx, token]);
 
-  if (isLoading) return <FullPageSpinner />;
+  if (isLoading) {
+    return (
+      <Flex minH="100dvh" align="center" justify="center" bg="bg" p={4}>
+        <Stack align="center" gap={4} w="full" maxW="600px">
+          <Box w="full" h="120px" bg="bg.subtle" borderRadius="xl" />
+          <Box w="full" h="200px" bg="bg.subtle" borderRadius="xl" />
+          <Box w="full" h="80px" bg="bg.subtle" borderRadius="xl" />
+        </Stack>
+      </Flex>
+    );
+  }
 
   if (error || !tx) {
     return (

@@ -1,12 +1,12 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Box, Button, Flex, Heading, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage, LuPencil } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
+
 import { useProduct } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
+
 
 function StockBadge({ status, quantity }: { status: Product['stock_status']; quantity?: number | null }) {
   const isInStock = status === 'IN_STOCK';
@@ -208,27 +208,48 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <AppShell>
-        <FullPageSpinner />
-      </AppShell>
+      
+        <Stack gap={6}>
+          <Flex align="center" gap={3}>
+            <Box w={8} h={8} bg="bg.subtle" borderRadius="md" />
+            <Box w="200px" h={6} bg="bg.subtle" borderRadius="md" />
+          </Flex>
+          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={8}>
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" overflow="hidden">
+              <Box w="full" h="400px" bg="bg.subtle" />
+            </Box>
+            <Stack gap={5}>
+              <Box w="80%" h={7} bg="bg.subtle" borderRadius="md" />
+              <Box w="60px" h={6} bg="bg.subtle" borderRadius="md" />
+              <Box w="full" h={3} bg="bg.subtle" borderRadius="md" />
+              <Box w="full" h={3} bg="bg.subtle" borderRadius="md" />
+              <Box w="60%" h={3} bg="bg.subtle" borderRadius="md" />
+              <Flex gap={3} mt={4}>
+                <Box flex={1} h="40px" bg="bg.subtle" borderRadius="lg" />
+                <Box flex={1} h="40px" bg="bg.subtle" borderRadius="lg" />
+              </Flex>
+            </Stack>
+          </Grid>
+        </Stack>
+      
     );
   }
 
   if (!product) {
     return (
-      <AppShell>
+      
         <Box textAlign="center" py={16}>
           <Text color="fg.muted" mb={4}>
             Product not found.
           </Text>
           <Button onClick={() => router.push('/products')}>Back to Products</Button>
         </Box>
-      </AppShell>
+      
     );
   }
 
   return (
-    <AppShell>
+    
       <Stack gap={6} maxW="720px" mx="auto">
         {/* Header */}
         <Flex align="center" justify="space-between">
@@ -294,6 +315,6 @@ export default function ProductDetailPage() {
           )}
         </Stack>
       </Stack>
-    </AppShell>
+    
   );
 }

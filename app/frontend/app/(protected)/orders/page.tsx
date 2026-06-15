@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { LuChevronLeft, LuChevronRight, LuClipboardList, LuPlus, LuSearch } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
+
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { useOrders } from '@/app/_hooks/order';
 import { PaymentStatus, OrderFilters, OrderListItem, OrderStatus } from '@/app/_types';
@@ -202,7 +202,7 @@ export default function OrdersPage() {
   const meta = data?.meta;
 
   return (
-    <AppShell>
+    
       <Stack gap={6}>
         {/* Header */}
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
@@ -405,6 +405,6 @@ export default function OrdersPage() {
           </Flex>
         )}
       </Stack>
-    </AppShell>
+    
   );
 }

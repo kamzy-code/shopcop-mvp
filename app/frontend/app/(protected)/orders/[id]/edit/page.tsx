@@ -5,14 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Flex, Heading, Input, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuPackage, LuX } from 'react-icons/lu';
-import { AppShell } from '@/components/shared/appShell';
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { useOrder, useUpdateOrder } from '@/app/_hooks/order';
 import { useProducts } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
 import { OrderEditData, orderEditSchema } from '@/app/validators/orderSchema';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { formatCurrency } from '@/app/_lib/orderHelpers';
 import { OrderEditForm } from '@/components/order/OrderEditForm';
 import { CatalogPickerPanel } from '@/components/order/CatalogPickerPanel';
@@ -124,28 +122,59 @@ export default function EditOrderPage() {
     }
   };
 
-  if (isLoading)
+  if (isLoading) {
     return (
-      <AppShell>
-        <FullPageSpinner />
-      </AppShell>
+      
+        <Stack gap={6}>
+          <Flex align="center" gap={3}>
+            <Box w={8} h={8} bg="bg.subtle" borderRadius="md" />
+            <Box w="180px" h={6} bg="bg.subtle" borderRadius="md" />
+          </Flex>
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={6}>
+            <Stack gap={5}>
+              <Box w="160px" h={6} bg="bg.subtle" borderRadius="md" />
+              <Box w="full" h="40px" bg="bg.subtle" borderRadius="lg" />
+              <Flex gap={4}>
+                <Box flex={1} h="40px" bg="bg.subtle" borderRadius="lg" />
+                <Box flex={1} h="40px" bg="bg.subtle" borderRadius="lg" />
+              </Flex>
+              <Box w="full" h="100px" bg="bg.subtle" borderRadius="lg" />
+            </Stack>
+          </Box>
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={6}>
+            <Stack gap={3}>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Flex key={i} align="center" gap={4} p={3} bg="bg.subtle" borderRadius="lg">
+                  <Box w={10} h={10} borderRadius="md" bg="bg.panel" />
+                  <Box flex={1}>
+                    <Box w="40%" h={3} bg="bg.panel" borderRadius="md" mb={1.5} />
+                    <Box w="25%" h={3} bg="bg.panel" borderRadius="md" />
+                  </Box>
+                  <Box w="80px" h={3} bg="bg.panel" borderRadius="md" />
+                </Flex>
+              ))}
+            </Stack>
+          </Box>
+        </Stack>
+      
     );
+  }
 
   if (!tx) {
     return (
-      <AppShell>
+      
         <Box textAlign="center" py={16}>
           <Text color="fg.muted">Order not found.</Text>
           <Button mt={4} variant="outline" onClick={() => router.push('/orders')}>
             Back to Orders
           </Button>
         </Box>
-      </AppShell>
+      
     );
   }
 
   return (
-    <AppShell>
+    <>
       <AlertModal
         open={errorModal.open}
         onClose={() => setErrorModal((s) => ({ ...s, open: false }))}
@@ -214,6 +243,6 @@ export default function EditOrderPage() {
           onCancel={() => router.push(`/orders/${id}`)}
         />
       </Box>
-    </AppShell>
+    </>
   );
 }

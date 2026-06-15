@@ -6,7 +6,6 @@ import { LuCheck, LuCopy, LuPackage, LuStore } from 'react-icons/lu';
 import { useOrderByToken, useSubmitPaymentProof } from '@/app/_hooks/order';
 import { useUploadPublicMedia } from '@/app/_hooks/upload';
 import { FileUpload } from '@/components/shared/fileUpload';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { formatCurrency, isVideoUrl } from '@/app/_lib/orderHelpers';
 import { Order, OrderVendor } from '@/app/_types';
 import { toaster } from '@/components/ui/toaster';
@@ -57,7 +56,26 @@ export default function CheckoutPage() {
     }
   }, [tx, token, router]);
 
-  if (isLoading) return <FullPageSpinner />;
+  if (isLoading) {
+    return (
+      <Flex minH="100dvh" align="center" justify="center" bg="bg" p={4}>
+        <Stack gap={6} w="full" maxW="520px">
+          <Flex align="center" justify="center" gap={2.5}>
+            <Box w={8} h={8} borderRadius="lg" bg="primary.subtle" />
+            <Box w="90px" h={5} bg="bg.subtle" borderRadius="md" />
+          </Flex>
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={6}>
+            <Stack gap={4}>
+              <Box w="160px" h={5} bg="bg.subtle" borderRadius="md" />
+              <Box w="full" h="40px" bg="bg.subtle" borderRadius="lg" />
+              <Box w="full" h="120px" bg="bg.subtle" borderRadius="lg" />
+              <Box w="full" h="40px" bg="bg.subtle" borderRadius="lg" />
+            </Stack>
+          </Box>
+        </Stack>
+      </Flex>
+    );
+  }
   if (!tx || tx.payment_status !== 'UNPAID') return null;
 
   const vendor = tx.vendor as OrderVendor;

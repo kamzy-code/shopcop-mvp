@@ -6,7 +6,7 @@ import { Box, Button, Flex, Heading, Spinner, Stack, Text } from '@chakra-ui/rea
 import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuPackage } from 'react-icons/lu';
 import { productSchema, ProductFormData } from '@/app/validators/vendorSchema';
-import { AppShell } from '@/components/shared/appShell';
+
 import { toaster } from '@/components/ui/toaster';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -122,25 +122,25 @@ export default function EditProductPage() {
 
   if (productLoading) {
     return (
-      <AppShell>
+      
         <Flex justify="center" py={16}><Spinner size="xl" colorPalette="primary" /></Flex>
-      </AppShell>
+      
     );
   }
 
   if (!product) {
     return (
-      <AppShell>
+      
         <Box textAlign="center" py={16}>
           <Text color="fg.muted">Product not found.</Text>
           <Button mt={4} onClick={() => router.push('/products')}>Back to Products</Button>
         </Box>
-      </AppShell>
+      
     );
   }
 
   return (
-    <AppShell>
+    <>
       <AlertModal open={errorModal.open} onClose={() => setErrorModal((s) => ({ ...s, open: false }))} title={errorModal.title} description={errorModal.description} type="error" />
       <ConfirmDialog
         open={removingIndex !== null}
@@ -201,6 +201,6 @@ export default function EditProductPage() {
           </Stack>
         </form>
       </Stack>
-    </AppShell>
+    </>
   );
 }

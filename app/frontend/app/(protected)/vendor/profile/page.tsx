@@ -3,9 +3,8 @@ import { Box, Flex, Heading, Stack, Tabs, Text } from '@chakra-ui/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LuBuilding2, LuShieldCheck, LuUser } from 'react-icons/lu';
 import { useVendorProfile } from '@/app/_hooks/vendor';
-import { AppShell } from '@/components/shared/appShell';
+
 import { TierBadge } from '@/components/shared/tierBadge';
-import FullPageSpinner from '@/components/shared/fullPageSpinner';
 import { PersonalInfoTab } from '@/components/vendor/PersonalInfoTab';
 import { BusinessInfoTab } from '@/components/vendor/BusinessInfoTab';
 import { VerificationsTab } from '@/components/vendor/VerificationsTab';
@@ -22,10 +21,41 @@ export default function VendorProfilePage() {
 
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Vendor';
 
-  if (isLoading) return <AppShell><FullPageSpinner /></AppShell>;
+  if (isLoading) {
+    return (
+      
+        <Stack gap={6}>
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={6}>
+            <Flex direction={{ base: 'column', sm: 'row' }} align="center" gap={4}>
+              <Box w={14} h={14} borderRadius="full" bg="bg.subtle" flexShrink={0} />
+              <Box flex={1} textAlign={{ base: 'center', sm: 'left' }}>
+                <Box w="180px" h={5} bg="bg.subtle" borderRadius="md" mb={2} mx={{ base: 'auto', sm: '0' }} />
+                <Box w="120px" h={3} bg="bg.subtle" borderRadius="md" mx={{ base: 'auto', sm: '0' }} />
+              </Box>
+            </Flex>
+          </Box>
+          <Flex gap={2}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Box key={i} flex={1} h="36px" bg="bg.subtle" borderRadius="lg" />
+            ))}
+          </Flex>
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={6}>
+            <Stack gap={4}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Box key={i}>
+                  <Box w="80px" h={3} bg="bg.subtle" borderRadius="md" mb={2} />
+                  <Box w="full" h="40px" bg="bg.subtle" borderRadius="lg" />
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        </Stack>
+      
+    );
+  }
 
   return (
-    <AppShell>
+    
       <Stack gap={6}>
         <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" position="relative">
           <Box position="absolute" top={4} right={4}>
@@ -72,6 +102,6 @@ export default function VendorProfilePage() {
           </Box>
         </Tabs.Root>
       </Stack>
-    </AppShell>
+    
   );
 }
