@@ -167,6 +167,13 @@ export default function SignupPage() {
         <Stack gap={4}>
           <Flex
             as="button"
+            data-disabled={true}
+            _disabled={{
+              opacity: 0.5,
+              cursor: 'not-allowed',
+              _hover: { borderColor: 'border' }, // suppress hover when disabled
+              shadow: 'none',
+            }}
             direction="column"
             align="flex-start"
             gap={3}
@@ -179,7 +186,7 @@ export default function SignupPage() {
             transition="all 0.15s"
             _hover={{ borderColor: 'primary.500', shadow: 'sm' }}
             _focusVisible={{ borderColor: 'primary.500', shadow: 'outline' }}
-            onClick={() => handleRoleSelect('BUYER')}
+            //onClick={() => handleRoleSelect('BUYER')}
           >
             <Flex
               w="10"
