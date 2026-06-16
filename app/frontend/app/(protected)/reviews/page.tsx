@@ -121,7 +121,7 @@ export default function VendorReviewsPage() {
           {summary && (
             <ReviewSummary
               summary={{ total_reviews: unfilteredTotal, distribution: summary.distribution }}
-              averageRating={profile.average_rating}
+              averageRating={profile?.average_rating}
             />
           )}
 
