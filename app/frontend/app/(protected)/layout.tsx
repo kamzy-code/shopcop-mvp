@@ -16,6 +16,7 @@ const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/products', roles: ['VENDOR'] },
   { prefix: '/orders', roles: ['VENDOR'] },
   { prefix: '/verifications', roles: ['VENDOR'] },
+  { prefix: '/reviews', roles: ['VENDOR'] },
   { prefix: '/admin', roles: ['ADMIN'] },
   { prefix: '/buyer', roles: ['BUYER'] },
 ];

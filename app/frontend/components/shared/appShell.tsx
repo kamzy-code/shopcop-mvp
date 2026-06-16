@@ -14,7 +14,7 @@ const VENDOR_NAV_ITEMS: NavItemConfig[] = [
   { label: 'Products', icon: LuPackage, href: '/products' },
   { label: 'Orders', icon: LuShoppingCart, href: '/orders' },
   { label: 'Profile', icon: LuUser, href: '/vendor/profile' },
-  { label: 'Reviews', icon: LuStar, href: '/reviews', disabled: true },
+  { label: 'Reviews', icon: LuStar, href: '/reviews' },
   { label: 'Settings', icon: LuSettings, href: '/settings', disabled: true },
 ];
 

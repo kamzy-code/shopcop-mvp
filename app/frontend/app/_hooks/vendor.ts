@@ -147,7 +147,7 @@ export const useProfileCompleteness = () =>
     gcTime: 30 * 60 * 1000,
   });
 
-export const useProducts = (filters: ProductFilters) =>
+export const useProducts = (filters?: ProductFilters) =>
   useQuery<{ data: Product[]; total: number; totalPages: number; page: number; limit: number }>({
     queryKey: ['products', filters],
     queryFn: async () => {
