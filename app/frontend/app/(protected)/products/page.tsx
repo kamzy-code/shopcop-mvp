@@ -1,16 +1,32 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuCopy, LuPackage, LuPencil, LuPlus, LuSearch, LuTrash2 } from 'react-icons/lu';
+import {
+  LuChevronLeft,
+  LuChevronRight,
+  LuCopy,
+  LuPackage,
+  LuPencil,
+  LuPlus,
+  LuSearch,
+  LuTrash2,
+} from 'react-icons/lu';
 
 import { useDeleteProduct, useDuplicateProduct, useProducts } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { Product } from '@/app/_types';
+import { ProductFilters } from '@/app/validators/productSchema';
 
-function StockBadge({ status, quantity }: { status: Product['stock_status']; quantity?: number | null }) {
+function StockBadge({
+  status,
+  quantity,
+}: {
+  status: Product['stock_status'];
+  quantity?: number | null;
+}) {
   const isInStock = status === 'IN_STOCK';
   return (
     <Box
@@ -55,7 +71,9 @@ function MediaThumbnail({ product }: { product: Product }) {
           borderRadius="md"
           bg="blackAlpha.600"
         >
-          <Text textStyle="2xs" color="white">▶ Video</Text>
+          <Text textStyle="2xs" color="white">
+            ▶ Video
+          </Text>
         </Box>
       </Box>
     );
@@ -201,21 +219,40 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 export default function ProductsPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
-    open: false, title: '', description: '',
+  const [errorModal, setErrorModal] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    title: '',
+    description: '',
   });
-  const { data: productsPage, isLoading } = useProducts();
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filters: ProductFilters = {
+    page,
+    limit: 20,
+    ...(debouncedSearch && { search: debouncedSearch }),
+  };
+  const { data: productsPage, isLoading } = useProducts(filters);
   const products = productsPage?.data ?? [];
+  const totalPages = productsPage?.totalPages ?? 1;
   const deleteMutation = useDeleteProduct();
   const duplicateMutation = useDuplicateProduct();
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.category ?? '').toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSearchChange = useCallback((val: string) => {
+    setSearch(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(val);
+      setPage(1);
+    }, 500);
+  }, []);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -287,7 +324,7 @@ export default function ProductsPage() {
         </Flex>
 
         {/* Search */}
-        {products.length > 0 && (
+        {
           <Flex
             align="center"
             maxW="360px"
@@ -303,7 +340,7 @@ export default function ProductsPage() {
             <input
               placeholder="Search products..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               style={{
                 flex: 1,
                 border: 'none',
@@ -314,32 +351,49 @@ export default function ProductsPage() {
               }}
             />
           </Flex>
-        )}
+        }
 
         {/* Content */}
         {isLoading ? (
           <Grid
-            templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }}
+            templateColumns={{
+              base: '1fr',
+              sm: 'repeat(2, 1fr)',
+              lg: 'repeat(3, 1fr)',
+              xl: 'repeat(4, 1fr)',
+            }}
             gap={4}
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <Box key={i} h="300px" bg="bg.subtle" borderRadius="xl" borderWidth="1px" borderColor="border" />
+              <Box
+                key={i}
+                h="300px"
+                bg="bg.subtle"
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor="border"
+              />
             ))}
           </Grid>
-        ) : filtered.length === 0 && products.length > 0 ? (
+        ) : products.length === 0 && debouncedSearch ? (
           <Box textAlign="center" py={12}>
             <Text color="fg.muted" textStyle="sm">
               No products match &ldquo;{search}&rdquo;
             </Text>
           </Box>
-        ) : filtered.length === 0 ? (
+        ) : products.length === 0 ? (
           <EmptyState onAdd={() => router.push('/products/new')} />
         ) : (
           <Grid
-            templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }}
+            templateColumns={{
+              base: '1fr',
+              sm: 'repeat(2, 1fr)',
+              lg: 'repeat(3, 1fr)',
+              xl: 'repeat(4, 1fr)',
+            }}
             gap={4}
           >
-            {filtered.map((product) => (
+            {products.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -350,6 +404,33 @@ export default function ProductsPage() {
               />
             ))}
           </Grid>
+        )}
+
+        {/* Pagination */}
+        {totalPages && totalPages > 1 && (
+          <Flex align="center" justify="center" gap={3}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <LuChevronLeft />
+              Prev
+            </Button>
+            <Text textStyle="sm" color="fg.muted">
+              {page} / {totalPages}
+            </Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+              <LuChevronRight />
+            </Button>
+          </Flex>
         )}
       </Stack>
     </>

@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { ProductService } from '@services/productService.js';
-import { createProductSchema, updateProductSchema } from '@validators/productValidator.js';
+import {
+  createProductSchema,
+  productFiltersSchema,
+  updateProductSchema,
+} from '@validators/productValidator.js';
 import { productLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
@@ -34,9 +38,19 @@ export class ProductController {
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const search = (req.query.search as string) || '';
 
+    const parsed = productFiltersSchema.safeParse({ search, page, limit });
+    if (!parsed.success) {
+      productLogger.warn('Invalid product filters', {
+        action,
+        userId,
+        issues: parsed.error.issues,
+      });
+      return next(new AppError(`Invalid filters: ${parseZodErrors(parsed.error.issues)}`, 400));
+    }
     try {
-      const result = await ProductService.getProducts(userId, { page, limit });
+      const result = await ProductService.getProducts(userId, parsed.data);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       productLogger.error('Failed to fetch products', { action, userId, error });

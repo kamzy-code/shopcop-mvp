@@ -1,7 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../_lib/fetchWrapper';
-import { BusinessCategory, Product, ProfileCompletenessBreakdown, VendorProfile, VerificationRecord } from '../_types';
+import {
+  BusinessCategory,
+  Product,
+  ProfileCompletenessBreakdown,
+  VendorProfile,
+  VerificationRecord,
+} from '../_types';
 import { BusinessInfoFormData, ProductFormData } from '../validators/vendorSchema';
+import { ProductFilters } from '../validators/productSchema';
 
 export const useGetCategories = () =>
   useQuery<BusinessCategory[]>({
@@ -10,8 +17,8 @@ export const useGetCategories = () =>
       const res = await apiFetch<BusinessCategory[]>('/categories');
       return res.data;
     },
-    staleTime: 30 * 60 * 1000,  // categories rarely change — 30 minutes
-    gcTime: 60 * 60 * 1000,     // keep in cache 1 hour
+    staleTime: 30 * 60 * 1000, // categories rarely change — 30 minutes
+    gcTime: 60 * 60 * 1000, // keep in cache 1 hour
     placeholderData: keepPreviousData,
   });
 
@@ -120,10 +127,7 @@ export const useSubmitSMEDANVerification = () => {
 export const useSubmitAddressVerification = () => {
   const invalidate = useInvalidateAfterVerification();
   return useMutation({
-    mutationFn: (data: {
-      address_document_url: string;
-      address_document_public_id: string;
-    }) =>
+    mutationFn: (data: { address_document_url: string; address_document_public_id: string }) =>
       apiFetch<VerificationRecord>('/verifications/address', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -143,13 +147,26 @@ export const useProfileCompleteness = () =>
     gcTime: 30 * 60 * 1000,
   });
 
-export const useProducts = ({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) =>
-  useQuery<{ data: Product[]; total: number; page: number; limit: number }>({
-    queryKey: ['products', { page, limit }],
+export const useProducts = (filters: ProductFilters) =>
+  useQuery<{ data: Product[]; total: number; totalPages: number; page: number; limit: number }>({
+    queryKey: ['products', filters],
     queryFn: async () => {
-      const res = await apiFetch<{ data: Product[]; total: number; page: number; limit: number }>(
-        `/products?page=${page}&limit=${limit}`
-      );
+      const params = new URLSearchParams();
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.set(key, String(value));
+          }
+        });
+      }
+      const query = params.toString();
+      const res = await apiFetch<{
+        data: Product[];
+        total: number;
+        totalPages: number;
+        page: number;
+        limit: number;
+      }>(`/products/${query ? `?${query}` : ''}`);
       return res.data;
     },
     staleTime: 5 * 60 * 1000,

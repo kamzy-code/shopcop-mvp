@@ -3,6 +3,7 @@ import { productLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { CreateProductInput, UpdateProductInput } from '../types/productTypes.js';
 import { VendorTier } from '../generated/prisma/enums.js';
+import { ProductFiltersSchema } from '@validators/productValidator.js';
 
 const productLimitPerTier: Record<VendorTier, number | null> = {
   TIER_0: 5,
@@ -74,13 +75,18 @@ export class ProductService {
     return product;
   }
 
-  static async getProducts(
-    userId: string,
-    { page = 1, limit = 20 }: { page?: number; limit?: number } = {}
-  ) {
+  static async getProducts(userId: string, { page = 1, limit = 20, search }: ProductFiltersSchema) {
     const vendor = await this.getVendorByUserId(userId);
 
-    const where = { vendor_id: vendor.id, deleted_at: null };
+    const where: Record<string, unknown> = { vendor_id: vendor.id, deleted_at: null };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [total, data] = await Promise.all([
       prisma.product.count({ where }),
@@ -95,7 +101,7 @@ export class ProductService {
       }),
     ]);
 
-    return { data, total, page, limit };
+    return { data, total, totalPages: Math.ceil(total / limit), page, limit };
   }
 
   static async getProductById(productId: string, userId: string) {

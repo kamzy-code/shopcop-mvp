@@ -23,3 +23,9 @@ export interface UpdateProductInput {
   stock_quantity?: number;
   media?: MediaItem[];
 }
+
+export interface ProductFilters {
+  search?: string;
+  page: number;
+  limit: number;
+}
