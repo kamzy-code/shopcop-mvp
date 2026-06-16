@@ -24,8 +24,8 @@ export default function Dashboard() {
   const { data: productsPage } = useProducts();
   const products = productsPage?.data ?? [];
   const productCount = productsPage?.total ?? 0;
-  const { data: completeness } = useProfileCompleteness();
-  const { data: verifications } = useGetVerifications();
+  const { data: completeness, isLoading: completenessLoading } = useProfileCompleteness();
+  const { data: verifications, isLoading: verificationsLoading } = useGetVerifications();
   const { data: profile } = useVendorProfile();
   const { data: analytics } = useOrderAnalytics();
 
@@ -43,7 +43,11 @@ export default function Dashboard() {
   const hasNoActiveVerification = !(verifications ?? []).some(
     (v) => v.status === 'APPROVED' || v.status === 'PENDING'
   );
-  const showVerificationBanner = isProfileSetupComplete && hasNoActiveVerification;
+  const showVerificationBanner =
+    isProfileSetupComplete &&
+    hasNoActiveVerification &&
+    !completenessLoading &&
+    !verificationsLoading;
 
   const verifMap = Object.fromEntries((verifications ?? []).map((v) => [v.type, v]));
 
@@ -94,155 +98,156 @@ export default function Dashboard() {
 
   if (!profile) {
     return (
-      
-        <Stack gap={8}>
-          <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
-            <Stack gap={1.5}>
-              <Box w="220px" h={7} bg="bg.subtle" borderRadius="md" />
-              <Box w="160px" h={4} bg="bg.subtle" borderRadius="md" />
-            </Stack>
-            <Box w="130px" h="40px" bg="bg.subtle" borderRadius="lg" />
-          </Flex>
-          <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5}>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Box key={i} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
-                <Flex justify="space-between" align="flex-start" mb={4}>
-                  <Box w={10} h={10} borderRadius="lg" bg="bg.subtle" />
-                  <Box w={3} h={3} bg="bg.subtle" borderRadius="full" />
-                </Flex>
-                <Box w="60px" h={3} bg="bg.subtle" borderRadius="md" mb={2} />
-                <Box w="100px" h={6} bg="bg.subtle" borderRadius="md" mb={1.5} />
-                <Box w="80px" h={2.5} bg="bg.subtle" borderRadius="md" />
-              </Box>
-            ))}
-          </Grid>
-        </Stack>
-      
+      <Stack gap={8}>
+        <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
+          <Stack gap={1.5}>
+            <Box w="220px" h={7} bg="bg.subtle" borderRadius="md" />
+            <Box w="160px" h={4} bg="bg.subtle" borderRadius="md" />
+          </Stack>
+          <Box w="130px" h="40px" bg="bg.subtle" borderRadius="lg" />
+        </Flex>
+        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Box
+              key={i}
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="xl"
+              p={5}
+            >
+              <Flex justify="space-between" align="flex-start" mb={4}>
+                <Box w={10} h={10} borderRadius="lg" bg="bg.subtle" />
+                <Box w={3} h={3} bg="bg.subtle" borderRadius="full" />
+              </Flex>
+              <Box w="60px" h={3} bg="bg.subtle" borderRadius="md" mb={2} />
+              <Box w="100px" h={6} bg="bg.subtle" borderRadius="md" mb={1.5} />
+              <Box w="80px" h={2.5} bg="bg.subtle" borderRadius="md" />
+            </Box>
+          ))}
+        </Grid>
+      </Stack>
     );
   }
 
   return (
-    
-      <Stack gap={8}>
-        <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
-          <Stack gap={1}>
-            <Flex align="center" gap={3}>
-              <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-                Welcome back, {firstName} 👋
-              </Heading>
-              {profile?.current_tier && <TierBadge tier={profile.current_tier} />}
-            </Flex>
-            <Text color="fg.muted" textStyle="sm">
-              Here is what is happening with your store today.
-            </Text>
-          </Stack>
-          <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
-            <LuPlus />
-            Add Product
-          </Button>
-        </Flex>
+    <Stack gap={8}>
+      <Flex align="center" justify="space-between" flexWrap="wrap" gap={4}>
+        <Stack gap={1}>
+          <Flex align="center" gap={3}>
+            <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
+              Welcome back, {firstName} 👋
+            </Heading>
+            {profile?.current_tier && <TierBadge tier={profile.current_tier} />}
+          </Flex>
+          <Text color="fg.muted" textStyle="sm">
+            Here is what is happening with your store today.
+          </Text>
+        </Stack>
+        <Button colorPalette="primary" size="md" onClick={() => router.push('/products/new')}>
+          <LuPlus />
+          Add Product
+        </Button>
+      </Flex>
 
-        {!isProfileSetupComplete && (
-          <Box
-            p={5}
-            bg="primary.subtle"
-            borderWidth="1.5px"
-            borderColor="primary.200"
-            borderRadius="xl"
-          >
-            <Flex align="center" gap={4} flexWrap="wrap">
-              <Flex
-                w={10}
-                h={10}
-                borderRadius="lg"
-                bg="primary.500"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuShieldAlert size={18} color="white" />
-              </Flex>
-              <Box flex={1} minW="200px">
-                <Text fontWeight="semibold" color="primary.fg" textStyle="sm">
-                  Complete your vendor profile
-                </Text>
-                <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                  Fill in your personal and business details to make your store visible to buyers.
-                </Text>
-                <Box mt={2}>
-                  <ProfileCompletenessBar pct={profileSetupPct} />
-                </Box>
+      {!isProfileSetupComplete && (
+        <Box
+          p={5}
+          bg="primary.subtle"
+          borderWidth="1.5px"
+          borderColor="primary.200"
+          borderRadius="xl"
+        >
+          <Flex align="center" gap={4} flexWrap="wrap">
+            <Flex
+              w={10}
+              h={10}
+              borderRadius="lg"
+              bg="primary.500"
+              align="center"
+              justify="center"
+              flexShrink={0}
+            >
+              <LuShieldAlert size={18} color="white" />
+            </Flex>
+            <Box flex={1} minW="200px">
+              <Text fontWeight="semibold" color="primary.fg" textStyle="sm">
+                Complete your vendor profile
+              </Text>
+              <Text color="primary.fg" textStyle="xs" opacity={0.85} mt={0.5}>
+                Fill in your personal and business details to make your store visible to buyers.
+              </Text>
+              <Box mt={2}>
+                <ProfileCompletenessBar pct={profileSetupPct} />
               </Box>
-              <Button
-                colorPalette="primary"
-                size="sm"
-                flexShrink={0}
-                onClick={() => router.push('/onboarding')}
-              >
-                Complete Setup <LuArrowRight size={14} />
-              </Button>
+            </Box>
+            <Button
+              colorPalette="primary"
+              size="sm"
+              flexShrink={0}
+              onClick={() => router.push('/onboarding')}
+            >
+              Complete Setup <LuArrowRight size={14} />
+            </Button>
+          </Flex>
+        </Box>
+      )}
+
+      {showVerificationBanner && (
+        <Box
+          p={5}
+          bg="warning.subtle"
+          borderWidth="1.5px"
+          borderColor="warning.200"
+          borderRadius="xl"
+        >
+          <Flex align="center" gap={4} flexWrap="wrap">
+            <Flex
+              w={10}
+              h={10}
+              borderRadius="lg"
+              bg="warning.400"
+              align="center"
+              justify="center"
+              flexShrink={0}
+            >
+              <LuShieldAlert size={18} color="white" />
             </Flex>
-          </Box>
-        )}
+            <Box flex={1} minW="200px">
+              <Text fontWeight="semibold" color="warning.fg" textStyle="sm">
+                Boost trust and unlock higher tiers
+              </Text>
+              <Text color="warning.fg" textStyle="xs" opacity={0.85} mt={0.5}>
+                Complete identity, address, and business verification to earn a verified badge,
+                build buyer confidence, and unlock higher account tiers.
+              </Text>
+            </Box>
+            <Button
+              colorPalette="warning"
+              size="sm"
+              flexShrink={0}
+              onClick={() => router.push('/vendor/profile?tab=verifications')}
+            >
+              Start Verification <LuArrowRight size={14} />
+            </Button>
+          </Flex>
+        </Box>
+      )}
 
-        {showVerificationBanner && (
-          <Box
-            p={5}
-            bg="warning.subtle"
-            borderWidth="1.5px"
-            borderColor="warning.200"
-            borderRadius="xl"
-          >
-            <Flex align="center" gap={4} flexWrap="wrap">
-              <Flex
-                w={10}
-                h={10}
-                borderRadius="lg"
-                bg="warning.400"
-                align="center"
-                justify="center"
-                flexShrink={0}
-              >
-                <LuShieldAlert size={18} color="white" />
-              </Flex>
-              <Box flex={1} minW="200px">
-                <Text fontWeight="semibold" color="warning.fg" textStyle="sm">
-                  Boost trust and unlock higher tiers
-                </Text>
-                <Text color="warning.fg" textStyle="xs" opacity={0.85} mt={0.5}>
-                  Complete identity, address, and business verification to earn a verified badge,
-                  build buyer confidence, and unlock higher account tiers.
-                </Text>
-              </Box>
-              <Button
-                colorPalette="warning"
-                size="sm"
-                flexShrink={0}
-                onClick={() => router.push('/vendor/profile?tab=verifications')}
-              >
-                Start Verification <LuArrowRight size={14} />
-              </Button>
-            </Flex>
-          </Box>
-        )}
+      {profile?.business_info_complete && profile?.slug && <StoreLinkStrip slug={profile.slug} />}
 
-        {profile?.business_info_complete && profile?.slug && (
-          <StoreLinkStrip slug={profile.slug} />
-        )}
+      <DashboardStats
+        productCount={productCount}
+        inStockCount={inStockCount}
+        analytics={analytics}
+      />
 
-        <DashboardStats
-          productCount={productCount}
-          inStockCount={inStockCount}
-          analytics={analytics}
-        />
+      <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+        <DashboardVerificationStatus items={verificationItems} />
+        <DashboardQuickActions />
+      </Grid>
 
-        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          <DashboardVerificationStatus items={verificationItems} />
-          <DashboardQuickActions />
-        </Grid>
-
-        <DashboardRecentProducts products={products} productCount={productCount} />
-      </Stack>
-    
+      <DashboardRecentProducts products={products} productCount={productCount} />
+    </Stack>
   );
 }

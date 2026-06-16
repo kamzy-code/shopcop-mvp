@@ -10,11 +10,9 @@ interface TrustIndicatorsProps {
 function CircleRing({
   value,
   label,
-  color = '#319795',
 }: {
   value: number;
   label: string;
-  color?: string;
 }) {
   const SIZE = 60;
   const STROKE = 5;
@@ -22,6 +20,7 @@ function CircleRing({
   const circumference = 2 * Math.PI * radius;
   const fill = Math.max(0, Math.min(100, value));
   const dashOffset = circumference - (fill / 100) * circumference;
+  const color = fill > 70 ? '#10b981' : fill >= 40 ? '#eab308' : '#ef4444';
 
   return (
     <Flex direction="column" align="center" gap={1.5} py={3} px={2}>
@@ -53,9 +52,9 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
       </Text>
       <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" overflow="hidden">
         <SimpleGrid columns={3} divideX="1px">
-          <CircleRing value={metrics.fulfillment_rate} label="Order Fulfilment Rate" color="#319795" />
-          <CircleRing value={metrics.on_time_delivery_rate} label="On-Time Delivery Rate" color="#6366f1" />
-          <CircleRing value={Math.max(0, 100 - metrics.refund_rate)} label="Customer Satisfaction Rate" color="#10b981" />
+          <CircleRing value={metrics.fulfillment_rate} label="Order Fulfilment Rate" />
+          <CircleRing value={metrics.on_time_delivery_rate} label="On-Time Delivery Rate" />
+          <CircleRing value={Math.max(0, 100 - metrics.refund_rate)} label="Customer Satisfaction Rate" />
         </SimpleGrid>
       </Box>
     </Box>
