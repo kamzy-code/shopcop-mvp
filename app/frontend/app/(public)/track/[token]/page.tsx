@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Box, Button, Flex, Heading, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Heading, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useParams } from 'next/navigation';
-import { LuCircleCheck, LuPackage, LuPencil, LuStore } from 'react-icons/lu';
+import { LuCircleCheck, LuImage, LuPackage, LuPencil, LuStore, LuX } from 'react-icons/lu';
 import {
   DialogBackdrop,
   DialogBody,
@@ -15,6 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { useOrderByToken } from '@/app/_hooks/order';
 import { useEditReview } from '@/app/_hooks/reviews';
+import { useUploadPublicMedia, useDeleteMedia, type UploadResult } from '@/app/_hooks/upload';
 import { OrderItem } from '@/app/_types';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { formatCurrency, formatDateTime } from '@/app/_lib/orderHelpers';
@@ -42,8 +43,13 @@ export default function TrackingPage() {
   const reviewModalAutoOpened = useRef(false);
   const [isEditingReview, setIsEditingReview] = useState(false);
   const [editReviewText, setEditReviewText] = useState('');
+  const [editMediaSlots, setEditMediaSlots] = useState<(UploadResult | null)[]>([]);
+  const [editUploadingSlots, setEditUploadingSlots] = useState<boolean[]>([]);
+  const [editLocalPreviews, setEditLocalPreviews] = useState<Record<number, { url: string; isVideo: boolean }>>({});
   const [viewerMediaIndex, setViewerMediaIndex] = useState<number | null>(null);
   const editReviewMutation = useEditReview();
+  const editUploadMedia = useUploadPublicMedia();
+  const editDeleteMedia = useDeleteMedia();
 
   useEffect(() => {
     if (!tx) return;
@@ -62,6 +68,54 @@ export default function TrackingPage() {
     const t = setTimeout(() => setShowReviewModal(true), 0);
     return () => clearTimeout(t);
   }, [tx, token]);
+
+  const handleEditFileSelect = async (index: number, file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toaster.create({ title: 'File must be under 10MB', type: 'error' });
+      return;
+    }
+    const localUrl = URL.createObjectURL(file);
+    setEditLocalPreviews((prev) => ({ ...prev, [index]: { url: localUrl, isVideo: file.type.startsWith('video/') } }));
+    setEditUploadingSlots((prev) => { const next = [...prev]; next[index] = true; return next; });
+    try {
+      const result = await editUploadMedia.mutateAsync({ file, setUploadProgress: () => {} });
+      URL.revokeObjectURL(localUrl);
+      setEditLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      setEditMediaSlots((prev) => { const next = [...prev]; next[index] = result; return next; });
+    } catch {
+      URL.revokeObjectURL(localUrl);
+      setEditLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      toaster.create({ title: 'Failed to upload media', type: 'error' });
+    }
+    setEditUploadingSlots((prev) => { const next = [...prev]; next[index] = false; return next; });
+  };
+
+  const handleEditSlotClick = (index: number) => {
+    if (editUploadingSlots[index] || editMediaSlots[index]) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm';
+    input.onchange = (e) => {
+      const f = (e.target as HTMLInputElement).files?.[0];
+      if (!f) return;
+      handleEditFileSelect(index, f);
+    };
+    input.click();
+  };
+
+  const handleEditRemoveSlot = (index: number) => {
+    const file = editMediaSlots[index];
+    if (file?.publicId) {
+      editDeleteMedia.mutate(file.publicId);
+    }
+    if (editLocalPreviews[index]) {
+      URL.revokeObjectURL(editLocalPreviews[index].url);
+      setEditLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
+    }
+    setEditMediaSlots((prev) => { const next = [...prev]; next[index] = null; return next; });
+  };
+
+  const editAnyUploading = editUploadingSlots.some(Boolean);
 
   if (isLoading) {
     return (
@@ -187,7 +241,19 @@ export default function TrackingPage() {
               <Flex justify="space-between" align="center" mb={3}>
                 <Text textStyle="xs" color="fg.muted" fontWeight="medium">YOUR REVIEW</Text>
                 {canEditReview && !isEditingReview && (
-                  <Button size="xs" variant="ghost" color="fg.muted" onClick={() => { setEditReviewText(tx.review?.review_text ?? ''); setIsEditingReview(true); }}>
+                  <Button size="xs" variant="ghost" color="fg.muted" onClick={() => {
+                    setEditReviewText(tx.review?.review_text ?? '');
+                    setIsEditingReview(true);
+                    setEditMediaSlots(
+                      (tx.review?.media as { media_url: string; public_id: string | null; media_type: string }[] | undefined)?.map((m) => ({
+                        url: m.media_url,
+                        publicId: m.public_id ?? '',
+                        resourceType: m.media_type === 'VIDEO' ? 'video' : 'image',
+                      })) ?? []
+                    );
+                    setEditUploadingSlots([]);
+                    setEditLocalPreviews({});
+                  }}>
                     <LuPencil size={12} />
                     Edit
                   </Button>
@@ -196,24 +262,109 @@ export default function TrackingPage() {
               <ReviewStars rating={tx.review.overall_rating} size="sm" />
               {isEditingReview ? (
                 <Box mt={3}>
-                  <Textarea value={editReviewText} onChange={(e) => setEditReviewText(e.target.value)} placeholder="What would you like others to know?" maxLength={2000} rows={3} mb={2} />
+                  <Textarea value={editReviewText} onChange={(e) => setEditReviewText(e.target.value)} placeholder="What would you like others to know?" maxLength={2000} rows={3} mb={3} />
+                  <Text textStyle="xs" color="fg.muted" mb={2}>Media (optional, up to 3)</Text>
+                  <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={3}>
+                    {Array.from({ length: 3 }).map((_, i) => {
+                      const slot = editMediaSlots[i] ?? null;
+                      const isUploading = editUploadingSlots[i] ?? false;
+                      const localPreview = editLocalPreviews[i];
+                      const previewUrl = localPreview?.url || slot?.url || null;
+                      const isVideo = localPreview ? localPreview.isVideo : slot?.resourceType === 'video';
+                      return (
+                        <Box
+                          key={i}
+                          aspectRatio={1}
+                          borderRadius="lg"
+                          borderWidth="2px"
+                          borderStyle={previewUrl ? 'solid' : 'dashed'}
+                          borderColor={previewUrl ? 'primary.300' : 'border'}
+                          bg={previewUrl ? 'transparent' : 'bg.subtle'}
+                          position="relative"
+                          overflow="hidden"
+                          cursor={isUploading || previewUrl ? 'default' : 'pointer'}
+                          onClick={() => handleEditSlotClick(i)}
+                          _hover={isUploading || previewUrl ? {} : { borderColor: 'primary.400', bg: 'primary.subtle' }}
+                          transition="all 0.15s"
+                        >
+                          {previewUrl ? (
+                            <>
+                              {isVideo ? (
+                                <video src={previewUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              ) : (
+                                <img src={previewUrl} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              )}
+                              <Box
+                                as="button"
+                                position="absolute"
+                                top={1}
+                                right={1}
+                                w={5}
+                                h={5}
+                                borderRadius="full"
+                                bg="red.500"
+                                color="white"
+                                fontSize="xs"
+                                lineHeight="1"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                onClick={(e) => { e.stopPropagation(); handleEditRemoveSlot(i); }}
+                                aria-label="Remove media"
+                              >
+                                <LuX size={10} />
+                              </Box>
+                            </>
+                          ) : (
+                            <Flex direction="column" align="center" justify="center" h="full" gap={1} p={2}>
+                              <LuImage size={18} />
+                              <Text textStyle="2xs" color="fg.muted" textAlign="center">Media</Text>
+                            </Flex>
+                          )}
+                          {isUploading && (
+                            <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center" bg="blackAlpha.400" borderRadius="lg" zIndex={1}>
+                              <Spinner size="md" color="white" />
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Grid>
                   <Flex gap={2} justify="flex-end">
-                    <Button size="sm" variant="outline" onClick={() => setIsEditingReview(false)}>Cancel</Button>
-                    <Button size="sm" colorPalette="primary" loading={editReviewMutation.isPending}
-                      onClick={() => editReviewMutation.mutate(
-                        { tracking_token: token, review_text: editReviewText.trim() || null },
-                        {
-                          onSuccess: () => { setIsEditingReview(false); toaster.create({ title: 'Review updated', type: 'success' }); },
-                          onError: (err) => toaster.create({ title: err.message || 'Failed to update review', type: 'error' }),
+                    <Button size="sm" variant="outline" disabled={editAnyUploading} onClick={() => setIsEditingReview(false)}>Cancel</Button>
+                    <Button size="sm" colorPalette="primary" loading={editReviewMutation.isPending} disabled={editAnyUploading}
+                      onClick={() => {
+                        if (editAnyUploading) {
+                          toaster.create({ title: 'Please wait for uploads to complete', type: 'warning' });
+                          return;
                         }
-                      )}
+                        const media = editMediaSlots
+                          .filter((m): m is UploadResult => m !== null)
+                          .map((m, i) => ({
+                            media_url: m.url,
+                            public_id: m.publicId,
+                            media_type: (m.resourceType === 'video' ? 'VIDEO' : 'IMAGE') as 'IMAGE' | 'VIDEO',
+                            position: i,
+                          }));
+                        editReviewMutation.mutate(
+                          {
+                            tracking_token: token,
+                            review_text: editReviewText.trim() || null,
+                            media: media.length > 0 ? media : undefined,
+                          },
+                          {
+                            onSuccess: () => { setIsEditingReview(false); toaster.create({ title: 'Review updated', type: 'success' }); },
+                            onError: (err) => toaster.create({ title: err.message || 'Failed to update review', type: 'error' }),
+                          }
+                        );
+                      }}
                     >Save</Button>
                   </Flex>
                 </Box>
               ) : tx.review.review_text && (
                 <Text textStyle="sm" color="fg.muted" mt={2}>{tx.review.review_text}</Text>
               )}
-              {tx.review.media && tx.review.media.length > 0 && (
+              {!isEditingReview && tx.review.media && tx.review.media.length > 0 && (
                 <Flex gap={2} mt={3} flexWrap="wrap">
                   {tx.review.media.map((m: { id: string; media_url: string; media_type: string }, i: number) => (
                     <Box

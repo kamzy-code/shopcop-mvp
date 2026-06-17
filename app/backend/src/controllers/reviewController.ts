@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ReviewService } from '@services/reviewService.js';
-import { createReviewSchema, editReviewTextSchema } from '@validators/reviewValidator.js';
+import { createReviewSchema, editReviewSchema } from '@validators/reviewValidator.js';
 import { reviewLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
@@ -32,24 +32,24 @@ export class ReviewController {
     }
   }
 
-  static async editReviewText(req: Request, res: Response, next: NextFunction) {
-    const action = 'editReviewText';
+  static async editReview(req: Request, res: Response, next: NextFunction) {
+    const action = 'editReview';
 
-    const parsed = editReviewTextSchema.safeParse(req.body);
+    const parsed = editReviewSchema.safeParse(req.body);
     if (!parsed.success) {
       return next(new AppError(`Invalid input: ${parseZodErrors(parsed.error.issues)}`, 400));
     }
 
     try {
-      const review = await ReviewService.editReviewText(parsed.data);
-      reviewLogger.info('Review text updated', { action, reviewId: review.id });
+      const review = await ReviewService.editReview(parsed.data);
+      reviewLogger.info('Review updated', { action, reviewId: review.id });
       res.status(200).json({
         success: true,
         data: review,
         message: 'Review updated successfully',
       });
     } catch (error) {
-      reviewLogger.error('Failed to edit review text', { action, error });
+      reviewLogger.error('Failed to edit review', { action, error });
       next(error);
     }
   }

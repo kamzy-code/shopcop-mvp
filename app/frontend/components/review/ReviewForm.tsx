@@ -23,7 +23,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [mediaSlots, setMediaSlots] = useState<(UploadResult | null)[]>([]);
   const [uploadingSlots, setUploadingSlots] = useState<boolean[]>([]);
-  const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<number, { url: string; isVideo: boolean }>>({});
   const uploadMedia = useUploadPublicMedia();
   const deleteMedia = useDeleteMedia();
 
@@ -38,7 +38,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
     }
 
     const localUrl = URL.createObjectURL(file);
-    setLocalPreviews((prev) => ({ ...prev, [index]: localUrl }));
+    setLocalPreviews((prev) => ({ ...prev, [index]: { url: localUrl, isVideo: file.type.startsWith('video/') } }));
     setUploadingSlots((prev) => {
       const next = [...prev];
       next[index] = true;
@@ -85,7 +85,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
       deleteMedia.mutate(file.publicId);
     }
     if (localPreviews[index]) {
-      URL.revokeObjectURL(localPreviews[index]);
+      URL.revokeObjectURL(localPreviews[index].url);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
     }
     setMediaSlots((prev) => {
@@ -211,10 +211,10 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
             {Array.from({ length: MAX_MEDIA }).map((_, i) => {
               const slot = mediaSlots[i] ?? null;
               const isUploading = uploadingSlots[i] ?? false;
-              const localUrl = localPreviews[i];
-              const previewUrl = localUrl || slot?.url || null;
-              const isVideo = localUrl
-                ? fileTypeIsVideo(localUrl)
+              const localPreview = localPreviews[i];
+              const previewUrl = localPreview?.url || slot?.url || null;
+              const isVideo = localPreview
+                ? localPreview.isVideo
                 : slot?.resourceType === 'video';
               return (
                 <Box
@@ -312,12 +312,4 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   );
 }
 
-function fileTypeIsVideo(src: string): boolean {
-  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.quicktime'];
-  try {
-    const ext = new URL(src).pathname.toLowerCase();
-    return videoExts.some((e) => ext.endsWith(e));
-  } catch {
-    return false;
-  }
-}
+

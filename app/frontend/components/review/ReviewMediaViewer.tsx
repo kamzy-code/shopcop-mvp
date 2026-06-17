@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
 import { LuChevronLeft, LuChevronRight, LuX } from 'react-icons/lu';
 import type { ReviewMedia } from '@/app/_types';
 
@@ -37,8 +37,8 @@ export function ReviewMediaViewer({ media, initialIndex = 0, onClose }: ReviewMe
       >
         <Flex
           position="absolute"
-          top={-10}
-          right={0}
+          top={2}
+          right={2}
           gap={2}
           zIndex={1}
         >
@@ -70,7 +70,7 @@ export function ReviewMediaViewer({ media, initialIndex = 0, onClose }: ReviewMe
             <Box
               as="button"
               position="absolute"
-              left={-12}
+              left={2}
               top="50%"
               transform="translateY(-50%)"
               w={8}
@@ -90,7 +90,7 @@ export function ReviewMediaViewer({ media, initialIndex = 0, onClose }: ReviewMe
             <Box
               as="button"
               position="absolute"
-              right={-12}
+              right={2}
               top="50%"
               transform="translateY(-50%)"
               w={8}

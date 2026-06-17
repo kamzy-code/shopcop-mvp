@@ -37,9 +37,10 @@ export interface ReviewData {
   media?: ReviewMediaData[];
 }
 
-export interface EditReviewTextInput {
+export interface EditReviewInput {
   tracking_token: string;
   review_text: string | null;
+  media?: ReviewMediaInput[];
 }
 
 export interface ReviewSummary {

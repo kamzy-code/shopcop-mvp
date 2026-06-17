@@ -16,8 +16,14 @@ export const createReviewSchema = z.object({
   })).max(3).optional(),
 });
 
-/** PATCH /api/v1/reviews — edit review text only, within 7-day window. */
-export const editReviewTextSchema = z.object({
+/** PATCH /api/v1/reviews — edit review text and/or media, within 7-day window. */
+export const editReviewSchema = z.object({
   tracking_token: z.string().min(1, 'Tracking token is required'),
   review_text: z.string().trim().max(2000, 'Review text too long').nullable(),
+  media: z.array(z.object({
+    media_url: z.url('Invalid media URL'),
+    public_id: z.string().optional(),
+    media_type: z.enum(['IMAGE', 'VIDEO']).optional(),
+    position: z.number().int().min(0).optional(),
+  })).max(3).optional(),
 });

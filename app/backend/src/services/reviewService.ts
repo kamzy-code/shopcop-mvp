@@ -3,7 +3,7 @@ import { reviewLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { ModerationStatus, OrderStatus } from '../generated/prisma/enums.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
-import type { CreateReviewInput, EditReviewTextInput, ReviewData, ReviewSummary } from '../types/reviewTypes.js';
+import type { CreateReviewInput, EditReviewInput, ReviewData, ReviewSummary } from '../types/reviewTypes.js';
 
 export class ReviewService {
   static async createReview(data: CreateReviewInput): Promise<ReviewData> {
@@ -104,7 +104,7 @@ export class ReviewService {
     };
   }
 
-  static async editReviewText(data: EditReviewTextInput): Promise<ReviewData> {
+  static async editReview(data: EditReviewInput): Promise<ReviewData> {
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
     const order = await prisma.order.findUnique({
@@ -141,14 +141,29 @@ export class ReviewService {
 
     const updated = await prisma.review.update({
       where: { id: order.review.id },
-      data: { review_text: data.review_text ?? null },
+      data: {
+        review_text: data.review_text ?? null,
+        ...(data.media !== undefined
+          ? {
+              media: {
+                deleteMany: {},
+                create: data.media.map((m, i) => ({
+                  media_url: m.media_url,
+                  public_id: m.public_id ?? null,
+                  media_type: m.media_type ?? 'IMAGE',
+                  position: m.position ?? i,
+                })),
+              },
+            }
+          : {}),
+      },
       include: {
         media: { orderBy: { position: 'asc' } },
       },
     });
 
-    reviewLogger.info('Review text edited', {
-      action: 'editReviewText',
+    reviewLogger.info('Review edited', {
+      action: 'editReview',
       reviewId: order.review.id,
     });
 

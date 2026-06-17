@@ -10,9 +10,10 @@ import type {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface EditReviewTextInput {
+export interface EditReviewInput {
   tracking_token: string;
   review_text: string | null;
+  media?: { media_url: string; public_id?: string; media_type?: 'IMAGE' | 'VIDEO'; position?: number }[];
 }
 
 /**
@@ -50,7 +51,7 @@ export const useEditReview = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: EditReviewTextInput) => {
+    mutationFn: async (data: EditReviewInput) => {
       const res = await apiFetch<Review>('/reviews', {
         method: 'PATCH',
         body: JSON.stringify(data),
