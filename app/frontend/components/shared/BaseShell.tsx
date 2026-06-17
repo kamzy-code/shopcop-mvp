@@ -1,6 +1,7 @@
 'use client';
 import { Box, Button, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LuBell, LuLogOut, LuMenu, LuStore, LuX } from 'react-icons/lu';
@@ -141,45 +142,49 @@ function SidebarContent({
 
   return (
     <Flex direction="column" h="full" py={5}>
-      <Flex align="center" px={5} mb={8} gap={2.5}>
-        <Flex
-          w={8}
-          h={8}
-          borderRadius="lg"
-          bg="primary.500"
-          align="center"
-          justify="center"
-          flexShrink={0}
-        >
-          <LuStore size={16} color="white" />
+        <Flex align="center" px={5} mb={8} gap={2.5}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Flex align="center" gap={2.5}>
+              <Flex
+                w={8}
+                h={8}
+                borderRadius="lg"
+                bg="primary.500"
+                align="center"
+                justify="center"
+                flexShrink={0}
+              >
+                <LuStore size={16} color="white" />
+              </Flex>
+              {variant === 'admin' ? (
+                <Box>
+                  <Text fontWeight="bold" textStyle="lg" color="fg" lineHeight="tight">
+                    ShopCop
+                  </Text>
+                  <Text textStyle="2xs" color="fg.muted" fontWeight="medium">
+                    Admin Panel
+                  </Text>
+                </Box>
+              ) : (
+                <Text fontWeight="bold" textStyle="lg" color="fg">
+                  ShopCop
+                </Text>
+              )}
+            </Flex>
+          </Link>
+          {onClose && (
+            <IconButton
+              ms="auto"
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              aria-label="Close menu"
+              color="fg.muted"
+            >
+              <LuX />
+            </IconButton>
+          )}
         </Flex>
-        {variant === 'admin' ? (
-          <Box>
-            <Text fontWeight="bold" textStyle="lg" color="fg" lineHeight="tight">
-              ShopCop
-            </Text>
-            <Text textStyle="2xs" color="fg.muted" fontWeight="medium">
-              Admin Panel
-            </Text>
-          </Box>
-        ) : (
-          <Text fontWeight="bold" textStyle="lg" color="fg">
-            ShopCop
-          </Text>
-        )}
-        {onClose && (
-          <IconButton
-            ms="auto"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            aria-label="Close menu"
-            color="fg.muted"
-          >
-            <LuX />
-          </IconButton>
-        )}
-      </Flex>
 
       <Stack gap={0.5} flex={1} px={3}>
         {navItems.map((item) => (

@@ -12,8 +12,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ShopCop — Verify vendors, shop with confidence',
-  description: 'ShopCop helps you find verified vendors and shop safely in Nigeria.',
+  title: 'ShopCop — Get verified, sell with confidence',
+  description:
+    'ShopCop verifies social commerce sellers so buyers can shop with confidence on WhatsApp, Instagram & TikTok.',
 };
 
 export default function RootLayout({
