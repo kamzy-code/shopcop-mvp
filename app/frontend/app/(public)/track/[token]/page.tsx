@@ -20,6 +20,7 @@ import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { formatCurrency, formatDateTime } from '@/app/_lib/orderHelpers';
 import { ItemDetailModal } from '@/components/order/ItemDetailModal';
 import { ReviewStars } from '@/components/review/ReviewStars';
+import { ReviewMediaViewer } from '@/components/review/ReviewMediaViewer';
 import dynamic from 'next/dynamic';
 import { toaster } from '@/components/ui/toaster';
 
@@ -41,6 +42,7 @@ export default function TrackingPage() {
   const reviewModalAutoOpened = useRef(false);
   const [isEditingReview, setIsEditingReview] = useState(false);
   const [editReviewText, setEditReviewText] = useState('');
+  const [viewerMediaIndex, setViewerMediaIndex] = useState<number | null>(null);
   const editReviewMutation = useEditReview();
 
   useEffect(() => {
@@ -211,6 +213,30 @@ export default function TrackingPage() {
               ) : tx.review.review_text && (
                 <Text textStyle="sm" color="fg.muted" mt={2}>{tx.review.review_text}</Text>
               )}
+              {tx.review.media && tx.review.media.length > 0 && (
+                <Flex gap={2} mt={3} flexWrap="wrap">
+                  {tx.review.media.map((m: { id: string; media_url: string; media_type: string }, i: number) => (
+                    <Box
+                      key={m.id}
+                      w={16}
+                      h={16}
+                      borderRadius="md"
+                      overflow="hidden"
+                      cursor="pointer"
+                      flexShrink={0}
+                      borderWidth="1px"
+                      borderColor="border"
+                      onClick={() => setViewerMediaIndex(i)}
+                    >
+                      {m.media_type === 'VIDEO' ? (
+                        <video src={m.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      ) : (
+                        <img src={m.media_url} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      )}
+                    </Box>
+                  ))}
+                </Flex>
+              )}
             </Box>
           )}
 
@@ -262,6 +288,14 @@ export default function TrackingPage() {
         onClose={() => setSelectedItem(null)}
         item={selectedItem!}
       />
+
+      {viewerMediaIndex !== null && tx?.review?.media && (
+        <ReviewMediaViewer
+          media={tx.review.media}
+          initialIndex={viewerMediaIndex}
+          onClose={() => setViewerMediaIndex(null)}
+        />
+      )}
     </Box>
   );
 }

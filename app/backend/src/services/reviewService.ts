@@ -58,6 +58,19 @@ export class ReviewService {
         review_text: data.review_text?.trim() || null,
         moderation_status: ModerationStatus.APPROVED,
         approved_at: new Date(),
+        media: data.media?.length
+          ? {
+              create: data.media.map((m, i) => ({
+                media_url: m.media_url,
+                public_id: m.public_id ?? null,
+                media_type: m.media_type ?? 'IMAGE',
+                position: m.position ?? i,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        media: { orderBy: { position: 'asc' } },
       },
     });
 
@@ -79,6 +92,15 @@ export class ReviewService {
       buyer_name: review.buyer_name,
       review_text: review.review_text,
       created_at: review.created_at,
+      media: review.media?.length
+        ? review.media.map((m) => ({
+            id: m.id,
+            media_url: m.media_url,
+            public_id: m.public_id,
+            media_type: m.media_type as 'IMAGE' | 'VIDEO',
+            position: m.position,
+          }))
+        : undefined,
     };
   }
 
@@ -120,6 +142,9 @@ export class ReviewService {
     const updated = await prisma.review.update({
       where: { id: order.review.id },
       data: { review_text: data.review_text ?? null },
+      include: {
+        media: { orderBy: { position: 'asc' } },
+      },
     });
 
     reviewLogger.info('Review text edited', {
@@ -136,6 +161,15 @@ export class ReviewService {
       buyer_name: updated.buyer_name,
       review_text: updated.review_text,
       created_at: updated.created_at,
+      media: updated.media?.length
+        ? updated.media.map((m) => ({
+            id: m.id,
+            media_url: m.media_url,
+            public_id: m.public_id,
+            media_type: m.media_type as 'IMAGE' | 'VIDEO',
+            position: m.position,
+          }))
+        : undefined,
     };
   }
 
@@ -169,6 +203,9 @@ export class ReviewService {
         orderBy: { created_at: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
+        include: {
+          media: { orderBy: { position: 'asc' } },
+        },
       }),
       prisma.review.count({ where: listWhere }),
       prisma.review.groupBy({
@@ -193,6 +230,15 @@ export class ReviewService {
         buyer_name: r.buyer_name,
         review_text: r.review_text,
         created_at: r.created_at,
+        media: r.media?.length
+          ? r.media.map((m) => ({
+              id: m.id,
+              media_url: m.media_url,
+              public_id: m.public_id,
+              media_type: m.media_type as 'IMAGE' | 'VIDEO',
+              position: m.position,
+            }))
+          : undefined,
       })),
       summary: {
         total_reviews: total,

@@ -488,6 +488,14 @@ export interface BusinessCategory {
 // REVIEW & TRUST TYPES
 // ============================================================
 
+export interface ReviewMedia {
+  id: string;
+  media_url: string;
+  public_id: string | null;
+  media_type: 'IMAGE' | 'VIDEO';
+  position: number;
+}
+
 export interface Review {
   id: string;
   overall_rating: number;
@@ -497,6 +505,7 @@ export interface Review {
   buyer_name: string | null;
   review_text: string | null;
   created_at: string;
+  media: ReviewMedia[];
 }
 
 export interface ReviewSummary {
@@ -541,6 +550,7 @@ export interface CreateReviewInput {
   satisfaction_rating?: number;
   buyer_name?: string;
   review_text?: string;
+  media?: { media_url: string; public_id?: string; media_type?: 'IMAGE' | 'VIDEO'; position?: number }[];
 }
 
 export interface PublicVendorProfileProfile {

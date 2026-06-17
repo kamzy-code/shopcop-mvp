@@ -14,6 +14,7 @@ import {
 } from '@/app/_hooks/order';
 import { Order, OrderItem, OrderStatus } from '@/app/_types';
 import { ReviewStars as ReviewStarsVendor } from '@/components/review/ReviewStars';
+import { ReviewMediaViewer } from '@/components/review/ReviewMediaViewer';
 import { ItemDetailModal } from '@/components/order/ItemDetailModal';
 import { formatCurrency, formatDate, formatDateTime } from '@/app/_lib/orderHelpers';
 import { OrderHeader } from '@/components/order/OrderHeader';
@@ -40,6 +41,7 @@ export default function OrderDetailPage() {
   const [refundVendorNotes, setRefundVendorNotes] = useState('');
   const [errorModal, setErrorModal] = useState({ open: false, title: '', description: '' });
   const [selectedItem, setSelectedItem] = useState<OrderItem | null>(null);
+  const [viewerMediaIndex, setViewerMediaIndex] = useState<number | null>(null);
 
   const { data: tx, isLoading, error } = useOrder(id);
   const statusMutation = useUpdateOrderStatus();
@@ -358,6 +360,30 @@ export default function OrderDetailPage() {
                   {tx.review.review_text}
                 </Text>
               )}
+              {tx.review.media && tx.review.media.length > 0 && (
+                <Flex gap={2} mt={3} flexWrap="wrap">
+                  {tx.review.media.map((m, i) => (
+                    <Box
+                      key={m.id}
+                      w={16}
+                      h={16}
+                      borderRadius="md"
+                      overflow="hidden"
+                      cursor="pointer"
+                      flexShrink={0}
+                      borderWidth="1px"
+                      borderColor="border"
+                      onClick={() => setViewerMediaIndex(i)}
+                    >
+                      {m.media_type === 'VIDEO' ? (
+                        <video src={m.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      ) : (
+                        <img src={m.media_url} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      )}
+                    </Box>
+                  ))}
+                </Flex>
+              )}
             </Box>
           )}
 
@@ -395,6 +421,14 @@ export default function OrderDetailPage() {
           )}
         </Stack>
       </Box>
+
+      {viewerMediaIndex !== null && tx?.review?.media && (
+        <ReviewMediaViewer
+          media={tx.review.media}
+          initialIndex={viewerMediaIndex}
+          onClose={() => setViewerMediaIndex(null)}
+        />
+      )}
     </>
   );
 }

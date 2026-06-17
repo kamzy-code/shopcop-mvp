@@ -1,3 +1,18 @@
+export interface ReviewMediaInput {
+  media_url: string;
+  public_id?: string;
+  media_type?: 'IMAGE' | 'VIDEO';
+  position?: number;
+}
+
+export interface ReviewMediaData {
+  id: string;
+  media_url: string;
+  public_id: string | null;
+  media_type: 'IMAGE' | 'VIDEO';
+  position: number;
+}
+
 export interface CreateReviewInput {
   tracking_token: string;
   overall_rating: number;
@@ -7,6 +22,7 @@ export interface CreateReviewInput {
   buyer_name?: string;
   review_text?: string;
   buyer_id?: string;
+  media?: ReviewMediaInput[];
 }
 
 export interface ReviewData {
@@ -18,6 +34,7 @@ export interface ReviewData {
   buyer_name: string | null;
   review_text: string | null;
   created_at: Date;
+  media?: ReviewMediaData[];
 }
 
 export interface EditReviewTextInput {

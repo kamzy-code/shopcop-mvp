@@ -34,7 +34,9 @@ const ORDER_INCLUDE = {
     },
   },
   status_history: { orderBy: { created_at: 'asc' as const } },
-  review: true,
+  review: {
+    include: { media: { orderBy: { position: 'asc' as const } } },
+  },
 } as const;
 
 // Buyer-facing include — adds bank details so the checkout page can show payment info.
@@ -56,7 +58,9 @@ const BUYER_ORDER_INCLUDE = {
     },
   },
   status_history: { orderBy: { created_at: 'asc' as const } },
-  review: true,
+  review: {
+    include: { media: { orderBy: { position: 'asc' as const } } },
+  },
 } as const;
 
 export class OrderService {
