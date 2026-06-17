@@ -259,6 +259,26 @@ export class VendorProfileService {
     return breakdown;
   }
 
+  /**
+   * Update the vendor's profile photo URL.
+   *
+   * @param userId - Authenticated user's ID
+   * @param profile_photo_url - Cloudinary URL of the uploaded photo
+   * @returns Updated vendor profile
+   * @throws {AppError} 404 — Vendor profile not found
+   */
+  static async updateProfilePhoto(userId: string, profile_photo_url: string, profile_photo_public_id?: string) {
+    const existing = await prisma.vendorProfile.findUnique({ where: { user_id: userId } });
+    if (!existing) {
+      throw new AppError('Vendor profile not found', 404);
+    }
+
+    return prisma.vendorProfile.update({
+      where: { user_id: userId },
+      data: { profile_photo_url, profile_photo_public_id: profile_photo_public_id ?? null },
+    });
+  }
+
   // ============================================
   // HELPER METHODS
   // ============================================

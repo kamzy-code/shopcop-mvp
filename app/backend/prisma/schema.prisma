@@ -266,7 +266,8 @@ model VendorProfile {
   business_name        String?
   business_description String? @db.Text
   slug                 String? @unique
-  profile_photo_url    String?
+  profile_photo_url         String?
+  profile_photo_public_id   String?
 
   // Location
   country        String  @default("Nigeria")

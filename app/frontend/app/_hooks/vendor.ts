@@ -59,6 +59,22 @@ export const useSubmitBusinessInfo = () =>
       }),
   });
 
+export const useUpdateProfilePhoto = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { profile_photo_url: string; profile_photo_public_id?: string }) => {
+      await apiFetch('/vendors/profile-photo', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-completeness'] });
+    },
+  });
+};
+
 const useInvalidateAfterVerification = () => {
   const queryClient = useQueryClient();
   return () => {

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { VendorProfileService } from '@services/vendorProfileService.js';
-import { personalInfoSchema, businessInfoSchema } from '../validators/vendorProfileValidator.js';
+import { personalInfoSchema, businessInfoSchema, profilePhotoSchema } from '../validators/vendorProfileValidator.js';
 import { vendorLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
@@ -176,6 +176,48 @@ export class VendorProfileController {
       res.status(200).json({ success: true, data: breakdown });
     } catch (error) {
       vendorLogger.error('Failed to get profile completeness', {
+        action,
+        userId,
+        error: error instanceof AppError ? error.message : error,
+      });
+      next(error);
+    }
+  }
+
+  /**
+   * Update the vendor's profile photo.
+   *
+   * @route  PATCH /api/v1/vendors/profile-photo
+   * @access Vendor (authenticated)
+   * @param req.body.profile_photo_url - Cloudinary URL of the uploaded photo
+   * @returns 200 `{ success, data: vendorProfile }`
+   */
+  static async updateProfilePhoto(req: Request, res: Response, next: NextFunction) {
+    const action = 'updateProfilePhoto';
+    const userId = req.user!.userId;
+
+    const parsed = profilePhotoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      vendorLogger.warn('Invalid profile photo input', { action, userId, issues: parsed.error.issues });
+      throw new AppError(`Invalid profile photo input: ${parseZodErrors(parsed.error.issues)}`, 400);
+    }
+
+    try {
+      const profile = await VendorProfileService.updateProfilePhoto(
+        userId,
+        parsed.data.profile_photo_url,
+        parsed.data.profile_photo_public_id,
+      );
+
+      vendorLogger.info('Profile photo updated successfully', { action, userId });
+
+      res.status(200).json({
+        success: true,
+        data: profile,
+        message: 'Profile photo updated successfully',
+      });
+    } catch (error) {
+      vendorLogger.error('Failed to update profile photo', {
         action,
         userId,
         error: error instanceof AppError ? error.message : error,

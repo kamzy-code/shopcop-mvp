@@ -21,4 +21,7 @@ vendorRouter.get('/', VendorProfileController.getVendorProfile);
 /** GET /api/v1/vendors/completeness — Get profile completeness breakdown. */
 vendorRouter.get('/completeness', VendorProfileController.getProfileCompleteness);
 
+/** PATCH /api/v1/vendors/profile-photo — Update profile photo. */
+vendorRouter.patch('/profile-photo', VendorProfileController.updateProfilePhoto);
+
 export default vendorRouter;

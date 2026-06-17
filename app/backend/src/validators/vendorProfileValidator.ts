@@ -53,12 +53,10 @@ export const personalInfoSchema = z.object({
 
   gender: z.enum(Gender, 'Gender must be MALE, FEMALE, or PREFER_NOT_TO_SAY'),
 
-  date_of_birth: z.coerce
-    .date()
-    .refine((date) => {
-      const age = new Date().getFullYear() - date.getFullYear();
-      return age >= 16 && age <= 120;
-    }, 'You must be at least 16 years old'),
+  date_of_birth: z.coerce.date().refine((date) => {
+    const age = new Date().getFullYear() - date.getFullYear();
+    return age >= 16 && age <= 120;
+  }, 'You must be at least 16 years old'),
 
   phone_number: z
     .string()
@@ -96,7 +94,10 @@ export const businessInfoSchema = z.object({
     .max(3, 'You can select up to 3 subcategories'),
 
   bank_name: z.string().trim().min(2, 'Bank name is required'),
-  account_number: z.string().trim().regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
+  account_number: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, 'Account number must be exactly 10 digits'),
   account_name: z
     .string()
     .trim()
@@ -136,4 +137,14 @@ export const businessInfoSchema = z.object({
     .trim()
     .max(500, 'Refund notes must be less than 500 characters')
     .optional(),
+});
+
+// ============================================
+// PROFILE PHOTO VALIDATION
+// ============================================
+
+/** Validates a profile photo URL update. */
+export const profilePhotoSchema = z.object({
+  profile_photo_url: z.url('Invalid photo URL').or(z.literal('')),
+  profile_photo_public_id: z.string().optional(),
 });

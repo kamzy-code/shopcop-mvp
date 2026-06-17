@@ -141,6 +141,7 @@ export const businessInfoSchema = z
     primary_contact: z
       .enum(['WHATSAPP', 'INSTAGRAM', 'TIKTOK', 'FACEBOOK', 'PHONE_CALL'])
       .optional(),
+    profile_photo_url: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const hasContact = [

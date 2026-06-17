@@ -2,6 +2,7 @@ import { Field, Flex, Input, Text, Textarea } from '@chakra-ui/react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
 import { BusinessInfoFormData } from '@/app/validators/vendorSchema';
 import { SectionHeader } from '../shared/formCard';
+import { ProfilePhotoUpload } from '../shared/profilePhotoUpload';
 
 interface BusinessDetailsFormProps {
   register: UseFormRegister<BusinessInfoFormData>;
@@ -10,6 +11,7 @@ interface BusinessDetailsFormProps {
 }
 
 export function BusinessDetailsForm({ register, errors, descriptionValue }: BusinessDetailsFormProps) {
+
   return (
     <>
      <SectionHeader title="Business Identity" description="Your brand name and a short pitch that tells buyers what you offer." />
@@ -41,6 +43,8 @@ export function BusinessDetailsForm({ register, errors, descriptionValue }: Busi
           </Text>
         </Flex>
       </Field.Root>
+
+      <ProfilePhotoUpload variant="field" />
     </>
   );
 }

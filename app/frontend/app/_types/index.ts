@@ -41,6 +41,7 @@ export interface VendorProfile {
   business_description: string | null;
   slug: string | null;
   profile_photo_url: string | null;
+  profile_photo_public_id: string | null;
 
   // Location
   country: string;
