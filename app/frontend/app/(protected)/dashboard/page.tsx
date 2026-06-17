@@ -240,6 +240,8 @@ export default function Dashboard() {
         productCount={productCount}
         inStockCount={inStockCount}
         analytics={analytics}
+        reviewCount={profile?.review_count ?? 0}
+        averageRating={profile?.average_rating ?? 0}
       />
 
       <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>

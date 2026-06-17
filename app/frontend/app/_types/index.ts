@@ -86,6 +86,7 @@ export interface VendorProfile {
   total_orders: number;
   fulfillment_rate: number;
   average_rating: number;
+  review_count: number;
 
   // Status & timestamps
   profile_status: string;

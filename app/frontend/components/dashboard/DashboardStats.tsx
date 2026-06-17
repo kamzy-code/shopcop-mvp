@@ -79,9 +79,11 @@ interface DashboardStatsProps {
   productCount: number;
   inStockCount: number;
   analytics: { this_month: { total_orders: number; revenue: number } } | undefined;
+  reviewCount: number;
+  averageRating: number;
 }
 
-export function DashboardStats({ productCount, inStockCount, analytics }: DashboardStatsProps) {
+export function DashboardStats({ productCount, inStockCount, analytics, reviewCount, averageRating }: DashboardStatsProps) {
   const router = useRouter();
   return (
     <Box>
@@ -127,10 +129,10 @@ export function DashboardStats({ productCount, inStockCount, analytics }: Dashbo
         <StatCard
           icon={LuStar}
           label="Reviews"
-          value="—"
-          sub="Reviews soon"
+          value={averageRating > 0 ? `${averageRating.toFixed(1)} ★` : '—'}
+          sub={`${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'}`}
           color="rating"
-          comingSoon
+          onClick={() => router.push('/reviews')}
         />
       </Grid>
     </Box>
