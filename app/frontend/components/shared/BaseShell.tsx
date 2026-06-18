@@ -4,7 +4,8 @@ import NextLink from 'next/link';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { LuBell, LuLogOut, LuMenu, LuStore, LuX } from 'react-icons/lu';
+import { LuLogOut, LuMenu, LuStore, LuX } from 'react-icons/lu';
+import { NotificationBell } from '@/components/shared/notificationBell';
 import type { IconType } from 'react-icons';
 import { useAuthStore } from '@/app/_store/authStore';
 import { useLogout } from '@/app/_hooks/auth';
@@ -303,9 +304,7 @@ export default function BaseShell({ navItems, variant, children }: BaseShellProp
           </IconButton>
           <Box flex={1} />
           <ColorModeButton />
-          <IconButton variant="ghost" size="sm" aria-label="Notifications" color="fg.muted">
-            <LuBell />
-          </IconButton>
+          <NotificationBell />
         </Flex>
 
         <Box flex={1} overflow="auto" p={{ base: 4, md: 6, lg: 8 }}>

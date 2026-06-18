@@ -4,6 +4,9 @@ import { orderLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { OrderStatus, RefundStatus, PaymentStatus } from '../generated/prisma/enums.js';
 import { TrustMetricsService } from '@services/trustMetricsService.js';
+import { NotificationService } from '@services/notificationService.js';
+import { NotificationType } from '../types/notification.types.js';
+import { sendPaymentConfirmedEmail } from '@utils/emailTemplates.js';
 import {
   CreateOrderInput,
   UpdateOrderInput,
@@ -20,6 +23,19 @@ import {
   NON_CANCELLABLE_STATUSES,
   REFUND_STATUS_SYNC,
 } from '@utils/orderUtils.js';
+
+function getOrderStatusMessage(status: OrderStatus, reference: string): string {
+  switch (status) {
+    case OrderStatus.IN_PROGRESS:       return `Your order ${reference} is now being processed.`;
+    case OrderStatus.SHIPPED:           return `Your order ${reference} has been shipped.`;
+    case OrderStatus.DELIVERED:         return `Your order ${reference} has been delivered.`;
+    case OrderStatus.COMPLETED:         return `Your order ${reference} is complete.`;
+    case OrderStatus.REFUND_IN_PROGRESS: return `Your refund for order ${reference} is in progress.`;
+    case OrderStatus.REFUNDED:          return `Your refund for order ${reference} has been processed.`;
+    case OrderStatus.RESOLVED:          return `Your order ${reference} has been resolved.`;
+    default:                            return `Your order ${reference} has been updated.`;
+  }
+}
 
 const ORDER_INCLUDE = {
   items: true,
@@ -78,6 +94,15 @@ export class OrderService {
       throw new AppError('Vendor profile not found', 404);
     }
     return vendor;
+  }
+
+  /** Resolve the User.id for a VendorProfile.id (needed for notifications). Returns null if not found. */
+  private static async resolveVendorUserId(vendorProfileId: string): Promise<string | null> {
+    const vendor = await prisma.vendorProfile.findUnique({
+      where: { id: vendorProfileId },
+      select: { user_id: true },
+    });
+    return vendor?.user_id ?? null;
   }
 
   // ─── Create ──────────────────────────────────────────────────────────────────
@@ -362,6 +387,28 @@ export class OrderService {
     });
 
     orderLogger.info('Buyer submitted payment proof', { orderId: updated.id });
+
+    // Buyer-triggered → notify vendor (no buyer_id guard needed)
+    const vendorUserId = await this.resolveVendorUserId(updated.vendor_id);
+    if (vendorUserId) {
+      NotificationService.create({
+        user_id: vendorUserId,
+        type: NotificationType.PAYMENT_PROOF_SUBMITTED,
+        title: 'Payment Proof Submitted',
+        message: `A buyer has submitted payment proof for order ${updated.reference}.`,
+        entity_type: 'ORDER',
+        entity_id: updated.id,
+        action_label: 'Review Order',
+        action_url: `/orders/${updated.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.PAYMENT_PROOF_SUBMITTED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
+    }
+
     return updated;
   }
 
@@ -593,20 +640,70 @@ export class OrderService {
             data: { stock_status: 'OUT_OF_STOCK' },
           });
 
-          //Send Notification Later
           orderLogger.warn('Product out of stock after order confirmation', {
             productId: product.id,
             productName: product.name,
             vendorId: product.vendor_id,
           });
-        } else if (product.low_stock_threshold && newQty <= product.low_stock_threshold) {
-          //Send notification later
 
+          // Notify vendor — resolve user_id outside transaction
+          this.resolveVendorUserId(product.vendor_id).then((vendorUserId) => {
+            if (vendorUserId) {
+              NotificationService.create({
+                user_id: vendorUserId,
+                type: NotificationType.OUT_OF_STOCK,
+                title: 'Out of Stock',
+                message: `"${product.name}" is now out of stock.`,
+                entity_type: 'PRODUCT',
+                entity_id: product.id,
+                action_label: 'Update Stock',
+                action_url: `/products/${product.id}`,
+              }).catch((err) => {
+                orderLogger.error('Failed to create notification', {
+                  action: 'notificationCreate',
+                  type: NotificationType.OUT_OF_STOCK,
+                  error: err instanceof Error ? err.message : err,
+                });
+              });
+            }
+          }).catch((err) => {
+            orderLogger.error('Failed to resolve vendor user for OUT_OF_STOCK notification', {
+              action: 'notificationCreate',
+              error: err instanceof Error ? err.message : err,
+            });
+          });
+        } else if (product.low_stock_threshold !== null && newQty <= product.low_stock_threshold) {
           orderLogger.warn('Product low stock after order confirmation', {
             productId: product.id,
             productName: product.name,
             vendorId: product.vendor_id,
             remaining: newQty,
+          });
+
+          this.resolveVendorUserId(product.vendor_id).then((vendorUserId) => {
+            if (vendorUserId) {
+              NotificationService.create({
+                user_id: vendorUserId,
+                type: NotificationType.LOW_STOCK_ALERT,
+                title: 'Low Stock Alert',
+                message: `"${product.name}" has only ${newQty} unit${newQty === 1 ? '' : 's'} remaining.`,
+                entity_type: 'PRODUCT',
+                entity_id: product.id,
+                action_label: 'Update Stock',
+                action_url: `/products/${product.id}`,
+              }).catch((err) => {
+                orderLogger.error('Failed to create notification', {
+                  action: 'notificationCreate',
+                  type: NotificationType.LOW_STOCK_ALERT,
+                  error: err instanceof Error ? err.message : err,
+                });
+              });
+            }
+          }).catch((err) => {
+            orderLogger.error('Failed to resolve vendor user for LOW_STOCK_ALERT notification', {
+              action: 'notificationCreate',
+              error: err instanceof Error ? err.message : err,
+            });
           });
         }
       }
@@ -640,6 +737,36 @@ export class OrderService {
       orderId,
       reference: result.reference,
     });
+
+    // Vendor-triggered → notify buyer only if a buyer account is linked
+    if (result.buyer_id) {
+      NotificationService.create({
+        user_id: result.buyer_id,
+        type: NotificationType.PAYMENT_CONFIRMED,
+        title: 'Payment Confirmed',
+        message: `Your payment for order ${result.reference} has been confirmed.`,
+        entity_type: 'ORDER',
+        entity_id: result.id,
+        action_label: 'Track Order',
+        action_url: `/orders/${result.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.PAYMENT_CONFIRMED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
+
+      // Email the buyer if we have their email
+      if (result.buyer_email) {
+        sendPaymentConfirmedEmail(result.buyer_email, undefined, result.reference, result.tracking_token ?? undefined).catch((err) => {
+          orderLogger.error('Failed to send payment confirmed email', {
+            action: 'sendPaymentConfirmedEmail',
+            error: err instanceof Error ? err.message : err,
+          });
+        });
+      }
+    }
 
     return result;
   }
@@ -712,6 +839,31 @@ export class OrderService {
 
     if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.REFUNDED || newStatus === OrderStatus.RESOLVED) {
       TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
+    }
+
+    // Vendor-triggered → notify buyer only if a buyer account is linked
+    const BUYER_NOTIFIED_STATUSES = new Set<OrderStatus>([
+      OrderStatus.IN_PROGRESS, OrderStatus.SHIPPED, OrderStatus.DELIVERED,
+      OrderStatus.COMPLETED, OrderStatus.REFUNDED, OrderStatus.RESOLVED,
+    ]);
+
+    if (BUYER_NOTIFIED_STATUSES.has(newStatus) && result.buyer_id) {
+      NotificationService.create({
+        user_id: result.buyer_id,
+        type: NotificationType.ORDER_STATUS_UPDATED,
+        title: 'Order Update',
+        message: getOrderStatusMessage(newStatus, result.reference),
+        entity_type: 'ORDER',
+        entity_id: result.id,
+        action_label: 'View Order',
+        action_url: `/orders/${result.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.ORDER_STATUS_UPDATED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
     }
 
     return result;
@@ -797,6 +949,26 @@ export class OrderService {
       reference: result.reference,
     });
 
+    // Vendor-triggered → notify buyer only if a buyer account is linked
+    if (result.buyer_id) {
+      NotificationService.create({
+        user_id: result.buyer_id,
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Order Cancelled',
+        message: `Order ${result.reference} has been cancelled by the vendor.`,
+        entity_type: 'ORDER',
+        entity_id: result.id,
+        action_label: 'View Order',
+        action_url: `/orders/${result.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.ORDER_CANCELLED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
+    }
+
     return result;
   }
 
@@ -846,6 +1018,27 @@ export class OrderService {
     });
 
     orderLogger.info('Buyer cancelled order', { orderId: order.id, token });
+
+    // Buyer-triggered → notify vendor (no buyer_id guard needed)
+    const vendorUserIdForCancel = await this.resolveVendorUserId(cancelled.vendor_id);
+    if (vendorUserIdForCancel) {
+      NotificationService.create({
+        user_id: vendorUserIdForCancel,
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Order Cancelled',
+        message: `A buyer has cancelled order ${cancelled.reference}.`,
+        entity_type: 'ORDER',
+        entity_id: cancelled.id,
+        action_label: 'View Order',
+        action_url: `/orders/${cancelled.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.ORDER_CANCELLED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
+    }
 
     const { vendor_notes: _omit, ...buyerSafe } = cancelled;
     void _omit;
@@ -1010,6 +1203,27 @@ export class OrderService {
 
     orderLogger.info('Buyer requested refund', { orderId: order.id, token });
 
+    // Buyer-triggered → notify vendor (no buyer_id guard needed)
+    const vendorUserIdForRefund = await this.resolveVendorUserId(updated.vendor_id);
+    if (vendorUserIdForRefund) {
+      NotificationService.create({
+        user_id: vendorUserIdForRefund,
+        type: NotificationType.ORDER_STATUS_UPDATED,
+        title: 'Refund Requested',
+        message: `A buyer has requested a refund on order ${updated.reference}.`,
+        entity_type: 'ORDER',
+        entity_id: updated.id,
+        action_label: 'View Order',
+        action_url: `/orders/${updated.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.ORDER_STATUS_UPDATED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
+    }
+
     const { vendor_notes: _omit, ...buyerSafe } = updated;
     void _omit;
     return buyerSafe;
@@ -1089,6 +1303,30 @@ export class OrderService {
 
     if (newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.REFUNDED || newStatus === OrderStatus.RESOLVED) {
       TrustMetricsService.recalculateVendorTrustMetrics(result.vendor_id);
+    }
+
+    // Vendor-triggered → notify buyer only if a buyer account is linked
+    const BUYER_REFUND_STATUSES = new Set<OrderStatus>([
+      OrderStatus.REFUND_IN_PROGRESS, OrderStatus.REFUNDED, OrderStatus.RESOLVED,
+    ]);
+
+    if (BUYER_REFUND_STATUSES.has(newStatus) && result.buyer_id) {
+      NotificationService.create({
+        user_id: result.buyer_id,
+        type: NotificationType.ORDER_STATUS_UPDATED,
+        title: 'Order Update',
+        message: getOrderStatusMessage(newStatus, result.reference),
+        entity_type: 'ORDER',
+        entity_id: result.id,
+        action_label: 'View Order',
+        action_url: `/orders/${result.id}`,
+      }).catch((err) => {
+        orderLogger.error('Failed to create notification', {
+          action: 'notificationCreate',
+          type: NotificationType.ORDER_STATUS_UPDATED,
+          error: err instanceof Error ? err.message : err,
+        });
+      });
     }
 
     return result;

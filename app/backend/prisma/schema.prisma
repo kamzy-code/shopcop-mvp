@@ -184,7 +184,8 @@ model User {
   buyer_profile  BuyerProfile[]
   admin_profile  AdminProfile[]
   admin_actions  AdminActivityLog[]
-  orders   Order[]
+  orders         Order[]
+  notifications  Notification[]
 
   @@index([email])
   @@index([google_id])
@@ -737,6 +738,35 @@ model ReviewMedia {
 
   @@index([review_id])
   @@map("review_media")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  type        String
+  title       String
+  message     String
+
+  entity_type String?  // "ORDER" | "VERIFICATION" | "PRODUCT"
+  entity_id   String?
+
+  action_label String?
+  action_url   String?
+
+  read        Boolean   @default(false)
+  read_at     DateTime?
+
+  created_at  DateTime  @default(now())
+
+  @@index([user_id, read])
+  @@index([user_id, created_at])
+  @@map("notifications")
 }
 
 // ============================================

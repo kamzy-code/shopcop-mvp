@@ -410,3 +410,221 @@ export const sendMagicLinkEmail = async (
     html,
   });
 };
+
+// ============================================================
+// VERIFICATION APPROVED EMAIL
+// ============================================================
+
+/**
+ * Notifies a vendor that their verification has been approved by an admin.
+ *
+ * @param email - Vendor's email address
+ * @param name  - Optional vendor display name
+ * @param verificationType - Verification type (NIN, CAC, SMEDAN, ADDRESS)
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
+export const sendVerificationApprovedEmail = async (
+  email: string,
+  name?: string,
+  verificationType?: string
+): Promise<boolean> => {
+  const greeting = name ? `Hi ${name}` : 'Hi there';
+  const typeLabel = verificationType ?? 'Your';
+
+  const html = emailShell(`
+    <p class="email-greeting">${greeting} 👋</p>
+
+    <p class="email-text">
+      Great news! Your <strong>${typeLabel}</strong> verification has been reviewed and approved.
+      Your account has been updated accordingly.
+    </p>
+
+    <div class="email-btn-wrap">
+      <a href="https://getshopcop.com/verifications" class="email-btn" target="_blank">
+        View Verifications
+      </a>
+    </div>
+
+    <hr class="email-divider" />
+
+    <p class="email-text-muted">
+      If you have any questions, feel free to contact our support team.
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Your verification was approved ✅',
+    html,
+  });
+};
+
+// ============================================================
+// VERIFICATION REJECTED EMAIL
+// ============================================================
+
+/**
+ * Notifies a vendor that their verification has been rejected by an admin.
+ *
+ * @param email           - Vendor's email address
+ * @param name            - Optional vendor display name
+ * @param verificationType - Verification type (NIN, CAC, SMEDAN, ADDRESS)
+ * @param rejectionReason - Required reason for rejection
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
+export const sendVerificationRejectedEmail = async (
+  email: string,
+  name?: string,
+  verificationType?: string,
+  rejectionReason?: string
+): Promise<boolean> => {
+  const greeting = name ? `Hi ${name}` : 'Hi there';
+  const typeLabel = verificationType ?? 'Your';
+
+  const html = emailShell(`
+    <p class="email-greeting">${greeting}</p>
+
+    <p class="email-text">
+      We've reviewed your <strong>${typeLabel}</strong> verification and were unable to approve it at this time.
+    </p>
+
+    ${rejectionReason ? `
+    <div class="email-notice">
+      <strong>Reason:</strong> ${rejectionReason}
+    </div>
+    ` : ''}
+
+    <p class="email-text">
+      You can resubmit your verification with the correct information from your dashboard.
+    </p>
+
+    <div class="email-btn-wrap">
+      <a href="https://getshopcop.com/verifications" class="email-btn" target="_blank">
+        Resubmit Verification
+      </a>
+    </div>
+
+    <hr class="email-divider" />
+
+    <p class="email-text-muted">
+      If you believe this is an error or need assistance, contact our support team.
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Verification update on your account',
+    html,
+  });
+};
+
+// ============================================================
+// PAYMENT CONFIRMED EMAIL
+// ============================================================
+
+/**
+ * Notifies a buyer that the vendor has confirmed their payment.
+ *
+ * @param email     - Buyer's email address
+ * @param name      - Optional buyer display name
+ * @param reference - Order reference number (e.g. SC-2025-00047)
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
+export const sendPaymentConfirmedEmail = async (
+  email: string,
+  name?: string,
+  reference?: string,
+  trackingToken?: string
+): Promise<boolean> => {
+  const greeting = name ? `Hi ${name}` : 'Hi there';
+  const orderLabel = reference ? `order <strong>${reference}</strong>` : 'your order';
+  const trackingUrl = trackingToken
+    ? `https://getshopcop.com/track/${trackingToken}`
+    : 'https://getshopcop.com';
+
+  const html = emailShell(`
+    <p class="email-greeting">${greeting} 👋</p>
+
+    <p class="email-text">
+      Your payment for ${orderLabel} has been confirmed by the vendor.
+      Your order is now being processed.
+    </p>
+
+    <div class="email-btn-wrap">
+      <a href="${trackingUrl}" class="email-btn" target="_blank">
+        Track Your Order
+      </a>
+    </div>
+
+    ${trackingToken ? `
+    <p class="email-text-muted" style="text-align:center;margin-top:8px;">
+      Or copy this link: <a href="${trackingUrl}" style="color:#0d9488;">${trackingUrl}</a>
+    </p>
+    ` : ''}
+
+    <hr class="email-divider" />
+
+    <p class="email-text-muted">
+      You'll receive further updates as your order progresses. Thank you for shopping with ShopCop.
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: 'Payment confirmed — your order is being processed',
+    html,
+  });
+};
+
+// ============================================================
+// TIER UPGRADED EMAIL
+// ============================================================
+
+/**
+ * Notifies a vendor that they've been upgraded to a new trust tier.
+ *
+ * @param email   - Vendor's email address
+ * @param name    - Optional vendor display name
+ * @param newTier - The new tier name (e.g. TIER_1, TIER_2)
+ * @returns `true` if the email was dispatched successfully, `false` otherwise
+ */
+export const sendTierUpgradedEmail = async (
+  email: string,
+  name?: string,
+  newTier?: string
+): Promise<boolean> => {
+  const greeting = name ? `Hi ${name}` : 'Hi there';
+  const tierLabel = newTier ?? 'a new tier';
+
+  const html = emailShell(`
+    <p class="email-greeting">${greeting} 🎉</p>
+
+    <p class="email-text">
+      Congratulations! Based on your verified credentials, your ShopCop account has been
+      upgraded to <strong>${tierLabel}</strong>.
+    </p>
+
+    <p class="email-text">
+      A higher tier unlocks increased buyer trust and visibility on the platform.
+      Keep completing verifications to reach the next level.
+    </p>
+
+    <div class="email-btn-wrap">
+      <a href="https://getshopcop.com/dashboard" class="email-btn" target="_blank">
+        View Your Profile
+      </a>
+    </div>
+
+    <hr class="email-divider" />
+
+    <p class="email-text-muted">
+      Thank you for building trust on ShopCop.
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `You've been upgraded to ${tierLabel} 🎉`,
+    html,
+  });
+};

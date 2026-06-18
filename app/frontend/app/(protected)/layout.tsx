@@ -6,9 +6,34 @@ import { ErrorBoundary } from '@/components/shared/errorBoundary';
 import { AppShell } from '@/components/shared/appShell';
 import { AdminShell } from '@/components/shared/adminShell';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useProfileCompleteness } from '@/app/_hooks/vendor';
 import { getRoleHomePage } from '@/app/_lib/roleRedirect';
+import { useNotificationPolling } from '@/app/_hooks/useNotifications';
+import { toaster } from '@/components/ui/toaster';
+
+// Polls for new notifications every 30s (paused when tab is hidden).
+// Renders nothing visually — side-effect only.
+function NotificationPoller() {
+  const { data } = useNotificationPolling();
+  const shownIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    const newOnes = (data?.notifications ?? []).filter((n) => !shownIds.current.has(n.id));
+    newOnes.forEach((n) => {
+      shownIds.current.add(n.id);
+      toaster.create({
+        title: n.title,
+        description: n.message,
+        type: 'info',
+        duration: 6000,
+        closable: true,
+      });
+    });
+  }, [data]);
+
+  return null;
+}
 
 const ROLE_REQUIREMENTS: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/onboarding', roles: ['VENDOR'] },
@@ -93,7 +118,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   if (!isOnboarding && !isAdmin && !isBuyer && completeness && !completeness.sections.personal_info.completed) return null;
 
   // Wrap in appropriate shell based on route
-  if (isAdmin) return <ErrorBoundary><AdminShell>{children}</AdminShell></ErrorBoundary>;
+  if (isAdmin) return <ErrorBoundary><NotificationPoller /><AdminShell>{children}</AdminShell></ErrorBoundary>;
   if (isOnboarding || isBuyer || isVerifications) return <ErrorBoundary>{children}</ErrorBoundary>;
-  return <ErrorBoundary><AppShell>{children}</AppShell></ErrorBoundary>;
+  return <ErrorBoundary><NotificationPoller /><AppShell>{children}</AppShell></ErrorBoundary>;
 }

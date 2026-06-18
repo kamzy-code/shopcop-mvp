@@ -3,6 +3,9 @@ import { adminLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { VerificationStatus, VerificationType } from '../../generated/prisma/client.js';
 import { TierCalculationService } from '../tierCalculationService.js';
+import { NotificationService } from '../notificationService.js';
+import { NotificationType } from '../../types/notification.types.js';
+import { sendVerificationApprovedEmail, sendVerificationRejectedEmail, sendTierUpgradedEmail } from '@utils/emailTemplates.js';
 
 // ============================================
 // TYPES
@@ -181,6 +184,12 @@ export class AdminVerificationService {
     }
 
     try {
+      // Capture old tier before recalculation so we can detect an actual change
+      const vendorBefore = await prisma.vendorProfile.findUnique({
+        where: { id: verification.vendor_id },
+        select: { current_tier: true, user_id: true },
+      });
+
       const approvedVerification = await prisma.vendorVerification.update({
         where: { id: verificationId },
         data: {
@@ -194,7 +203,7 @@ export class AdminVerificationService {
           vendor: {
             include: {
               user: {
-                select: { email: true },
+                select: { email: true, name: true },
               },
             },
           },
@@ -202,6 +211,45 @@ export class AdminVerificationService {
       });
 
       const newTier = await TierCalculationService.calculateAndUpdateTier(verification.vendor_id);
+
+      // Notify vendor of approval (always)
+      if (vendorBefore) {
+        await NotificationService.create({
+          user_id: vendorBefore.user_id,
+          type: NotificationType.VERIFICATION_APPROVED,
+          title: 'Verification Approved',
+          message: `Your ${verification.type} verification has been approved.`,
+          entity_type: 'VERIFICATION',
+          entity_id: verification.id,
+          action_label: 'View Verifications',
+          action_url: '/verifications',
+        });
+
+        // Notify tier upgrade only if it actually changed
+        if (newTier !== vendorBefore.current_tier) {
+          await NotificationService.create({
+            user_id: vendorBefore.user_id,
+            type: NotificationType.TIER_UPGRADED,
+            title: 'Tier Upgraded',
+            message: `Congratulations! You've been upgraded to ${newTier}.`,
+            entity_type: 'VERIFICATION',
+            entity_id: verification.id,
+            action_label: 'View Profile',
+            action_url: '/dashboard',
+          });
+          sendTierUpgradedEmail(
+            approvedVerification.vendor.user.email,
+            approvedVerification.vendor.user.name ?? undefined,
+            newTier
+          ).catch(() => {});
+        }
+
+        sendVerificationApprovedEmail(
+          approvedVerification.vendor.user.email,
+          approvedVerification.vendor.user.name ?? undefined,
+          verification.type
+        ).catch(() => {});
+      }
 
       await this.logAdminAction(adminId, 'verification_approved', verificationId, {
         verification_type: verification.type,
@@ -268,6 +316,12 @@ export class AdminVerificationService {
     }
 
     try {
+      // Fetch vendor user_id before rejection for notification targeting
+      const vendorForReject = await prisma.vendorProfile.findUnique({
+        where: { id: verification.vendor_id },
+        select: { user_id: true },
+      });
+
       const rejectedVerification = await prisma.vendorVerification.update({
         where: { id: verificationId },
         data: {
@@ -281,12 +335,33 @@ export class AdminVerificationService {
           vendor: {
             include: {
               user: {
-                select: { email: true },
+                select: { email: true, name: true },
               },
             },
           },
         },
       });
+
+      // Notify vendor of rejection
+      if (vendorForReject) {
+        await NotificationService.create({
+          user_id: vendorForReject.user_id,
+          type: NotificationType.VERIFICATION_REJECTED,
+          title: 'Verification Update',
+          message: `Your ${verification.type} verification was not approved. Reason: ${data.rejection_reason}`,
+          entity_type: 'VERIFICATION',
+          entity_id: verification.id,
+          action_label: 'Resubmit',
+          action_url: '/verifications',
+        });
+
+        sendVerificationRejectedEmail(
+          rejectedVerification.vendor.user.email,
+          rejectedVerification.vendor.user.name ?? undefined,
+          verification.type,
+          data.rejection_reason
+        ).catch(() => {});
+      }
 
       await this.logAdminAction(adminId, 'verification_rejected', verificationId, {
         verification_type: verification.type,

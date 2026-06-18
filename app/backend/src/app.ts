@@ -22,6 +22,7 @@ import trackRouter from '@routes/trackRoute.js';
 import trustMetricsRouter from '@routes/trustMetricsRoute.js';
 import reviewRouter from '@routes/reviewRoute.js';
 import publicProfileRouter from '@routes/publicProfileRoute.js';
+import notificationRouter from '@routes/notificationRoute.js';
 
 dotenv.config();
 
@@ -93,6 +94,7 @@ app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/vendors/trust-metrics', trustMetricsRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/track', trackRouter);
+app.use('/api/v1/notifications', notificationRouter);
 
 // 404 handler
 app.use((req, res) => {

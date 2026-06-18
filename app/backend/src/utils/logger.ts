@@ -231,5 +231,16 @@ const productLogger = createLogger({
 //   defaultMeta: { service: "authService" },
 // });
 
+/** Winston logger scoped to notification creation and delivery operations. */
+const notificationLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'notificationService', timeStamp: new Date().toISOString() },
+});
+
 export default logger;
-export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, orderLogger, trustMetricsLogger, reviewLogger, publicProfileLogger };
+export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, orderLogger, trustMetricsLogger, reviewLogger, publicProfileLogger, notificationLogger };
