@@ -12,9 +12,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ShopCop — Get verified, sell with confidence',
+  title: 'ShopCop — Get Verified, Sell More',
   description:
-    'ShopCop verifies social commerce sellers so buyers can shop with confidence on WhatsApp, Instagram & TikTok.',
+    'Sell more on WhatsApp, TikTok & Instagram by getting verified on ShopCop. Build trust with buyers, close deals faster. Free beta testing.',
+  keywords: ['verified sellers', 'social commerce Nigeria', 'trusted vendors', 'online trust', 'ShopCop'],
+  openGraph: {
+    title: 'ShopCop — Get Verified, Sell More',
+    description: 'Stop losing sales to buyer suspicion. Get verified, build trust, sell faster.',
+    url: 'https://getshopcop.com',
+    siteName: 'ShopCop',
+    locale: 'en_NG',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ShopCop — Get Verified, Sell More',
+    description: 'Verified commerce for Nigerian sellers.',
+  },
+  robots: 'index, follow',
 };
 
 export default function RootLayout({

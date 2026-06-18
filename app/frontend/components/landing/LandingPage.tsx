@@ -6,8 +6,11 @@ import { LandingNavbar } from './LandingNavbar';
 import { HeroSection } from './HeroSection';
 import { ProblemSection } from './ProblemSection';
 import { SolutionSection } from './SolutionSection';
+import { HowItWorksSection } from './HowItWorksSection';
 import { BenefitsSection } from './BenefitsSection';
 import { ScreenshotSection } from './ScreenshotSection';
+import { ProofSection } from './ProofSection';
+import { FAQSection } from './FAQSection';
 import { CtaSection } from './CtaSection';
 import { FooterSection } from './FooterSection';
 
@@ -29,8 +32,11 @@ export default function LandingPage() {
       <HeroSection ctaLabel={ctaLabel} ctaHref={ctaHref} />
       <ProblemSection />
       <SolutionSection />
+      <HowItWorksSection />
       <BenefitsSection />
       <ScreenshotSection />
+      <ProofSection />
+      <FAQSection />
       <CtaSection ctaLabel={ctaLabel} ctaHref={ctaHref} />
       <FooterSection />
     </>

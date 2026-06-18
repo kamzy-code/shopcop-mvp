@@ -11,7 +11,7 @@ interface RevealProps {
   className?: string;
 }
 
-export function Reveal({ children, delay = 0, y = 40, duration = 0.6, as = 'div' }: RevealProps) {
+export function Reveal({ children, delay = 0, y = 40, duration = 0.6, as = 'div', className }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
   const Tag = motion[as];
@@ -22,6 +22,7 @@ export function Reveal({ children, delay = 0, y = 40, duration = 0.6, as = 'div'
       initial={{ opacity: 0, y }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
       transition={{ duration, delay, ease: 'easeOut' }}
+      className={className}
     >
       {children}
     </Tag>
