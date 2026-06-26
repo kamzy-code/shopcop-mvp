@@ -35,6 +35,7 @@ export function LandingNavbar({ isLoggedIn, ctaLabel, ctaHref }: LandingNavbarPr
       backdropBlur="8px"
       borderBottomWidth="1px"
       borderColor="border"
+      boxShadow="sm"
       px={4}
       py={3}
     >
@@ -45,11 +46,12 @@ export function LandingNavbar({ isLoggedIn, ctaLabel, ctaHref }: LandingNavbarPr
               <Flex
                 w={8}
                 h={8}
-                borderRadius="lg"
+                borderRadius="full"
                 bg="primary.500"
                 align="center"
                 justify="center"
                 flexShrink={0}
+                boxShadow="sm"
               >
                 <LuBadgeCheck size={18} color="white" />
               </Flex>

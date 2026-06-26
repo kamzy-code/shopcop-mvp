@@ -3,6 +3,7 @@ import { Box, Collapsible, Flex, Icon, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { LuChevronDown } from 'react-icons/lu';
 import { Reveal } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
 
 const faqs = [
   {
@@ -45,10 +46,11 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   return (
     <Box
       borderWidth="1px"
-      borderColor="border"
+      borderColor={open ? 'primary.300' : 'border'}
       borderRadius="lg"
       bg="bg.panel"
       overflow="hidden"
+      transition="border-color 0.2s"
     >
       <Flex
         align="center"
@@ -59,17 +61,26 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         onClick={() => setOpen(!open)}
         gap={4}
       >
-        <Text textStyle="sm" fontWeight="medium" color="fg" flex={1}>
+        <Text textStyle="sm" fontWeight="semibold" color={open ? 'primary.fg' : 'fg'} flex={1}>
           {question}
         </Text>
-        <Icon
-          as={LuChevronDown}
-          boxSize={4}
-          color="fg.subtle"
-          transform={open ? 'rotate(180deg)' : 'rotate(0deg)'}
-          transition="transform 0.2s"
+        <Flex
+          w={7}
+          h={7}
+          borderRadius="full"
+          bg={open ? 'primary.500' : 'bg.subtle'}
+          align="center"
+          justify="center"
           flexShrink={0}
-        />
+        >
+          <Icon
+            as={LuChevronDown}
+            boxSize={4}
+            color={open ? 'white' : 'fg.subtle'}
+            transform={open ? 'rotate(180deg)' : 'rotate(0deg)'}
+            transition="transform 0.2s"
+          />
+        </Flex>
       </Flex>
       <Collapsible.Root open={open}>
         <Collapsible.Content>
@@ -90,7 +101,8 @@ export function FAQSection() {
       <Flex direction="column" align="center" maxW="3xl" mx="auto" gap={8}>
         <Reveal>
           <Box textAlign="center">
-            <Text fontWeight="bold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={3}>
+            <SectionEyebrow label="FAQ" colorPalette="warning" />
+            <Text fontWeight="extrabold" textStyle={{ base: '2xl', md: '3xl' }} color="fg" mb={3} letterSpacing="tight">
               Frequently Asked Questions
             </Text>
             <Text textStyle="sm" color="fg.muted">

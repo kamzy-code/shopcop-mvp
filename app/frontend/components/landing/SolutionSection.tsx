@@ -2,7 +2,9 @@
 import { Box, Flex, Icon, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { LuBadgeCheck, LuShieldCheck, LuChartBar } from 'react-icons/lu';
+import { GradientBlob } from './GradientBlob';
 import { Reveal, staggerContainer, staggerItem } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
 
 const solutions = [
   {
@@ -27,11 +29,13 @@ const solutions = [
 
 export function SolutionSection() {
   return (
-    <Box as="section" py={{ base: 12, md: 16 }} px={4}>
-      <Flex direction="column" align="center" maxW="5xl" mx="auto" gap={10}>
+    <Box as="section" py={{ base: 12, md: 16 }} px={4} position="relative" overflow="hidden">
+      <GradientBlob color="var(--chakra-colors-success-500)" size="380px" bottom="-140px" right="-140px" opacity={0.12} />
+      <Flex direction="column" align="center" maxW="5xl" mx="auto" gap={10} position="relative" zIndex={1}>
         <Reveal>
           <Box textAlign="center" maxW="3xl">
-            <Text fontWeight="bold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={3}>
+            <SectionEyebrow label="The Solution" colorPalette="success" />
+            <Text fontWeight="extrabold" textStyle={{ base: '2xl', md: '3xl' }} color="fg" mb={3} letterSpacing="tight">
               How ShopCop Changes Everything
             </Text>
             <Text textStyle="sm" color="fg.muted">
@@ -52,34 +56,34 @@ export function SolutionSection() {
               <Flex
                 align="flex-start"
                 gap={4}
-                bg="bg.panel"
+                bg="success.subtle"
                 p={5}
                 borderRadius="xl"
-                borderWidth="1px"
-                borderColor="border"
-                _hover={{ borderColor: 'primary.300', bg: 'primary.subtle' }}
-                transition="all 0.2s"
+                borderLeftWidth="4px"
+                borderLeftColor="success.500"
+                _hover={{ boxShadow: 'lg' }}
+                transition="box-shadow 0.2s"
               >
                 <Flex
                   w={10}
                   h={10}
                   borderRadius="lg"
-                  bg="success.subtle"
+                  bg="success.500"
                   align="center"
                   justify="center"
                   flexShrink={0}
                   mt={0.5}
                 >
-                  <Icon as={solution.icon} boxSize={5} color="success.500" />
+                  <Icon as={solution.icon} boxSize={5} color="white" />
                 </Flex>
                 <Box flex={1}>
-                  <Text fontWeight="semibold" textStyle="md" color="fg" mb={1}>
+                  <Text fontWeight="bold" textStyle="md" color="fg" mb={1}>
                     {solution.headline}
                   </Text>
                   <Text textStyle="sm" color="fg.muted" mb={2}>
                     {solution.description}
                   </Text>
-                  <Text textStyle="xs" color="success.600" fontWeight="medium">
+                  <Text textStyle="xs" color="success.fg" fontWeight="semibold">
                     {solution.benefit}
                   </Text>
                 </Box>

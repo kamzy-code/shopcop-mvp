@@ -23,7 +23,7 @@ export function CtaSection({ ctaLabel, ctaHref }: CtaSectionProps) {
           maxW="3xl"
           mx="auto"
           gap={6}
-          bg="primary.subtle"
+          bg="navy.900"
           p={{ base: 8, md: 12 }}
           borderRadius="2xl"
           position="relative"
@@ -33,28 +33,30 @@ export function CtaSection({ ctaLabel, ctaHref }: CtaSectionProps) {
             position="absolute"
             top="-50%"
             right="-20%"
-            w="300px"
-            h="300px"
+            w="320px"
+            h="320px"
             borderRadius="full"
-            bg="primary.500"
-            opacity={0.06}
+            bg="primary.400"
+            style={{ filter: 'blur(40px)' }}
+            opacity={0.25}
           />
           <Box
             position="absolute"
             bottom="-30%"
             left="-10%"
-            w="200px"
-            h="200px"
+            w="240px"
+            h="240px"
             borderRadius="full"
-            bg="primary.500"
-            opacity={0.04}
+            bg="accent.500"
+            style={{ filter: 'blur(40px)' }}
+            opacity={0.25}
           />
 
-          <Heading as="h2" textStyle={{ base: 'xl', md: '2xl' }} fontWeight="bold" color="primary.fg" position="relative">
+          <Heading as="h2" textStyle={{ base: '2xl', md: '3xl' }} fontWeight="extrabold" color="white" position="relative" letterSpacing="tight">
             Ready to Stop Losing Sales?
           </Heading>
 
-          <Text textStyle="md" color="primary.fg" position="relative" maxW="lg">
+          <Text textStyle="md" color="navy.200" position="relative" maxW="lg">
             Join 50+ sellers who are already selling with confidence.
           </Text>
 
@@ -66,21 +68,21 @@ export function CtaSection({ ctaLabel, ctaHref }: CtaSectionProps) {
             flexWrap="wrap"
             justify="center"
           >
-            <Flex align="center" gap={1.5} bg="primary.500/10" px={3} py={1.5} borderRadius="full">
-              <LuClock size={14} />
-              <Text textStyle="xs" color="primary.fg" fontWeight="medium">
+            <Flex align="center" gap={1.5} bg="white/10" px={3} py={1.5} borderRadius="full">
+              <LuClock size={14} color="white" />
+              <Text textStyle="xs" color="white" fontWeight="medium">
                 Only 15 spots left
               </Text>
             </Flex>
-            <Flex align="center" gap={1.5} bg="primary.500/10" px={3} py={1.5} borderRadius="full">
-              <LuZap size={14} />
-              <Text textStyle="xs" color="primary.fg" fontWeight="medium">
+            <Flex align="center" gap={1.5} bg="white/10" px={3} py={1.5} borderRadius="full">
+              <LuZap size={14} color="white" />
+              <Text textStyle="xs" color="white" fontWeight="medium">
                 Free during beta
               </Text>
             </Flex>
-            <Flex align="center" gap={1.5} bg="primary.500/10" px={3} py={1.5} borderRadius="full">
-              <LuBadgeCheck size={14} />
-              <Text textStyle="xs" color="primary.fg" fontWeight="medium">
+            <Flex align="center" gap={1.5} bg="white/10" px={3} py={1.5} borderRadius="full">
+              <LuBadgeCheck size={14} color="white" />
+              <Text textStyle="xs" color="white" fontWeight="medium">
                 Approval in 24 hours
               </Text>
             </Flex>
@@ -88,7 +90,7 @@ export function CtaSection({ ctaLabel, ctaHref }: CtaSectionProps) {
 
           <m.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} style={{ position: 'relative' }}>
             <Link href={ctaHref} style={{ textDecoration: 'none' }}>
-              <Button size="lg" colorPalette="primary" px={10} py={6} textStyle="md" fontWeight="semibold">
+              <Button size="lg" bg="white" color="navy.900" _hover={{ bg: 'navy.50' }} px={10} py={6} textStyle="md" fontWeight="bold" boxShadow="xl">
                 {ctaLabel}
               </Button>
             </Link>
@@ -96,13 +98,13 @@ export function CtaSection({ ctaLabel, ctaHref }: CtaSectionProps) {
 
           {/* What happens next */}
           <Flex direction="column" gap={2} position="relative" align="flex-start" textAlign="left">
-            <Text textStyle="xs" color="primary.fg" fontWeight="semibold" mb={1}>
+            <Text textStyle="xs" color="white" fontWeight="semibold" mb={1}>
               What happens next:
             </Text>
             {['Confirmation within 1 hour', 'Access to your ShopCop dashboard', 'Step-by-step verification guide', 'Support from our team'].map((item) => (
               <Flex key={item} align="center" gap={2}>
-                <LuBadgeCheck size={14} />
-                <Text textStyle="xs" color="primary.fg">
+                <LuBadgeCheck size={14} color="var(--chakra-colors-primary-300)" />
+                <Text textStyle="xs" color="navy.200">
                   {item}
                 </Text>
               </Flex>

@@ -3,26 +3,29 @@ import { Box, Flex, Icon, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { LuStar, LuThumbsUp, LuClock, LuBadgeCheck } from 'react-icons/lu';
 import { Reveal, staggerContainer, staggerItem } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
 
 const testimonials = [
   {
     name: 'Chioma',
     role: 'Fashion Vendor',
+    color: 'primary',
     quote: 'Buyers used to haggle like crazy about price, asking \'Is it real?\' \'Why should I trust you?\' Now they see the badge, they trust me instantly. Made 5 sales in 3 days (used to take 2 weeks).',
     rating: 5,
   },
   {
     name: 'Ahmed',
     role: 'Frequent Buyer',
+    color: 'accent',
     quote: 'Been scammed 3 times buying online. Finally can buy without the paranoia. Verified badges + real reviews = I actually enjoy shopping online now.',
     rating: 5,
   },
 ];
 
 const stats = [
-  { icon: LuThumbsUp, value: '87%', label: 'say it helped them sell more' },
-  { icon: LuClock, value: '95%', label: 'approval rate in 24 hours' },
-  { icon: LuBadgeCheck, value: '150+', label: 'transactions completed' },
+  { icon: LuThumbsUp, value: '87%', label: 'say it helped them sell more', color: 'primary' },
+  { icon: LuClock, value: '95%', label: 'approval rate in 24 hours', color: 'accent' },
+  { icon: LuBadgeCheck, value: '150+', label: 'transactions completed', color: 'success' },
 ];
 
 export function ProofSection() {
@@ -31,7 +34,8 @@ export function ProofSection() {
       <Flex direction="column" align="center" maxW="5xl" mx="auto" gap={10}>
         <Reveal>
           <Box textAlign="center">
-            <Text fontWeight="bold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={3}>
+            <SectionEyebrow label="Social Proof" colorPalette="success" />
+            <Text fontWeight="extrabold" textStyle={{ base: '2xl', md: '3xl' }} color="fg" mb={3} letterSpacing="tight">
               Early Users Are Already Winning
             </Text>
             <Text textStyle="sm" color="fg.muted">
@@ -67,12 +71,12 @@ export function ProofSection() {
                     w={10}
                     h={10}
                     borderRadius="full"
-                    bg="primary.subtle"
+                    bg={`${t.color}.500`}
                     align="center"
                     justify="center"
                     flexShrink={0}
                   >
-                    <Text fontWeight="bold" textStyle="sm" color="primary.fg">
+                    <Text fontWeight="bold" textStyle="sm" color="white">
                       {t.name[0]}
                     </Text>
                   </Flex>
@@ -111,15 +115,15 @@ export function ProofSection() {
                 direction="column"
                 align="center"
                 textAlign="center"
-                bg="bg.subtle"
+                bg={`${stat.color}.subtle`}
                 px={6}
                 py={4}
                 borderRadius="lg"
                 flex={1}
                 gap={1}
               >
-                <Icon as={stat.icon} boxSize={5} color="primary.500" />
-                <Text fontWeight="bold" textStyle="lg" color="fg">
+                <Icon as={stat.icon} boxSize={5} color={`${stat.color}.fg`} />
+                <Text fontWeight="extrabold" textStyle="lg" color="fg">
                   {stat.value}
                 </Text>
                 <Text textStyle="xs" color="fg.subtle">

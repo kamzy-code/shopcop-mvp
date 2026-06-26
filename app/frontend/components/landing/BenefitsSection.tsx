@@ -3,6 +3,7 @@ import { Box, Flex, Icon, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { LuZap, LuBadgeCheck, LuTrendingUp, LuDollarSign, LuMessageSquare, LuCrown } from 'react-icons/lu';
 import { Reveal, staggerContainer, staggerItem } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
 
 const benefits = [
   {
@@ -49,11 +50,12 @@ export function BenefitsSection() {
       <Flex direction="column" align="center" maxW="6xl" mx="auto" gap={10}>
         <Reveal>
           <Box textAlign="center">
-            <Text fontWeight="bold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={3}>
-              What You Get
+            <SectionEyebrow label="What You Get" colorPalette="accent" />
+            <Text fontWeight="extrabold" textStyle={{ base: '2xl', md: '3xl' }} color="fg" mb={3} letterSpacing="tight">
+              Tangible Outcomes, Not Just Features
             </Text>
             <Text textStyle="sm" color="fg.muted">
-              Tangible outcomes, not just features.
+              Here&apos;s what changes when buyers see your verified badge.
             </Text>
           </Box>
         </Reveal>
@@ -81,30 +83,30 @@ export function BenefitsSection() {
                 borderColor="border"
                 h="full"
                 gap={4}
-                transition="box-shadow 0.25s"
-                _hover={{ boxShadow: 'lg', borderColor: 'primary.200' }}
+                transition="box-shadow 0.25s, border-color 0.25s"
+                _hover={{ boxShadow: 'xl', borderColor: 'accent.300' }}
               >
                 <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="lg"
-                  bg="primary.subtle"
+                  w={11}
+                  h={11}
+                  borderRadius="xl"
+                  bg="accent.subtle"
                   align="center"
                   justify="center"
                   flexShrink={0}
                 >
-                  <Icon as={benefit.icon} boxSize={5} color="primary.500" />
+                  <Icon as={benefit.icon} boxSize={5} color="accent.fg" />
                 </Flex>
 
                 <Box>
-                  <Text fontWeight="semibold" textStyle="md" color="fg" mb={1}>
+                  <Text fontWeight="bold" textStyle="md" color="fg" mb={1}>
                     {benefit.title}
                   </Text>
                   <Text textStyle="sm" color="fg.muted" mb={3}>
                     {benefit.description}
                   </Text>
                   <Flex
-                    bg="bg.subtle"
+                    bg="accent.subtle"
                     px={3}
                     py={1.5}
                     borderRadius="md"
@@ -112,8 +114,8 @@ export function BenefitsSection() {
                     align="center"
                     gap={1.5}
                   >
-                    <Box w={1.5} h={1.5} borderRadius="full" bg="primary.400" />
-                    <Text textStyle="xs" color="primary.500" fontWeight="medium">
+                    <Box w={1.5} h={1.5} borderRadius="full" bg="accent.500" />
+                    <Text textStyle="xs" color="accent.fg" fontWeight="semibold">
                       {benefit.metric}
                     </Text>
                   </Flex>

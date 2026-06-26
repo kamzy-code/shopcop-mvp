@@ -1,9 +1,10 @@
 'use client';
-import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Icon, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
-import { LuBadgeCheck, LuPlay } from 'react-icons/lu';
+import { LuBadgeCheck, LuPlay, LuSparkle } from 'react-icons/lu';
+import { GradientBlob } from './GradientBlob';
 import { Reveal } from './Reveal';
 import { VideoModal } from './VideoModal';
 
@@ -18,28 +19,51 @@ export function HeroSection({ ctaLabel, ctaHref }: HeroSectionProps) {
   const [videoOpen, setVideoOpen] = useState(false);
 
   return (
-    <Box as="section" py={{ base: 16, md: 24 }} px={4} id="hero">
+    <Box as="section" py={{ base: 16, md: 24 }} px={4} id="hero" position="relative" overflow="hidden">
+      <GradientBlob color="var(--chakra-colors-primary-500)" size="500px" top="-160px" left="-120px" opacity={0.16} />
+      <GradientBlob color="var(--chakra-colors-accent-500)" size="420px" top="60px" right="-160px" opacity={0.14} />
+
       <Flex
         direction={{ base: 'column', md: 'row' }}
         align="center"
         maxW="6xl"
         mx="auto"
         gap={{ base: 10, md: 16 }}
+        position="relative"
+        zIndex={1}
       >
         {/* Left: Text Content */}
         <Box flex={1} textAlign={{ base: 'center', md: 'left' }}>
+          <Reveal delay={0}>
+            <Flex
+              align="center"
+              gap={2}
+              display={{ base: 'inline-flex', md: 'inline-flex' }}
+              bg="primary.subtle"
+              px={3}
+              py={1.5}
+              borderRadius="full"
+              mb={5}
+            >
+              <Icon as={LuSparkle} boxSize={3.5} color="primary.500" />
+              <Text textStyle="2xs" fontWeight="bold" color="primary.fg" letterSpacing="wider" textTransform="uppercase">
+                Verified Commerce
+              </Text>
+            </Flex>
+          </Reveal>
+
           <Reveal delay={0.1}>
             <Heading
               as="h1"
-              textStyle={{ base: '3xl', md: '5xl' }}
-              fontWeight="extrabold"
-              letterSpacing="tight"
+              textStyle={{ base: '4xl', md: '6xl' }}
+              fontWeight="black"
+              letterSpacing="tighter"
               color="fg"
-              lineHeight="1.1"
+              lineHeight="1.05"
               mb={4}
             >
               Sell More by Proving{' '}
-              <Box as="span" color="primary.500">
+              <Box as="span" color="primary.500" position="relative" display="inline-block">
                 You&apos;re Legit
               </Box>
             </Heading>
@@ -110,22 +134,62 @@ export function HeroSection({ ctaLabel, ctaHref }: HeroSectionProps) {
         </Box>
 
         {/* Right: Visual */}
-        <Reveal delay={0.35} y={20} className="flex-1">
-          <Box
-            display={{ base: 'none', md: 'block' }}
-            w="full"
-            maxW="480px"
-            aspectRatio={4 / 5}
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor="border"
-            bg="bg.subtle"
-            overflow="hidden"
-            position="relative"
+        <Box flex={1} display={{ base: 'none', md: 'block' }} position="relative" w="full" maxW="480px">
+          <Reveal delay={0.35} y={20}>
+            <m.div
+              initial={{ rotate: 3 }}
+              animate={{ rotate: [3, 1, 3] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ position: 'relative' }}
+            >
+              <Box
+                w="full"
+                aspectRatio={4 / 5}
+                borderRadius="2xl"
+                borderWidth="1px"
+                borderColor="border"
+                bg="bg.subtle"
+                overflow="hidden"
+                position="relative"
+                boxShadow="2xl"
+              >
+                <DashboardPreview />
+              </Box>
+            </m.div>
+          </Reveal>
+
+          {/* Floating verification badge chip */}
+          <m.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: [0, -8, 0] }}
+            transition={{ delay: 0.8, duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ position: 'absolute', bottom: '-24px', left: '-32px' }}
           >
-            <DashboardPreview />
-          </Box>
-        </Reveal>
+            <Flex
+              align="center"
+              gap={3}
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="xl"
+              px={4}
+              py={3}
+              boxShadow="xl"
+            >
+              <Flex w={9} h={9} borderRadius="full" bg="success.subtle" align="center" justify="center" flexShrink={0}>
+                <LuBadgeCheck size={18} color="var(--chakra-colors-success-500)" />
+              </Flex>
+              <Box>
+                <Text textStyle="xs" fontWeight="bold" color="fg">
+                  Verified Seller
+                </Text>
+                <Text textStyle="2xs" color="fg.subtle">
+                  ID checked &middot; 24h
+                </Text>
+              </Box>
+            </Flex>
+          </m.div>
+        </Box>
       </Flex>
 
       <VideoModal isOpen={videoOpen} onClose={() => setVideoOpen(false)} />

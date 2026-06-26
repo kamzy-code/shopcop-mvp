@@ -1,37 +1,44 @@
 'use client';
 import { Box, Flex, Text } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import { GradientBlob } from './GradientBlob';
 import { Reveal } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
+
+const m = motion;
 
 export function ScreenshotSection() {
   return (
-    <Box as="section" py={{ base: 12, md: 16 }} px={4}>
-      <Flex direction="column" align="center" maxW="4xl" mx="auto" gap={6}>
+    <Box as="section" py={{ base: 12, md: 16 }} px={4} position="relative" overflow="hidden">
+      <GradientBlob color="var(--chakra-colors-primary-500)" size="500px" top="-100px" left="50%" opacity={0.1} />
+      <Flex direction="column" align="center" maxW="4xl" mx="auto" gap={6} position="relative" zIndex={1}>
         <Reveal>
           <Box textAlign="center">
-            <Text fontWeight="bold" textStyle="xl" color="fg" mb={2}>
-              See it in action
-            </Text>
-            <Text textStyle="sm" color="fg.muted">
-              Your verified profile — at a glance.
+            <SectionEyebrow label="See It In Action" colorPalette="primary" />
+            <Text fontWeight="extrabold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={2} letterSpacing="tight">
+              Your Verified Profile — At a Glance
             </Text>
           </Box>
         </Reveal>
 
         <Reveal delay={0.2} y={30}>
-          <Flex
-            w="full"
-            aspectRatio={16 / 9}
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor="border"
-            bg="bg.subtle"
-            align="center"
-            justify="center"
-            position="relative"
-            overflow="hidden"
-          >
-            <DashboardMockup />
-          </Flex>
+          <m.div whileHover={{ rotate: 0, scale: 1.01 }} style={{ rotate: '-1deg' }}>
+            <Flex
+              w="full"
+              aspectRatio={16 / 9}
+              borderRadius="xl"
+              borderWidth="1px"
+              borderColor="border"
+              bg="bg.subtle"
+              align="center"
+              justify="center"
+              position="relative"
+              overflow="hidden"
+              boxShadow="2xl"
+            >
+              <DashboardMockup />
+            </Flex>
+          </m.div>
         </Reveal>
       </Flex>
     </Box>

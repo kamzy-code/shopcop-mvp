@@ -3,6 +3,7 @@ import { Box, Flex, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { LuUserPlus, LuFileCheck, LuRocket } from 'react-icons/lu';
 import { Reveal, staggerContainer, staggerItem } from './Reveal';
+import { SectionEyebrow } from './SectionEyebrow';
 
 const steps = [
   {
@@ -34,7 +35,8 @@ export function HowItWorksSection() {
       <Flex direction="column" align="center" maxW="5xl" mx="auto" gap={10}>
         <Reveal>
           <Box textAlign="center">
-            <Text fontWeight="bold" textStyle={{ base: 'xl', md: '2xl' }} color="fg" mb={3}>
+            <SectionEyebrow label="How It Works" colorPalette="primary" />
+            <Text fontWeight="extrabold" textStyle={{ base: '2xl', md: '3xl' }} color="fg" mb={3} letterSpacing="tight">
               Get Started in 3 Steps
             </Text>
             <Text textStyle="sm" color="fg.muted">
@@ -82,29 +84,35 @@ export function HowItWorksSection() {
                 position="relative"
                 zIndex={1}
                 gap={4}
+                boxShadow="md"
+                _hover={{ boxShadow: 'xl' }}
+                transition="box-shadow 0.25s"
               >
                 <Flex
-                  w={14}
-                  h={14}
+                  w={16}
+                  h={16}
                   borderRadius="full"
-                  bg="primary.subtle"
+                  bg="primary.500"
                   align="center"
                   justify="center"
                   position="relative"
+                  boxShadow="lg"
                 >
-                  <step.icon size={24} color="var(--chakra-colors-primary-500)" />
+                  <step.icon size={26} color="white" />
                   <Flex
                     position="absolute"
-                    top={-1}
-                    right={-1}
-                    w={5}
-                    h={5}
+                    top={-2}
+                    right={-2}
+                    w={7}
+                    h={7}
                     borderRadius="full"
-                    bg="primary.500"
+                    bg="navy.900"
                     align="center"
                     justify="center"
+                    borderWidth="2px"
+                    borderColor="bg.panel"
                   >
-                    <Text textStyle="2xs" color="white" fontWeight="bold">
+                    <Text textStyle="xs" color="white" fontWeight="bold">
                       {step.step}
                     </Text>
                   </Flex>
