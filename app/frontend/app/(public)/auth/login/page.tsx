@@ -17,14 +17,14 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email) return;
 
-    const emailResult = emailSchema.safeParse(email);
+    const emailResult = emailSchema.safeParse(email.trim().toLowerCase());
     if (!emailResult.success) {
       toaster.create({ title: emailResult.error.issues[0].message, type: 'error' });
       return;
     }
 
     try {
-      await loginMutation.mutateAsync({ email });
+      await loginMutation.mutateAsync({ email: emailResult.data });
       router.push(`/auth/verify-login?email=${encodeURIComponent(email)}`);
     } catch (error) {
       toaster.create({

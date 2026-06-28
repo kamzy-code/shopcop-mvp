@@ -28,14 +28,14 @@ export default function SignupPage() {
     e.preventDefault();
     if (!role) return;
 
-    const emailResult = emailSchema.safeParse(email);
+    const emailResult = emailSchema.safeParse(email.trim().toLowerCase());
     if (!emailResult.success) {
       toaster.create({ title: emailResult.error.issues[0].message, type: 'error' });
       return;
     }
 
     try {
-      const result = await signupMutation.mutateAsync({ role, email });
+      const result = await signupMutation.mutateAsync({ role, email: emailResult.data });
 
       toaster.create({
         title: 'Verification code sent',
