@@ -2,6 +2,8 @@ import { prisma } from '@config/prisma.js';
 import { vendorLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { VerificationType, VerificationStatus } from '../generated/prisma/client.js';
+import { NotificationService } from '@services/notificationService.js';
+import { NotificationType } from '../types/notification.types.js';
 import {
   NINVerificationInput,
   AddressVerificationInput,
@@ -80,6 +82,22 @@ export class VerificationService {
       vendorId,
     });
 
+    NotificationService.createForAdmins({
+      type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+      title: 'New Verification Submission',
+      message: 'A vendor submitted NIN verification for review.',
+      entity_type: 'VERIFICATION',
+      entity_id: verification.id,
+      action_label: 'Review Verification',
+      action_url: `/admin/verifications/${verification.id}`,
+    }).catch((err) => {
+      vendorLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+        error: err instanceof Error ? err.message : err,
+      });
+    });
+
     return verification;
   }
 
@@ -146,6 +164,22 @@ export class VerificationService {
     vendorLogger.info('CAC verification submitted', {
       action: 'submitCACVerification',
       vendorId,
+    });
+
+    NotificationService.createForAdmins({
+      type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+      title: 'New Verification Submission',
+      message: 'A vendor submitted CAC verification for review.',
+      entity_type: 'VERIFICATION',
+      entity_id: verification.id,
+      action_label: 'Review Verification',
+      action_url: `/admin/verifications/${verification.id}`,
+    }).catch((err) => {
+      vendorLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+        error: err instanceof Error ? err.message : err,
+      });
     });
 
     return verification;
@@ -216,6 +250,22 @@ export class VerificationService {
       vendorId,
     });
 
+    NotificationService.createForAdmins({
+      type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+      title: 'New Verification Submission',
+      message: 'A vendor submitted SMEDAN verification for review.',
+      entity_type: 'VERIFICATION',
+      entity_id: verification.id,
+      action_label: 'Review Verification',
+      action_url: `/admin/verifications/${verification.id}`,
+    }).catch((err) => {
+      vendorLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+        error: err instanceof Error ? err.message : err,
+      });
+    });
+
     return verification;
   }
 
@@ -282,6 +332,22 @@ export class VerificationService {
     vendorLogger.info('Address verification submitted', {
       action: 'submitAddressVerification',
       vendorId,
+    });
+
+    NotificationService.createForAdmins({
+      type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+      title: 'New Verification Submission',
+      message: 'A vendor submitted address verification for review.',
+      entity_type: 'VERIFICATION',
+      entity_id: verification.id,
+      action_label: 'Review Verification',
+      action_url: `/admin/verifications/${verification.id}`,
+    }).catch((err) => {
+      vendorLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.NEW_VERIFICATION_SUBMISSION,
+        error: err instanceof Error ? err.message : err,
+      });
     });
 
     return verification;

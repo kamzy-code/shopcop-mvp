@@ -8,6 +8,9 @@ export const NotificationType = {
   ORDER_CANCELLED:         'ORDER_CANCELLED',
   LOW_STOCK_ALERT:         'LOW_STOCK_ALERT',
   OUT_OF_STOCK:            'OUT_OF_STOCK',
+  NEW_USER_SIGNUP:             'NEW_USER_SIGNUP',
+  NEW_VERIFICATION_SUBMISSION: 'NEW_VERIFICATION_SUBMISSION',
+  REFUND_REQUESTED:            'REFUND_REQUESTED',
 } as const;
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];

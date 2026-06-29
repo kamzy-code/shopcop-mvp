@@ -409,6 +409,22 @@ export class OrderService {
       });
     }
 
+    NotificationService.createForAdmins({
+      type: NotificationType.PAYMENT_PROOF_SUBMITTED,
+      title: 'Payment Proof Submitted',
+      message: `A buyer submitted payment proof for order ${updated.reference}.`,
+      entity_type: 'ORDER',
+      entity_id: updated.id,
+      action_label: 'Review Order',
+      action_url: `/admin/transactions/${updated.id}`,
+    }).catch((err) => {
+      orderLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.PAYMENT_PROOF_SUBMITTED,
+        error: err instanceof Error ? err.message : err,
+      });
+    });
+
     return updated;
   }
 
@@ -1223,6 +1239,22 @@ export class OrderService {
         });
       });
     }
+
+    NotificationService.createForAdmins({
+      type: NotificationType.REFUND_REQUESTED,
+      title: 'Refund Requested',
+      message: `A buyer requested a refund on order ${updated.reference}.`,
+      entity_type: 'ORDER',
+      entity_id: updated.id,
+      action_label: 'View Order',
+      action_url: `/admin/transactions/${updated.id}`,
+    }).catch((err) => {
+      orderLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.REFUND_REQUESTED,
+        error: err instanceof Error ? err.message : err,
+      });
+    });
 
     const { vendor_notes: _omit, ...buyerSafe } = updated;
     void _omit;

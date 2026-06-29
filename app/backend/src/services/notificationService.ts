@@ -26,6 +26,28 @@ export class NotificationService {
   }
 
   /**
+   * Create the same notification for every ADMIN-role user.
+   * Used for platform-level events admins need visibility into (signups,
+   * verification submissions, refund requests, payment proofs).
+   *
+   * @param data - Notification fields, excluding `user_id` (resolved per-admin)
+   */
+  static async createForAdmins(data: Omit<CreateNotificationInput, 'user_id'>) {
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { id: true },
+    });
+    await Promise.all(
+      admins.map((admin) => prisma.notification.create({ data: { ...data, user_id: admin.id } }))
+    );
+    notificationLogger.info('Notification broadcast to admins', {
+      action: 'createForAdmins',
+      type: data.type,
+      adminCount: admins.length,
+    });
+  }
+
+  /**
    * Fetch the latest notifications for a user, newest first.
    *
    * @param userId - Authenticated user's ID

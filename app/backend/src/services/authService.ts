@@ -12,6 +12,8 @@ import { UserRole, AuthProvider, VendorTier } from '../generated/prisma/client.j
 import { checkRateLimit, generateOTP, generateJWT } from '../helpers/authHelper.js';
 import { env } from '@config/env.js';
 import { AppError } from '@middleware/errorHandler.js';
+import { NotificationService } from '@services/notificationService.js';
+import { NotificationType } from '../types/notification.types.js';
 
 export class AuthService {
   /**
@@ -204,6 +206,22 @@ export class AuthService {
       email: verifiedUser.email,
       role: verifiedUser.role,
       action: 'verifyOTP',
+    });
+
+    NotificationService.createForAdmins({
+      type: NotificationType.NEW_USER_SIGNUP,
+      title: 'New User Signup',
+      message: `${verifiedUser.name || verifiedUser.email} signed up as a ${verifiedUser.role.toLowerCase()}.`,
+      entity_type: 'USER',
+      entity_id: verifiedUser.id,
+      action_label: 'View User',
+      action_url: `/admin/users/${verifiedUser.id}`,
+    }).catch((err) => {
+      authLogger.error('Failed to create admin notification', {
+        action: 'notificationCreate',
+        type: NotificationType.NEW_USER_SIGNUP,
+        error: err instanceof Error ? err.message : err,
+      });
     });
 
     return {
