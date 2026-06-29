@@ -9,6 +9,7 @@ interface ProductItem {
   price: number;
   category: string;
   stock_status: string;
+  is_flagged?: boolean;
   media: Array<{ media_url: string; media_type: string }>;
 }
 
@@ -77,9 +78,18 @@ function ProductCard({ product, slug }: { product: ProductItem; slug: string }) 
           <Text textStyle="sm" color="primary.fg" fontWeight="bold" mt={1}>
             {formatCurrency(product.price)}
           </Text>
-          <Text textStyle="2xs" color="fg.muted" mt={1}>
-            {product.category}
-          </Text>
+          <Flex align="center" justify="space-between" mt={1}>
+            <Text textStyle="2xs" color="fg.muted">
+              {product.category}
+            </Text>
+            {product.is_flagged && (
+              <Box px={1.5} py={0.5} borderRadius="full" bg="warning.subtle">
+                <Text textStyle="2xs" fontWeight="semibold" color="warning.fg">
+                  Under Review
+                </Text>
+              </Box>
+            )}
+          </Flex>
         </Box>
       </Box>
     </Link>

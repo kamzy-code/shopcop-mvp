@@ -1,12 +1,14 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
+import { Alert, Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
 import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage, LuPencil } from 'react-icons/lu';
 
 import { useProduct } from '@/app/_hooks/vendor';
 import { Product } from '@/app/_types';
 
+
+const FLAG_GRACE_PERIOD_DAYS = 7;
 
 function StockBadge({ status, quantity }: { status: Product['stock_status']; quantity?: number | null }) {
   const isInStock = status === 'IN_STOCK';
@@ -295,6 +297,28 @@ export default function ProductDetailPage() {
             </Text>
             <StockBadge status={product.stock_status} quantity={product.stock_quantity} />
           </Flex>
+
+          {product.is_flagged && (
+            <Alert.Root status="warning" borderRadius="lg">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Flagged for quality review</Alert.Title>
+                <Alert.Description textStyle="xs">
+                  {product.flag_reason}
+                  {product.flagged_at && (
+                    <>
+                      {' — '}please resolve within {FLAG_GRACE_PERIOD_DAYS} days (by{' '}
+                      {new Date(
+                        new Date(product.flagged_at).getTime() +
+                          FLAG_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
+                      ).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      ) or this product will be archived.
+                    </>
+                  )}
+                </Alert.Description>
+              </Alert.Content>
+            </Alert.Root>
+          )}
 
           {product.description && (
             <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">

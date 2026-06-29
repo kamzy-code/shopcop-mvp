@@ -1,10 +1,12 @@
 'use client';
-import { LuLayoutDashboard, LuShieldCheck, LuUser, LuUsers } from 'react-icons/lu';
+import { LuLayoutDashboard, LuShieldCheck, LuUser, LuUsers, LuPackage, LuReceipt } from 'react-icons/lu';
 import BaseShell, { type NavItemConfig } from './BaseShell';
 
 const ADMIN_NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/admin' },
   { label: 'Verifications', icon: LuShieldCheck, href: '/admin/verifications' },
+  { label: 'Products', icon: LuPackage, href: '/admin/products' },
+  { label: 'Transactions', icon: LuReceipt, href: '/admin/transactions' },
   { label: 'Users', icon: LuUsers, href: '/admin/users' },
   { label: 'Profile', icon: LuUser, href: '/admin/profile' },
 ];

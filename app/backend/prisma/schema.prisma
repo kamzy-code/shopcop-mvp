@@ -485,6 +485,13 @@ model Product {
   media     ProductMedia[]
   video_url String?
 
+  // Admin quality control (non-blocking — does not affect stock_status/visibility)
+  is_flagged  Boolean   @default(false)
+  flagged_by  String?
+  flagged_at  DateTime?
+  flag_reason String?
+  admin_notes String?
+
   // Timestamps
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -498,6 +505,7 @@ model Product {
   @@index([created_at])
   @@index([deleted_at])
   @@index([vendor_id, created_at])
+  @@index([is_flagged])
   //@@fulltext([name, description])
   @@map("products")
 }

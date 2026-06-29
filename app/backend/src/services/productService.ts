@@ -130,6 +130,7 @@ export class ProductService {
         price: true,
         description: true,
         category: true,
+        is_flagged: true,
         media: { orderBy: { position: 'asc' } },
         vendor: {
           select: {

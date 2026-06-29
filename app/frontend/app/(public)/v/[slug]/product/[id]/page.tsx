@@ -358,9 +358,18 @@ export default function PublicProductDetailPage() {
               )}
             </Stack>
 
-            <Text textStyle="2xl" fontWeight="bold" color="primary.fg">
-              ₦{product.price.toLocaleString()}
-            </Text>
+            <Flex align="center" gap={3}>
+              <Text textStyle="2xl" fontWeight="bold" color="primary.fg">
+                ₦{product.price.toLocaleString()}
+              </Text>
+              {product.is_flagged && (
+                <Box px={2} py={0.5} borderRadius="full" bg="warning.subtle">
+                  <Text textStyle="xs" fontWeight="semibold" color="warning.fg">
+                    Under Review
+                  </Text>
+                </Box>
+              )}
+            </Flex>
 
             {product.description && (
               <Box p={4} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">

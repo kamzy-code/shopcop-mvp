@@ -123,6 +123,9 @@ export interface Product {
   stock_quantity: number | null;
   media: ProductMedia[];
   video_url: string | null;
+  is_flagged?: boolean;
+  flag_reason?: string | null;
+  flagged_at?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -250,6 +253,97 @@ export interface AdminUsersResponse {
 export interface AdminVerificationsResponse {
   verifications: VerificationRecord[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
+// ============================================================
+// ADMIN PRODUCTS
+// ============================================================
+
+export interface AdminProduct extends Product {
+  is_flagged: boolean;
+  flagged_by: string | null;
+  flagged_at: string | null;
+  flag_reason: string | null;
+  admin_notes: string | null;
+  vendor: { id: string; business_name: string | null; current_tier: VendorTier };
+}
+
+export interface AdminProductListResponse {
+  data: AdminProduct[];
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminProductAnalytics {
+  quick_stats: { active: number; archived: number; out_of_stock: number; flagged: number };
+  top_performers: {
+    product_id: string;
+    name: string;
+    vendor_name: string | null;
+    price: number;
+    units_sold: number;
+    revenue: number;
+  }[];
+}
+
+export interface AdminProductDetail extends AdminProduct {
+  order_items: {
+    id: string;
+    quantity: number;
+    item_price: number;
+    subtotal: number;
+    order: { reference: string; created_at: string; status: OrderStatus };
+  }[];
+  analytics: { units_sold: number; revenue: number };
+}
+
+export interface AdminProductFilters {
+  vendor_id?: string;
+  status?: 'ACTIVE' | 'ARCHIVED' | 'OUT_OF_STOCK';
+  flagged?: boolean;
+  low_stock?: boolean;
+  search?: string;
+  sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc';
+  page?: number;
+  limit?: number;
+}
+
+// ============================================================
+// ADMIN TRANSACTIONS (ORDERS)
+// ============================================================
+
+export type AdminOrderListItem = OrderListItem;
+
+export interface AdminOrderListResponse {
+  data: AdminOrderListItem[];
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+export interface AdminOrderAnalytics extends OrderAnalytics {
+  this_month: OrderAnalytics['this_month'] & { avg_order_value: number };
+  needing_attention: {
+    proof_submitted: AdminOrderListItem[];
+    refund_requested: AdminOrderListItem[];
+    late_delivered: AdminOrderListItem[];
+  };
+}
+
+export interface AdminOrderFilters {
+  vendor_id?: string;
+  status?: string;
+  payment_status?: string;
+  refund_status?: string;
+  search?: string;
+  from_date?: string;
+  to_date?: string;
+  sort?: 'newest' | 'oldest' | 'amount_asc' | 'amount_desc';
+  page?: number;
+  limit?: number;
 }
 
 export interface AdminProfile {
@@ -585,6 +679,7 @@ export interface PublicVendorProfileProduct {
   price: number;
   category: string;
   stock_status: string;
+  is_flagged?: boolean;
   media: Array<{ media_url: string; media_type: string }>;
 }
 
@@ -619,6 +714,7 @@ export interface PublicProductDetail {
   price: number;
   description: string | null;
   category: string;
+  is_flagged?: boolean;
   media: PublicProductDetailMedia[];
   vendor: {
     whatsapp_number: string | null;

@@ -141,12 +141,20 @@ function ProductCard({
           {product.category}
         </Text>
 
-        <Flex align="center" justify="space-between" mb={3}>
+        <Flex align="center" justify="space-between" mb={product.is_flagged ? 2 : 3}>
           <Text color="primary.fg" fontWeight="bold" textStyle="md">
             ₦{product.price.toLocaleString()}
           </Text>
           <StockBadge status={product.stock_status} quantity={product.stock_quantity} />
         </Flex>
+
+        {product.is_flagged && (
+          <Box display="inline-block" px={2} py={0.5} mb={3} borderRadius="full" bg="warning.subtle">
+            <Text textStyle="xs" fontWeight="semibold" color="warning.fg">
+              Under Review
+            </Text>
+          </Box>
+        )}
 
         <Flex gap={2}>
           <Button

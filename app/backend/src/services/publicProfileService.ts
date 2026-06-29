@@ -119,6 +119,7 @@ export class PublicProfileService {
           price: true,
           category: true,
           stock_status: true,
+          is_flagged: true,
           media: {
             where: { is_primary: true },
             select: { media_url: true, media_type: true },

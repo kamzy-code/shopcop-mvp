@@ -7,6 +7,14 @@ import {
   AdminUsersResponse,
   AdminVerificationsResponse,
   VerificationRecord,
+  AdminProductListResponse,
+  AdminProductAnalytics,
+  AdminProductDetail,
+  AdminProductFilters,
+  AdminOrderListResponse,
+  AdminOrderAnalytics,
+  AdminOrderListItem,
+  AdminOrderFilters,
 } from '../_types';
 
 // ============================================================
@@ -237,3 +245,158 @@ export const useUpdateAdminProfile = () => {
     },
   });
 };
+
+// ============================================================
+// ADMIN PRODUCTS
+// ============================================================
+
+function buildAdminProductQuery(filters: AdminProductFilters) {
+  const params = new URLSearchParams();
+  if (filters.vendor_id) params.set('vendor_id', filters.vendor_id);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.flagged !== undefined) params.set('flagged', String(filters.flagged));
+  if (filters.low_stock !== undefined) params.set('low_stock', String(filters.low_stock));
+  if (filters.search) params.set('search', filters.search);
+  if (filters.sort) params.set('sort', filters.sort);
+  if (filters.page) params.set('page', String(filters.page));
+  if (filters.limit) params.set('limit', String(filters.limit));
+  return params.toString();
+}
+
+export const useAdminProducts = (filters: AdminProductFilters = {}) => {
+  const qs = buildAdminProductQuery(filters);
+
+  return useQuery<AdminProductListResponse>({
+    queryKey: ['admin-products', filters],
+    queryFn: async () => {
+      const res = await apiFetch<AdminProductListResponse>(`/admin/products${qs ? `?${qs}` : ''}`);
+      return res.data;
+    },
+    staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminProductAnalytics = () =>
+  useQuery<AdminProductAnalytics>({
+    queryKey: ['admin-product-analytics'],
+    queryFn: async () => {
+      const res = await apiFetch<AdminProductAnalytics>('/admin/products/analytics');
+      return res.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
+export const useAdminProduct = (id: string) =>
+  useQuery<AdminProductDetail>({
+    queryKey: ['admin-product', id],
+    queryFn: async () => {
+      const res = await apiFetch<AdminProductDetail>(`/admin/products/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+    staleTime: 60 * 1000,
+  });
+
+function invalidateAdminProductQueries(queryClient: ReturnType<typeof useQueryClient>, id?: string) {
+  queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-product-analytics'] });
+  if (id) queryClient.invalidateQueries({ queryKey: ['admin-product', id] });
+}
+
+export const useAdminUpdateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & Partial<AdminProductDetail>) =>
+      apiFetch<AdminProductDetail>(`/admin/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, { id }) => invalidateAdminProductQueries(queryClient, id),
+  });
+};
+
+export const useAdminFlagProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiFetch<AdminProductDetail>(`/admin/products/${id}/flag`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: (_, { id }) => invalidateAdminProductQueries(queryClient, id),
+  });
+};
+
+export const useAdminApproveProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      apiFetch<AdminProductDetail>(`/admin/products/${id}/approve`, { method: 'PATCH' }),
+    onSuccess: (_, { id }) => invalidateAdminProductQueries(queryClient, id),
+  });
+};
+
+export const useAdminArchiveProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      apiFetch<AdminProductDetail>(`/admin/products/${id}`, { method: 'DELETE' }),
+    onSuccess: (_, { id }) => invalidateAdminProductQueries(queryClient, id),
+  });
+};
+
+// ============================================================
+// ADMIN TRANSACTIONS (ORDERS)
+// ============================================================
+
+function buildAdminOrderQuery(filters: AdminOrderFilters) {
+  const params = new URLSearchParams();
+  if (filters.vendor_id) params.set('vendor_id', filters.vendor_id);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.payment_status) params.set('payment_status', filters.payment_status);
+  if (filters.refund_status) params.set('refund_status', filters.refund_status);
+  if (filters.search) params.set('search', filters.search);
+  if (filters.from_date) params.set('from_date', filters.from_date);
+  if (filters.to_date) params.set('to_date', filters.to_date);
+  if (filters.sort) params.set('sort', filters.sort);
+  if (filters.page) params.set('page', String(filters.page));
+  if (filters.limit) params.set('limit', String(filters.limit));
+  return params.toString();
+}
+
+export const useAdminOrders = (filters: AdminOrderFilters = {}) => {
+  const qs = buildAdminOrderQuery(filters);
+
+  return useQuery<AdminOrderListResponse>({
+    queryKey: ['admin-orders', filters],
+    queryFn: async () => {
+      const res = await apiFetch<AdminOrderListResponse>(`/admin/orders${qs ? `?${qs}` : ''}`);
+      return res.data;
+    },
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminOrderAnalytics = () =>
+  useQuery<AdminOrderAnalytics>({
+    queryKey: ['admin-order-analytics'],
+    queryFn: async () => {
+      const res = await apiFetch<AdminOrderAnalytics>('/admin/orders/analytics');
+      return res.data;
+    },
+    staleTime: 30 * 1000,
+  });
+
+export const useAdminOrder = (id: string) =>
+  useQuery<AdminOrderListItem>({
+    queryKey: ['admin-order', id],
+    queryFn: async () => {
+      const res = await apiFetch<AdminOrderListItem>(`/admin/orders/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+
