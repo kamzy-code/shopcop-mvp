@@ -13,7 +13,7 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LuArrowRight, LuSearch, LuFlag, LuPackage } from 'react-icons/lu';
 import {
   useAdminProducts,
@@ -48,6 +48,8 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const vendorId = searchParams.get('vendor_id') ?? undefined;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(undefined);
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [search, setSearch] = useState('');
@@ -67,6 +69,7 @@ export default function AdminProductsPage() {
   };
 
   const filters: AdminProductFilters = {
+    ...(vendorId && { vendor_id: vendorId }),
     ...(statusFilter && { status: statusFilter }),
     ...(flaggedOnly && { flagged: true }),
     ...(debouncedSearch && { search: debouncedSearch }),
@@ -142,7 +145,7 @@ export default function AdminProductsPage() {
         >
           <LuSearch size={14} color="var(--chakra-colors-fg-muted)" />
           <Input
-            placeholder="Search products…"
+            placeholder="Search by product or vendor name…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             border="none"

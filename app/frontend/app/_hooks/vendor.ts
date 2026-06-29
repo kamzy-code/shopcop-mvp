@@ -152,13 +152,14 @@ export const useSubmitAddressVerification = () => {
   });
 };
 
-export const useProfileCompleteness = () =>
+export const useProfileCompleteness = (enabled: boolean = true) =>
   useQuery<ProfileCompletenessBreakdown>({
     queryKey: ['profile-completeness'],
     queryFn: async () => {
       const res = await apiFetch<ProfileCompletenessBreakdown>('/vendors/completeness');
       return res.data;
     },
+    enabled,
     staleTime: 2 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

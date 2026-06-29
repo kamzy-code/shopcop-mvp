@@ -1,9 +1,10 @@
 'use client';
-import { use } from 'react';
+import { use, useState } from 'react';
 import { Alert, Box, Button, Flex, Heading, Image, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuStar } from 'react-icons/lu';
 import { useAdminOrder } from '@/app/_hooks/admin';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 
 function InfoRow({ label, value }: { label: string; value?: string | null | number | boolean }) {
   if (value === undefined || value === null || value === '') return null;
@@ -24,11 +25,16 @@ function formatNaira(value: number) {
   return `₦${Number(value).toLocaleString('en-NG')}`;
 }
 
-export default function AdminTransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function formatDate(value: string) {
+  return new Date(value).toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+export default function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
   const { data: order, isLoading, isError } = useAdminOrder(id);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -56,11 +62,22 @@ export default function AdminTransactionDetailPage({ params }: { params: Promise
 
   const awaitingPaymentConfirmation = order.payment_status === 'PROOF_SUBMITTED';
   const hasActiveRefundRequest = order.refund_status === 'REQUESTED' || order.refund_status === 'IN_PROGRESS';
+  const hasDeliveryWindow = order.expected_delivery_start || order.expected_delivery_end;
 
   return (
     <Stack gap={8}>
-      <Button variant="ghost" size="sm" color="fg.muted" w="fit-content" px={0} onClick={() => router.push('/admin/transactions')}>
-        <LuArrowLeft size={14} /> Back to Transactions
+      {order.payment_proof_url && (
+        <ImagePreviewModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          src={order.payment_proof_url}
+          alt="Payment proof"
+          title="Payment Proof"
+        />
+      )}
+
+      <Button variant="ghost" size="sm" color="fg.muted" w="fit-content" px={0} onClick={() => router.push('/admin/orders')}>
+        <LuArrowLeft size={14} /> Back to Orders
       </Button>
 
       <Flex align="flex-start" justify="space-between" flexWrap="wrap" gap={4}>
@@ -115,7 +132,13 @@ export default function AdminTransactionDetailPage({ params }: { params: Promise
               <InfoRow label="Buyer Email" value={order.buyer_email} />
               <InfoRow label="Total Amount" value={formatNaira(order.total_amount)} />
               <InfoRow label="Delivery Method" value={order.delivery_method} />
-              <InfoRow label="Created" value={new Date(order.created_at).toLocaleString('en-NG')} />
+              {hasDeliveryWindow && (
+                <InfoRow
+                  label="Expected Delivery"
+                  value={`${order.expected_delivery_start ? formatDate(order.expected_delivery_start) : '—'} to ${order.expected_delivery_end ? formatDate(order.expected_delivery_end) : '—'}`}
+                />
+              )}
+              <InfoRow label="Created" value={formatDate(order.created_at)} />
             </Stack>
           </Box>
 
@@ -124,7 +147,16 @@ export default function AdminTransactionDetailPage({ params }: { params: Promise
               <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
                 Payment Proof
               </Text>
-              <Image src={order.payment_proof_url} alt="Payment proof" maxH="320px" borderRadius="md" />
+              <Box
+                cursor="pointer"
+                display="inline-block"
+                borderRadius="md"
+                overflow="hidden"
+                onClick={() => setPreviewOpen(true)}
+                title="Click to view full size"
+              >
+                <Image src={order.payment_proof_url} alt="Payment proof" maxH="320px" borderRadius="md" />
+              </Box>
             </Box>
           )}
 
@@ -132,12 +164,19 @@ export default function AdminTransactionDetailPage({ params }: { params: Promise
             <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
               Order Items
             </Text>
-            <Stack gap={2}>
+            <Stack gap={3}>
               {order.items.map((item) => (
-                <Flex key={item.id} align="center" justify="space-between">
-                  <Text textStyle="sm" color="fg.muted">
-                    {item.item_name} × {item.quantity}
-                  </Text>
+                <Flex key={item.id} align="center" gap={3}>
+                  <Box w="44px" h="44px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle">
+                    {item.item_image_url && (
+                      <img src={item.item_image_url} alt={item.item_name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    )}
+                  </Box>
+                  <Box flex={1}>
+                    <Text textStyle="sm" color="fg.muted">
+                      {item.item_name} × {item.quantity}
+                    </Text>
+                  </Box>
                   <Text textStyle="sm" color="fg">
                     {formatNaira(item.subtotal)}
                   </Text>
@@ -145,6 +184,46 @@ export default function AdminTransactionDetailPage({ params }: { params: Promise
               ))}
             </Stack>
           </Box>
+
+          {order.review && (
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
+              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
+                Buyer Review
+              </Text>
+              <Stack gap={2}>
+                <Flex align="center" gap={1}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <LuStar
+                      key={i}
+                      size={14}
+                      fill={i < order.review!.overall_rating ? 'var(--chakra-colors-warning-fg)' : 'none'}
+                      color="var(--chakra-colors-warning-fg)"
+                    />
+                  ))}
+                  <Text textStyle="xs" color="fg.muted" ml={1}>
+                    {order.review.overall_rating}/5
+                  </Text>
+                </Flex>
+                {order.review.review_text && (
+                  <Text textStyle="sm" color="fg">
+                    {order.review.review_text}
+                  </Text>
+                )}
+                {order.review.media.length > 0 && (
+                  <Flex gap={2} mt={1} overflowX="auto">
+                    {order.review.media.map((m) => (
+                      <Box key={m.id} w="56px" h="56px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle">
+                        <img src={m.media_url} alt="Review attachment" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </Box>
+                    ))}
+                  </Flex>
+                )}
+                <Text textStyle="xs" color="fg.subtle">
+                  {formatDate(order.review.created_at)}
+                </Text>
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </Flex>
     </Stack>

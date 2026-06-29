@@ -13,7 +13,7 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LuArrowRight, LuSearch, LuTriangleAlert } from 'react-icons/lu';
 import { useAdminOrders, useAdminOrderAnalytics } from '@/app/_hooks/admin';
 import { AdminOrderFilters, AdminOrderListItem } from '@/app/_types';
@@ -58,8 +58,10 @@ function AttentionRow({ order, onClick }: { order: AdminOrderListItem; onClick: 
   );
 }
 
-export default function AdminTransactionsPage() {
+export default function AdminOrdersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const vendorId = searchParams.get('vendor_id') ?? undefined;
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -78,6 +80,7 @@ export default function AdminTransactionsPage() {
   };
 
   const filters: AdminOrderFilters = {
+    ...(vendorId && { vendor_id: vendorId }),
     ...(statusFilter && { status: statusFilter }),
     ...(debouncedSearch && { search: debouncedSearch }),
     page,
@@ -99,7 +102,7 @@ export default function AdminTransactionsPage() {
     <Stack gap={8}>
       <Stack gap={1}>
         <Heading as="h1" textStyle="2xl" fontWeight="bold" color="fg">
-          Transactions
+          Orders
         </Heading>
         <Text color="fg.muted" textStyle="sm">
           Monitor order flow, payments, and refunds across all vendors.
@@ -107,12 +110,29 @@ export default function AdminTransactionsPage() {
       </Stack>
 
       {/* Quick stats */}
-      <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
-        <StatCard label="Orders This Month" value={analytics?.this_month.total_orders ?? '—'} />
-        <StatCard label="Completion Rate" value={analytics ? `${analytics.this_month.completion_rate}%` : '—'} />
-        <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.this_month.avg_order_value) : '—'} />
-        <StatCard label="Refund Rate" value={analytics ? `${analytics.this_month.refund_rate}%` : '—'} />
-      </SimpleGrid>
+      <Box>
+        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+          This Month
+        </Text>
+        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
+          <StatCard label="Orders This Month" value={analytics?.this_month.total_orders ?? '—'} />
+          <StatCard label="Completion Rate" value={analytics ? `${analytics.this_month.completion_rate}%` : '—'} />
+          <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.this_month.avg_order_value) : '—'} />
+          <StatCard label="Refund Rate" value={analytics ? `${analytics.this_month.refund_rate}%` : '—'} />
+        </SimpleGrid>
+      </Box>
+
+      <Box>
+        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+          All Time
+        </Text>
+        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
+          <StatCard label="Total Orders" value={analytics?.all_time.total_orders ?? '—'} />
+          <StatCard label="Completion Rate" value={analytics ? `${analytics.all_time.completion_rate}%` : '—'} />
+          <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.all_time.avg_order_value) : '—'} />
+          <StatCard label="Refund Rate" value={analytics ? `${analytics.all_time.refund_rate}%` : '—'} />
+        </SimpleGrid>
+      </Box>
 
       {/* Needing attention */}
       {attentionCount > 0 && (
@@ -125,13 +145,13 @@ export default function AdminTransactionsPage() {
           </Flex>
           <Stack gap={1}>
             {attention?.proof_submitted.map((o) => (
-              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/transactions/${o.id}`)} />
+              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/orders/${o.id}`)} />
             ))}
             {attention?.refund_requested.map((o) => (
-              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/transactions/${o.id}`)} />
+              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/orders/${o.id}`)} />
             ))}
             {attention?.late_delivered.map((o) => (
-              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/transactions/${o.id}`)} />
+              <AttentionRow key={o.id} order={o} onClick={() => router.push(`/admin/orders/${o.id}`)} />
             ))}
           </Stack>
         </Box>
@@ -142,7 +162,7 @@ export default function AdminTransactionsPage() {
         <Flex align="center" gap={2} px={3} py={2} borderWidth="1px" borderColor="border" borderRadius="lg" bg="bg.panel" flex={{ base: '1', md: '0 0 260px' }}>
           <LuSearch size={14} color="var(--chakra-colors-fg-muted)" />
           <Input
-            placeholder="Search by reference or email…"
+            placeholder="Search by reference, email, vendor, or item…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             border="none"
@@ -170,7 +190,7 @@ export default function AdminTransactionsPage() {
         <Alert.Root status="error" borderRadius="lg">
           <Alert.Indicator />
           <Alert.Content>
-            <Alert.Title>Failed to load transactions</Alert.Title>
+            <Alert.Title>Failed to load orders</Alert.Title>
             <Alert.Description textStyle="xs">Please check your filters and try again.</Alert.Description>
           </Alert.Content>
         </Alert.Root>
@@ -184,7 +204,7 @@ export default function AdminTransactionsPage() {
           </Flex>
         ) : orders.length === 0 ? (
           <Box py={12} textAlign="center">
-            <Text color="fg.muted">No transactions found.</Text>
+            <Text color="fg.muted">No orders found.</Text>
           </Box>
         ) : (
           <Box overflowX="auto">
@@ -227,7 +247,7 @@ export default function AdminTransactionsPage() {
                       </Box>
                     </Table.Cell>
                     <Table.Cell px={4} py={3} textAlign="right">
-                      <Button size="xs" variant="ghost" color="primary.fg" onClick={() => router.push(`/admin/transactions/${o.id}`)}>
+                      <Button size="xs" variant="ghost" color="primary.fg" onClick={() => router.push(`/admin/orders/${o.id}`)}>
                         View <LuArrowRight size={12} />
                       </Button>
                     </Table.Cell>

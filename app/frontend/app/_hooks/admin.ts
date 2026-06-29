@@ -14,6 +14,7 @@ import {
   AdminOrderListResponse,
   AdminOrderAnalytics,
   AdminOrderListItem,
+  AdminOrderDetail,
   AdminOrderFilters,
 } from '../_types';
 
@@ -390,10 +391,10 @@ export const useAdminOrderAnalytics = () =>
   });
 
 export const useAdminOrder = (id: string) =>
-  useQuery<AdminOrderListItem>({
+  useQuery<AdminOrderDetail>({
     queryKey: ['admin-order', id],
     queryFn: async () => {
-      const res = await apiFetch<AdminOrderListItem>(`/admin/orders/${id}`);
+      const res = await apiFetch<AdminOrderDetail>(`/admin/orders/${id}`);
       return res.data;
     },
     enabled: !!id,

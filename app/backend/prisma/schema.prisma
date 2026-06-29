@@ -180,9 +180,9 @@ model User {
   // Relations
   otp_codes      OtpCode[]
   magic_links    MagicLink[]
-  vendor_profile VendorProfile[]
-  buyer_profile  BuyerProfile[]
-  admin_profile  AdminProfile[]
+  vendor_profile VendorProfile?
+  buyer_profile  BuyerProfile?
+  admin_profile  AdminProfile?
   admin_actions  AdminActivityLog[]
   orders         Order[]
   notifications  Notification[]

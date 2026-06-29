@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
         >
           <LuSearch size={14} color="var(--chakra-colors-fg-muted)" />
           <Input
-            placeholder="Search by email or name…"
+            placeholder="Search by email, name, or vendor business name…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             border="none"

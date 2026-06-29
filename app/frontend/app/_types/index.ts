@@ -219,6 +219,16 @@ export interface AdminUserDetail extends User {
     business_info_complete: boolean;
     profile_status: string;
     created_at: string;
+    total_orders: number;
+    successful_orders: number;
+    fulfillment_rate: number;
+    refund_rate: number;
+    on_time_delivery_rate: number;
+    review_count: number;
+    average_rating: number;
+    avg_delivery_rating: number;
+    avg_response_rating: number;
+    customer_satisfaction_rating: number;
   } | null;
 }
 
@@ -316,6 +326,11 @@ export interface AdminProductFilters {
 
 export type AdminOrderListItem = OrderListItem;
 
+/** Full order detail as returned by GET /admin/orders/:id — includes status_history and review, unlike the list shape. */
+export interface AdminOrderDetail extends Omit<Order, 'vendor'> {
+  vendor: Pick<OrderVendor, 'id' | 'business_name' | 'current_tier'>;
+}
+
 export interface AdminOrderListResponse {
   data: AdminOrderListItem[];
   total: number;
@@ -324,8 +339,19 @@ export interface AdminOrderListResponse {
   limit: number;
 }
 
-export interface AdminOrderAnalytics extends OrderAnalytics {
-  this_month: OrderAnalytics['this_month'] & { avg_order_value: number };
+export interface AdminOrderAnalyticsBlock {
+  total_orders: number;
+  completed: number;
+  revenue: number;
+  avg_order_value: number;
+  completion_rate: number;
+  refund_rate: number;
+  by_status: Record<string, number>;
+}
+
+export interface AdminOrderAnalytics {
+  this_month: AdminOrderAnalyticsBlock;
+  all_time: AdminOrderAnalyticsBlock;
   needing_attention: {
     proof_submitted: AdminOrderListItem[];
     refund_requested: AdminOrderListItem[];

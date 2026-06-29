@@ -6,7 +6,7 @@ const ADMIN_NAV_ITEMS: NavItemConfig[] = [
   { label: 'Dashboard', icon: LuLayoutDashboard, href: '/admin' },
   { label: 'Verifications', icon: LuShieldCheck, href: '/admin/verifications' },
   { label: 'Products', icon: LuPackage, href: '/admin/products' },
-  { label: 'Transactions', icon: LuReceipt, href: '/admin/transactions' },
+  { label: 'Orders', icon: LuReceipt, href: '/admin/orders' },
   { label: 'Users', icon: LuUsers, href: '/admin/users' },
   { label: 'Profile', icon: LuUser, href: '/admin/profile' },
 ];

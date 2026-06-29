@@ -40,6 +40,7 @@ export class AdminProductService {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { category: { contains: search, mode: 'insensitive' } },
+        { vendor: { business_name: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -186,6 +187,9 @@ export class AdminProductService {
       adminLogger.warn('Product not found for update', { action: 'updateProduct', adminId, productId });
       throw new AppError('Product not found', 404);
     }
+    if (existing.deleted_at) {
+      throw new AppError('Cannot modify an archived product', 400);
+    }
 
     const updated = await prisma.product.update({
       where: { id: productId },
@@ -219,6 +223,9 @@ export class AdminProductService {
     if (!existing) {
       throw new AppError('Product not found', 404);
     }
+    if (existing.deleted_at) {
+      throw new AppError('Cannot modify an archived product', 400);
+    }
 
     const updated = await prisma.product.update({
       where: { id: productId },
@@ -241,6 +248,9 @@ export class AdminProductService {
     const existing = await prisma.product.findUnique({ where: { id: productId } });
     if (!existing) {
       throw new AppError('Product not found', 404);
+    }
+    if (existing.deleted_at) {
+      throw new AppError('Cannot modify an archived product', 400);
     }
 
     const updated = await prisma.product.update({
@@ -266,6 +276,9 @@ export class AdminProductService {
     const existing = await prisma.product.findUnique({ where: { id: productId } });
     if (!existing) {
       throw new AppError('Product not found', 404);
+    }
+    if (existing.deleted_at) {
+      throw new AppError('Product is already archived', 400);
     }
 
     const archived = await prisma.product.update({

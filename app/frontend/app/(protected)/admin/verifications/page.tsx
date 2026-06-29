@@ -10,7 +10,7 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LuArrowRight, LuFilter } from 'react-icons/lu';
 import { useAdminVerifications, AdminVerificationsFilters } from '@/app/_hooks/admin';
 
@@ -40,11 +40,14 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminVerificationsPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
+  const searchParams = useSearchParams();
+  const vendorId = searchParams.get('vendorId') ?? undefined;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(vendorId ? undefined : 'PENDING');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(undefined);
   const [page, setPage] = useState(1);
 
   const filters: AdminVerificationsFilters = {
+    ...(vendorId && { vendorId }),
     ...(statusFilter && { status: statusFilter }),
     ...(typeFilter && { type: typeFilter }),
     page,

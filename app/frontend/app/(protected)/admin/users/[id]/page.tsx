@@ -9,10 +9,11 @@ import {
   Heading,
   Spinner,
   Stack,
+  Tabs,
   Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuShieldCheck, LuPackage, LuReceipt, LuStar, LuUser } from 'react-icons/lu';
 import {
   useAdminUser,
   useAdminUpdateUserStatus,
@@ -103,7 +104,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
-  const vendorProfile = (user as any).vendor_profile;
+  const vendorProfile = user.vendor_profile;
 
   return (
     <Stack gap={8}>
@@ -202,19 +203,111 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           {/* Vendor profile (if any) */}
           {vendorProfile && (
             <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
-              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
-                Vendor Profile
-              </Text>
-              <Stack gap={3}>
-                <InfoRow label="Vendor Profile ID" value={vendorProfile.id} />
-                <InfoRow label="Business Name" value={vendorProfile.business_name} />
-                <InfoRow label="Current Tier" value={vendorProfile.current_tier} />
-                <InfoRow label="Verification Points" value={vendorProfile.verification_points} />
-                <InfoRow label="Profile Completeness" value={`${vendorProfile.profile_completeness}%`} />
-                <InfoRow label="Personal Info Complete" value={vendorProfile.personal_info_complete} />
-                <InfoRow label="Business Info Complete" value={vendorProfile.business_info_complete} />
-                <InfoRow label="Profile Status" value={vendorProfile.profile_status} />
-              </Stack>
+              <Tabs.Root defaultValue="summary">
+                <Tabs.List gap={{ base: 2, sm: 0 }}>
+                  <Tabs.Trigger value="summary">
+                    <LuUser size={16} />
+                    <Box hideBelow="sm">Summary</Box>
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="verifications">
+                    <LuShieldCheck size={16} />
+                    <Box hideBelow="sm">Verifications</Box>
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="products">
+                    <LuPackage size={16} />
+                    <Box hideBelow="sm">Products</Box>
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="orders">
+                    <LuReceipt size={16} />
+                    <Box hideBelow="sm">Orders</Box>
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="reviews">
+                    <LuStar size={16} />
+                    <Box hideBelow="sm">Reviews</Box>
+                  </Tabs.Trigger>
+                </Tabs.List>
+
+                <Box pt={5}>
+                  <Tabs.Content value="summary">
+                    <Stack gap={3}>
+                      <InfoRow label="Vendor Profile ID" value={vendorProfile.id} />
+                      <InfoRow label="Business Name" value={vendorProfile.business_name} />
+                      <InfoRow label="Current Tier" value={vendorProfile.current_tier} />
+                      <InfoRow label="Verification Points" value={vendorProfile.verification_points} />
+                      <InfoRow label="Profile Completeness" value={`${vendorProfile.profile_completeness}%`} />
+                      <InfoRow label="Personal Info Complete" value={vendorProfile.personal_info_complete} />
+                      <InfoRow label="Business Info Complete" value={vendorProfile.business_info_complete} />
+                      <InfoRow label="Profile Status" value={vendorProfile.profile_status} />
+                      <InfoRow label="Total Orders" value={vendorProfile.total_orders ?? 0} />
+                      <InfoRow label="Successful Orders" value={vendorProfile.successful_orders ?? 0} />
+                      <InfoRow label="Fulfillment Rate" value={`${vendorProfile.fulfillment_rate ?? 0}%`} />
+                      <InfoRow label="Refund Rate" value={`${vendorProfile.refund_rate ?? 0}%`} />
+                      <InfoRow label="On-Time Delivery Rate" value={`${vendorProfile.on_time_delivery_rate ?? 0}%`} />
+                    </Stack>
+                  </Tabs.Content>
+
+                  <Tabs.Content value="verifications">
+                    <Stack gap={3}>
+                      <Text textStyle="sm" color="fg.muted">
+                        View this vendor's verification submissions and approval history.
+                      </Text>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        colorPalette="primary"
+                        w="fit-content"
+                        onClick={() => router.push(`/admin/verifications?vendorId=${vendorProfile.id}`)}
+                      >
+                        View All Verifications <LuArrowRight size={14} />
+                      </Button>
+                    </Stack>
+                  </Tabs.Content>
+
+                  <Tabs.Content value="products">
+                    <Stack gap={3}>
+                      <Text textStyle="sm" color="fg.muted">
+                        View every product this vendor has listed, including flagged and archived items.
+                      </Text>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        colorPalette="primary"
+                        w="fit-content"
+                        onClick={() => router.push(`/admin/products?vendor_id=${vendorProfile.id}`)}
+                      >
+                        View All Products <LuArrowRight size={14} />
+                      </Button>
+                    </Stack>
+                  </Tabs.Content>
+
+                  <Tabs.Content value="orders">
+                    <Stack gap={3}>
+                      <Text textStyle="sm" color="fg.muted">
+                        View this vendor's order history, payments, and refunds.
+                      </Text>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        colorPalette="primary"
+                        w="fit-content"
+                        onClick={() => router.push(`/admin/orders?vendor_id=${vendorProfile.id}`)}
+                      >
+                        View All Orders <LuArrowRight size={14} />
+                      </Button>
+                    </Stack>
+                  </Tabs.Content>
+
+                  <Tabs.Content value="reviews">
+                    <Stack gap={3}>
+                      <InfoRow label="Review Count" value={vendorProfile.review_count ?? 0} />
+                      <InfoRow label="Average Rating" value={`${(vendorProfile.average_rating ?? 0).toFixed(1)} / 5`} />
+                      <InfoRow label="Avg Delivery Rating" value={`${(vendorProfile.avg_delivery_rating ?? 0).toFixed(1)} / 5`} />
+                      <InfoRow label="Avg Response Rating" value={`${(vendorProfile.avg_response_rating ?? 0).toFixed(1)} / 5`} />
+                      <InfoRow label="Customer Satisfaction" value={`${(vendorProfile.customer_satisfaction_rating ?? 0).toFixed(1)} / 5`} />
+                    </Stack>
+                  </Tabs.Content>
+                </Box>
+              </Tabs.Root>
             </Box>
           )}
         </Stack>

@@ -52,7 +52,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const pathname = usePathname();
-  const { data: completeness } = useProfileCompleteness();
+  const { data: completeness } = useProfileCompleteness(user?.role === 'VENDOR');
 
   useEffect(() => {
     if (!isSessionReady) return;

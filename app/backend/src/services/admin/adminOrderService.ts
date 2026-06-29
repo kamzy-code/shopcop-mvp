@@ -8,7 +8,44 @@ const ADMIN_ORDER_INCLUDE = {
   items: true,
   vendor: { select: { id: true, business_name: true, current_tier: true } },
   status_history: { orderBy: { created_at: 'asc' as const } },
+  review: { include: { media: { orderBy: { position: 'asc' as const } } } },
 } as const;
+
+/** Computes the shared analytics shape (totals/completion/refund rate/by-status) for a date window. */
+async function computeOrderAnalyticsBlock(createdAtGte?: Date) {
+  const completedWhere = createdAtGte
+    ? { status: OrderStatus.COMPLETED, completed_at: { gte: createdAtGte } }
+    : { status: OrderStatus.COMPLETED };
+  const groupByWhere = createdAtGte ? { created_at: { gte: createdAtGte } } : {};
+  const refundWhere = createdAtGte
+    ? { refund_status: RefundStatus.REFUNDED, status: OrderStatus.COMPLETED, completed_at: { gte: createdAtGte } }
+    : { refund_status: RefundStatus.REFUNDED, status: OrderStatus.COMPLETED };
+
+  const [groupedOrders, revenue, refundCount] = await Promise.all([
+    prisma.order.groupBy({ by: ['status'], where: groupByWhere, _count: { status: true } }),
+    prisma.order.aggregate({ where: completedWhere, _sum: { total_amount: true }, _count: { id: true } }),
+    // Only REFUNDED counts as an actual refund — RESOLVED means the refund
+    // request was rejected and no money moved, so it must not inflate the rate.
+    prisma.order.count({ where: refundWhere }),
+  ]);
+
+  const totalOrders = groupedOrders.reduce((sum, row) => sum + row._count.status, 0);
+  const completed = revenue._count.id;
+  const completionRate = totalOrders > 0 ? (completed / totalOrders) * 100 : 0;
+  const refundRate = completed > 0 ? (refundCount / completed) * 100 : 0;
+  const avgOrderValue = completed > 0 ? Number(revenue._sum.total_amount ?? 0) / completed : 0;
+  const byStatus = Object.fromEntries(groupedOrders.map((row) => [row.status, row._count.status]));
+
+  return {
+    total_orders: totalOrders,
+    completed,
+    revenue: revenue._sum.total_amount ?? 0,
+    avg_order_value: Math.round(avgOrderValue * 100) / 100,
+    completion_rate: Math.round(completionRate),
+    refund_rate: Math.round(refundRate * 10) / 10,
+    by_status: byStatus,
+  };
+}
 
 export class AdminOrderService {
   /** List orders across all vendors with filters, search, and pagination. */
@@ -26,6 +63,8 @@ export class AdminOrderService {
       where.OR = [
         { reference: { contains: search, mode: 'insensitive' } },
         { buyer_email: { contains: search, mode: 'insensitive' } },
+        { vendor: { business_name: { contains: search, mode: 'insensitive' } } },
+        { items: { some: { item_name: { contains: search, mode: 'insensitive' } } } },
       ];
     }
 
@@ -77,35 +116,9 @@ export class AdminOrderService {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [
-      allCompleted,
-      monthOrders,
-      monthRevenue,
-      refundCount,
-      proofSubmitted,
-      refundRequested,
-      lateDelivered,
-    ] = await Promise.all([
-      prisma.order.count({ where: { status: OrderStatus.COMPLETED } }),
-      prisma.order.groupBy({
-        by: ['status'],
-        where: { created_at: { gte: monthStart } },
-        _count: { status: true },
-      }),
-      prisma.order.aggregate({
-        where: { status: OrderStatus.COMPLETED, completed_at: { gte: monthStart } },
-        _sum: { total_amount: true },
-        _count: { id: true },
-      }),
-      // Only REFUNDED counts as an actual refund — RESOLVED means the refund
-      // request was rejected and no money moved, so it must not inflate the rate.
-      prisma.order.count({
-        where: {
-          refund_status: RefundStatus.REFUNDED,
-          status: OrderStatus.COMPLETED,
-          completed_at: { gte: monthStart },
-        },
-      }),
+    const [thisMonth, allTime, proofSubmitted, refundRequested, lateDelivered] = await Promise.all([
+      computeOrderAnalyticsBlock(monthStart),
+      computeOrderAnalyticsBlock(),
       prisma.order.findMany({
         where: { payment_status: 'PROOF_SUBMITTED' },
         orderBy: { payment_proof_submitted_at: 'asc' },
@@ -130,30 +143,11 @@ export class AdminOrderService {
       }),
     ]);
 
-    const monthTotal = monthOrders.reduce((sum, row) => sum + row._count.status, 0);
-    const completedThisMonth = monthRevenue._count.id;
-    const completionRate = monthTotal > 0 ? (completedThisMonth / monthTotal) * 100 : 0;
-    const refundRate = completedThisMonth > 0 ? (refundCount / completedThisMonth) * 100 : 0;
-    const avgOrderValue =
-      completedThisMonth > 0
-        ? Number(monthRevenue._sum.total_amount ?? 0) / completedThisMonth
-        : 0;
-
-    const statusCounts = Object.fromEntries(monthOrders.map((row) => [row.status, row._count.status]));
-
     adminLogger.info('Admin fetched order analytics', { action: 'getOrderAnalytics', adminId });
 
     return {
-      all_time_completed: allCompleted,
-      this_month: {
-        total_orders: monthTotal,
-        completed: completedThisMonth,
-        revenue: monthRevenue._sum.total_amount ?? 0,
-        avg_order_value: Math.round(avgOrderValue * 100) / 100,
-        completion_rate: Math.round(completionRate),
-        refund_rate: Math.round(refundRate * 10) / 10,
-        by_status: statusCounts,
-      },
+      this_month: thisMonth,
+      all_time: allTime,
       needing_attention: {
         proof_submitted: proofSubmitted,
         refund_requested: refundRequested,

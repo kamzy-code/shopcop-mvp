@@ -57,6 +57,7 @@ export class AdminUserService {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
         { name: { contains: search, mode: 'insensitive' } },
+        { vendor_profile: { business_name: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -121,6 +122,17 @@ export class AdminUserService {
             business_info_complete: true,
             profile_status: true,
             created_at: true,
+            // Reputation metrics — power the Summary/Reviews tabs on the admin user detail page.
+            total_orders: true,
+            successful_orders: true,
+            fulfillment_rate: true,
+            refund_rate: true,
+            on_time_delivery_rate: true,
+            review_count: true,
+            average_rating: true,
+            avg_delivery_rating: true,
+            avg_response_rating: true,
+            customer_satisfaction_rating: true,
           },
         },
       },

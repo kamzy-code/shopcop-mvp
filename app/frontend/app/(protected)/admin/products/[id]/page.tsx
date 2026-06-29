@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { use } from 'react';
 import { Alert, Box, Button, Flex, Heading, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage } from 'react-icons/lu';
 import {
   useAdminProduct,
   useAdminFlagProduct,
@@ -13,6 +13,97 @@ import {
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AlertModal } from '@/components/ui/alert-modal';
+import type { ProductMedia } from '@/app/_types';
+
+function MediaGallery({ media, name }: { media: ProductMedia[]; name: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const mainVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  const goToSlide = (index: number) => {
+    mainVideoRef.current?.pause();
+    setActiveIndex(index);
+  };
+
+  if (media.length === 0) {
+    return (
+      <Flex w="full" h="240px" bg="bg.subtle" borderRadius="xl" align="center" justify="center" color="fg.subtle">
+        <LuPackage size={48} />
+      </Flex>
+    );
+  }
+
+  const current = media[activeIndex];
+
+  return (
+    <Stack gap={3}>
+      <Box position="relative" w="full" aspectRatio={1} maxW="360px" borderRadius="xl" overflow="hidden" bg="bg.subtle">
+        {current.media_type === 'VIDEO' ? (
+          <video
+            key={`main-video-${activeIndex}`}
+            ref={mainVideoRef}
+            src={current.media_url}
+            controls
+            playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }}
+          />
+        ) : (
+          <img
+            src={current.media_url}
+            alt={`${name} — image ${activeIndex + 1}`}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+          />
+        )}
+        {media.length > 1 && (
+          <>
+            <Button
+              position="absolute" left={2} top="50%" transform="translateY(-50%)"
+              size="sm" borderRadius="full" w={8} h={8} minW={8} p={0}
+              bg="bg.panel" colorPalette="gray" variant="outline"
+              disabled={activeIndex === 0} onClick={() => goToSlide(activeIndex - 1)} aria-label="Previous"
+            >
+              <LuChevronLeft size={14} />
+            </Button>
+            <Button
+              position="absolute" right={2} top="50%" transform="translateY(-50%)"
+              size="sm" borderRadius="full" w={8} h={8} minW={8} p={0}
+              bg="bg.panel" colorPalette="gray" variant="outline"
+              disabled={activeIndex === media.length - 1} onClick={() => goToSlide(activeIndex + 1)} aria-label="Next"
+            >
+              <LuChevronRight size={14} />
+            </Button>
+          </>
+        )}
+      </Box>
+
+      {media.length > 1 && (
+        <Flex gap={2} overflowX="auto" pb={1}>
+          {media.map((item, i) => (
+            <Box
+              key={item.id}
+              flexShrink={0}
+              w="56px"
+              h="56px"
+              borderRadius="md"
+              overflow="hidden"
+              cursor="pointer"
+              borderWidth="2px"
+              borderColor={i === activeIndex ? 'primary.500' : 'transparent'}
+              opacity={i === activeIndex ? 1 : 0.6}
+              transition="all 0.15s"
+              onClick={() => goToSlide(i)}
+            >
+              {item.media_type === 'VIDEO' ? (
+                <video src={item.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <img src={item.media_url} alt={`Thumbnail ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              )}
+            </Box>
+          ))}
+        </Flex>
+      )}
+    </Stack>
+  );
+}
 
 function InfoRow({ label, value }: { label: string; value?: string | null | number | boolean }) {
   if (value === undefined || value === null || value === '') return null;
@@ -184,6 +275,13 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
         <Stack gap={4} flex={1}>
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
             <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
+              Images
+            </Text>
+            <MediaGallery media={product.media} name={product.name} />
+          </Box>
+
+          <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
+            <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
               Product Details
             </Text>
             <Stack gap={3}>
@@ -233,22 +331,26 @@ export default function AdminProductDetailPage({ params }: { params: Promise<{ i
             <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
               Admin Actions
             </Text>
-            <Stack gap={3}>
-              {product.is_flagged ? (
-                <Button colorPalette="success" size="md" w="full" onClick={handleApprove} loading={approveMutation.isPending}>
-                  Approve / Clear Flag
-                </Button>
-              ) : (
-                <Button colorPalette="warning" variant="outline" size="md" w="full" onClick={() => setFlagDialogOpen(true)}>
-                  Flag for Review
-                </Button>
-              )}
-              {!isArchived && (
+            {isArchived ? (
+              <Text textStyle="sm" color="fg.muted">
+                This product is archived. Archiving is a one-way action — no further admin changes can be made to it.
+              </Text>
+            ) : (
+              <Stack gap={3}>
+                {product.is_flagged ? (
+                  <Button colorPalette="success" size="md" w="full" onClick={handleApprove} loading={approveMutation.isPending}>
+                    Approve / Clear Flag
+                  </Button>
+                ) : (
+                  <Button colorPalette="warning" variant="outline" size="md" w="full" onClick={() => setFlagDialogOpen(true)}>
+                    Flag for Review
+                  </Button>
+                )}
                 <Button colorPalette="red" variant="outline" size="md" w="full" onClick={() => setArchiveDialogOpen(true)}>
                   Archive Product
                 </Button>
-              )}
-            </Stack>
+              </Stack>
+            )}
           </Box>
         </Box>
       </Flex>
