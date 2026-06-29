@@ -2,7 +2,7 @@ import { prisma } from '@config/prisma.js';
 import { adminLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { OrderStatus, RefundStatus } from '../../generated/prisma/enums.js';
-import { ListAdminOrdersQuery } from '@validators/adminOrderValidator.js';
+import { ListAdminOrdersQuery, AnalyticsPeriod } from '@validators/adminOrderValidator.js';
 
 const ADMIN_ORDER_INCLUDE = {
   items: true,
@@ -11,14 +11,25 @@ const ADMIN_ORDER_INCLUDE = {
   review: { include: { media: { orderBy: { position: 'asc' as const } } } },
 } as const;
 
+interface DateRange {
+  start?: Date;
+  end?: Date;
+}
+
 /** Computes the shared analytics shape (totals/completion/refund rate/by-status) for a date window. */
-async function computeOrderAnalyticsBlock(createdAtGte?: Date) {
-  const completedWhere = createdAtGte
-    ? { status: OrderStatus.COMPLETED, completed_at: { gte: createdAtGte } }
+async function computeOrderAnalyticsBlock({ start, end }: DateRange) {
+  const dateFilter = {
+    ...(start && { gte: start }),
+    ...(end && { lt: end }),
+  };
+  const hasFilter = !!start || !!end;
+
+  const completedWhere = hasFilter
+    ? { status: OrderStatus.COMPLETED, completed_at: dateFilter }
     : { status: OrderStatus.COMPLETED };
-  const groupByWhere = createdAtGte ? { created_at: { gte: createdAtGte } } : {};
-  const refundWhere = createdAtGte
-    ? { refund_status: RefundStatus.REFUNDED, status: OrderStatus.COMPLETED, completed_at: { gte: createdAtGte } }
+  const groupByWhere = hasFilter ? { created_at: dateFilter } : {};
+  const refundWhere = hasFilter
+    ? { refund_status: RefundStatus.REFUNDED, status: OrderStatus.COMPLETED, completed_at: dateFilter }
     : { refund_status: RefundStatus.REFUNDED, status: OrderStatus.COMPLETED };
 
   const [groupedOrders, revenue, refundCount] = await Promise.all([
@@ -45,6 +56,45 @@ async function computeOrderAnalyticsBlock(createdAtGte?: Date) {
     refund_rate: Math.round(refundRate * 10) / 10,
     by_status: byStatus,
   };
+}
+
+/**
+ * Resolves a named period to a `[start, end)` window.
+ * - Without `referenceDate`: anchored to now, open-ended (`end` is undefined so it includes up to the present moment).
+ * - With `referenceDate`: a fully bounded historical window for that specific day/week/month/year.
+ * 'all_time' always returns an unbounded range regardless of `referenceDate`.
+ */
+function resolvePeriodRange(period: AnalyticsPeriod, referenceDate?: Date): DateRange {
+  if (period === 'all_time') return {};
+
+  const ref = referenceDate ?? new Date();
+  const bounded = !!referenceDate;
+
+  switch (period) {
+    case 'daily': {
+      const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+      const end = bounded ? new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + 1) : undefined;
+      return { start, end };
+    }
+    case 'weekly': {
+      // Monday-based calendar week containing `ref`.
+      const day = ref.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - diffToMonday);
+      const end = bounded ? new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7) : undefined;
+      return { start, end };
+    }
+    case 'monthly': {
+      const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+      const end = bounded ? new Date(ref.getFullYear(), ref.getMonth() + 1, 1) : undefined;
+      return { start, end };
+    }
+    case 'yearly': {
+      const start = new Date(ref.getFullYear(), 0, 1);
+      const end = bounded ? new Date(ref.getFullYear() + 1, 0, 1) : undefined;
+      return { start, end };
+    }
+  }
 }
 
 export class AdminOrderService {
@@ -108,17 +158,20 @@ export class AdminOrderService {
   }
 
   /**
-   * Platform-wide order analytics: totals, completion rate, revenue, refund rate,
+   * Platform-wide order analytics for a single selected period (daily/weekly/
+   * monthly/yearly/all_time): totals, completion rate, revenue, refund rate,
    * status breakdown, plus a "needing attention" queue (proof submitted,
-   * refund requested, and delivered-but-late orders).
+   * refund requested, and delivered-but-late orders — unaffected by the period).
+   *
+   * @param referenceDate - Anchors the period to a specific day/week/month/year
+   * (e.g. picking March 2025 for 'monthly') instead of the current one.
    */
-  static async getAnalytics(adminId: string) {
+  static async getAnalytics(adminId: string, period: AnalyticsPeriod = 'monthly', referenceDate?: Date) {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const range = resolvePeriodRange(period, referenceDate);
 
-    const [thisMonth, allTime, proofSubmitted, refundRequested, lateDelivered] = await Promise.all([
-      computeOrderAnalyticsBlock(monthStart),
-      computeOrderAnalyticsBlock(),
+    const [summary, proofSubmitted, refundRequested, lateDelivered] = await Promise.all([
+      computeOrderAnalyticsBlock(range),
       prisma.order.findMany({
         where: { payment_status: 'PROOF_SUBMITTED' },
         orderBy: { payment_proof_submitted_at: 'asc' },
@@ -143,11 +196,11 @@ export class AdminOrderService {
       }),
     ]);
 
-    adminLogger.info('Admin fetched order analytics', { action: 'getOrderAnalytics', adminId });
+    adminLogger.info('Admin fetched order analytics', { action: 'getOrderAnalytics', adminId, period });
 
     return {
-      this_month: thisMonth,
-      all_time: allTime,
+      period,
+      summary,
       needing_attention: {
         proof_submitted: proofSubmitted,
         refund_requested: refundRequested,

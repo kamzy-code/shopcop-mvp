@@ -3,7 +3,7 @@ import { AdminOrderService } from '@services/admin/adminOrderService.js';
 import { adminLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
-import { listAdminOrdersQuerySchema } from '@validators/adminOrderValidator.js';
+import { listAdminOrdersQuerySchema, orderAnalyticsQuerySchema } from '@validators/adminOrderValidator.js';
 
 export class AdminOrderController {
   /** GET /api/v1/admin/orders — List orders across all vendors with filters, search, pagination. */
@@ -29,13 +29,18 @@ export class AdminOrderController {
     }
   }
 
-  /** GET /api/v1/admin/orders/analytics — Platform-wide order analytics + needing-attention queue. */
+  /** GET /api/v1/admin/orders/analytics?period=daily|weekly|monthly|yearly|all_time — Platform-wide order analytics for the selected period, plus needing-attention queue. */
   static async getAnalytics(req: Request, res: Response, next: NextFunction) {
     const action = 'getOrderAnalytics';
     const adminId = req.user!.userId;
 
+    const parsed = orderAnalyticsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      throw new AppError(parseZodErrors(parsed.error.issues), 400);
+    }
+
     try {
-      const result = await AdminOrderService.getAnalytics(adminId);
+      const result = await AdminOrderService.getAnalytics(adminId, parsed.data.period, parsed.data.date);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       adminLogger.error('Failed to get order analytics', {

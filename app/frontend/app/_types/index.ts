@@ -349,9 +349,11 @@ export interface AdminOrderAnalyticsBlock {
   by_status: Record<string, number>;
 }
 
+export type AdminOrderAnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all_time';
+
 export interface AdminOrderAnalytics {
-  this_month: AdminOrderAnalyticsBlock;
-  all_time: AdminOrderAnalyticsBlock;
+  period: AdminOrderAnalyticsPeriod;
+  summary: AdminOrderAnalyticsBlock;
   needing_attention: {
     proof_submitted: AdminOrderListItem[];
     refund_requested: AdminOrderListItem[];

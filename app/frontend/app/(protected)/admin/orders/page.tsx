@@ -16,11 +16,19 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LuArrowRight, LuSearch, LuTriangleAlert } from 'react-icons/lu';
 import { useAdminOrders, useAdminOrderAnalytics } from '@/app/_hooks/admin';
-import { AdminOrderFilters, AdminOrderListItem } from '@/app/_types';
+import { AdminOrderAnalyticsPeriod, AdminOrderFilters, AdminOrderListItem } from '@/app/_types';
 
 const STATUS_OPTIONS = [
   'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'SHIPPED', 'DELIVERED', 'COMPLETED',
   'REFUND_REQUESTED', 'CANCELLED',
+];
+
+const PERIOD_OPTIONS: { label: string; value: AdminOrderAnalyticsPeriod }[] = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Yearly', value: 'yearly' },
+  { label: 'All Time', value: 'all_time' },
 ];
 
 function formatNaira(value: number) {
@@ -63,6 +71,8 @@ export default function AdminOrdersPage() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get('vendor_id') ?? undefined;
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AdminOrderAnalyticsPeriod>('monthly');
+  const [customDate, setCustomDate] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -88,7 +98,21 @@ export default function AdminOrdersPage() {
   };
 
   const { data, isLoading, isError } = useAdminOrders(filters);
-  const { data: analytics } = useAdminOrderAnalytics();
+
+  // Convert the raw native-input value into an ISO date the backend can anchor the period to.
+  const analyticsDate = (() => {
+    if (!customDate) return undefined;
+    if (analyticsPeriod === 'monthly') return `${customDate}-01`; // input type="month" → "YYYY-MM"
+    if (analyticsPeriod === 'yearly') return /^\d{4}$/.test(customDate) ? `${customDate}-01-01` : undefined;
+    return customDate; // daily/weekly: input type="date" → "YYYY-MM-DD"
+  })();
+
+  const { data: analytics } = useAdminOrderAnalytics(analyticsPeriod, analyticsDate);
+
+  const handlePeriodChange = (value: AdminOrderAnalyticsPeriod) => {
+    setAnalyticsPeriod(value);
+    setCustomDate('');
+  };
 
   const orders = data?.data ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -111,26 +135,64 @@ export default function AdminOrdersPage() {
 
       {/* Quick stats */}
       <Box>
-        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
-          This Month
-        </Text>
-        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
-          <StatCard label="Orders This Month" value={analytics?.this_month.total_orders ?? '—'} />
-          <StatCard label="Completion Rate" value={analytics ? `${analytics.this_month.completion_rate}%` : '—'} />
-          <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.this_month.avg_order_value) : '—'} />
-          <StatCard label="Refund Rate" value={analytics ? `${analytics.this_month.refund_rate}%` : '—'} />
-        </SimpleGrid>
-      </Box>
+        <Flex align="center" justify="space-between" mb={3} flexWrap="wrap" gap={2}>
+          <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider">
+            Analytics
+          </Text>
+          <Flex gap={2} flexWrap="wrap" align="center">
+            {PERIOD_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                size="xs"
+                variant={analyticsPeriod === opt.value ? 'solid' : 'outline'}
+                colorPalette="primary"
+                onClick={() => handlePeriodChange(opt.value)}
+                borderRadius="full"
+              >
+                {opt.label}
+              </Button>
+            ))}
 
-      <Box>
-        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
-          All Time
-        </Text>
+            {analyticsPeriod !== 'all_time' && (
+              <Flex align="center" gap={1.5} ml={1}>
+                {analyticsPeriod === 'yearly' ? (
+                  <input
+                    type="number"
+                    placeholder={String(new Date().getFullYear())}
+                    value={customDate}
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    style={{
+                      width: '90px', padding: '4px 8px', borderRadius: '999px',
+                      border: '1px solid var(--chakra-colors-border)',
+                      background: 'var(--chakra-colors-bg-panel)', color: 'var(--chakra-colors-fg)', fontSize: '12px',
+                    }}
+                  />
+                ) : (
+                  <input
+                    type={analyticsPeriod === 'monthly' ? 'month' : 'date'}
+                    value={customDate}
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    style={{
+                      padding: '4px 8px', borderRadius: '999px',
+                      border: '1px solid var(--chakra-colors-border)',
+                      background: 'var(--chakra-colors-bg-panel)', color: 'var(--chakra-colors-fg)', fontSize: '12px',
+                    }}
+                  />
+                )}
+                {customDate && (
+                  <Button size="2xs" variant="ghost" color="fg.muted" onClick={() => setCustomDate('')}>
+                    Clear
+                  </Button>
+                )}
+              </Flex>
+            )}
+          </Flex>
+        </Flex>
         <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
-          <StatCard label="Total Orders" value={analytics?.all_time.total_orders ?? '—'} />
-          <StatCard label="Completion Rate" value={analytics ? `${analytics.all_time.completion_rate}%` : '—'} />
-          <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.all_time.avg_order_value) : '—'} />
-          <StatCard label="Refund Rate" value={analytics ? `${analytics.all_time.refund_rate}%` : '—'} />
+          <StatCard label="Total Orders" value={analytics?.summary.total_orders ?? '—'} />
+          <StatCard label="Completion Rate" value={analytics ? `${analytics.summary.completion_rate}%` : '—'} />
+          <StatCard label="Avg Order Value" value={analytics ? formatNaira(analytics.summary.avg_order_value) : '—'} />
+          <StatCard label="Refund Rate" value={analytics ? `${analytics.summary.refund_rate}%` : '—'} />
         </SimpleGrid>
       </Box>
 

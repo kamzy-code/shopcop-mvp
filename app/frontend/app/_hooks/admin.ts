@@ -13,6 +13,7 @@ import {
   AdminProductFilters,
   AdminOrderListResponse,
   AdminOrderAnalytics,
+  AdminOrderAnalyticsPeriod,
   AdminOrderListItem,
   AdminOrderDetail,
   AdminOrderFilters,
@@ -380,11 +381,13 @@ export const useAdminOrders = (filters: AdminOrderFilters = {}) => {
   });
 };
 
-export const useAdminOrderAnalytics = () =>
+export const useAdminOrderAnalytics = (period: AdminOrderAnalyticsPeriod = 'monthly', date?: string) =>
   useQuery<AdminOrderAnalytics>({
-    queryKey: ['admin-order-analytics'],
+    queryKey: ['admin-order-analytics', period, date],
     queryFn: async () => {
-      const res = await apiFetch<AdminOrderAnalytics>('/admin/orders/analytics');
+      const params = new URLSearchParams({ period });
+      if (date) params.set('date', date);
+      const res = await apiFetch<AdminOrderAnalytics>(`/admin/orders/analytics?${params.toString()}`);
       return res.data;
     },
     staleTime: 30 * 1000,

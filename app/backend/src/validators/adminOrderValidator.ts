@@ -35,3 +35,20 @@ export const listAdminOrdersQuerySchema = z
   });
 
 export type ListAdminOrdersQuery = z.infer<typeof listAdminOrdersQuerySchema>;
+
+// ============================================
+// ANALYTICS QUERY VALIDATION
+// ============================================
+
+const ANALYTICS_PERIOD_VALUES = ['daily', 'weekly', 'monthly', 'yearly', 'all_time'] as const;
+
+/** Validates the period (+ optional anchor date) filter for GET /admin/orders/analytics. */
+export const orderAnalyticsQuerySchema = z.object({
+  period: z
+    .enum(ANALYTICS_PERIOD_VALUES, { error: `period must be one of: ${ANALYTICS_PERIOD_VALUES.join(', ')}` })
+    .default('monthly'),
+  // Anchors the period to a specific day/week/month/year instead of the current one.
+  date: z.coerce.date({ error: 'date must be a valid date' }).optional(),
+});
+
+export type AnalyticsPeriod = (typeof ANALYTICS_PERIOD_VALUES)[number];
