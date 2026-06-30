@@ -10,6 +10,7 @@ import { formatCurrency, isVideoUrl } from '@/app/_lib/orderHelpers';
 import { Order, OrderVendor } from '@/app/_types';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ApiError } from '@/app/_lib/fetchWrapper';
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [deliveryExpiredMessage, setDeliveryExpiredMessage] = useState<string | null>(null);
 
   const uploadMutation = useUploadPublicMedia();
   const submitMutation = useSubmitPaymentProof(token);
@@ -80,6 +82,7 @@ export default function CheckoutPage() {
 
   const vendor = tx.vendor as OrderVendor;
   const hasPaymentDetails = vendor?.bank_name || vendor?.account_number || vendor?.account_name;
+  const deliveryHasExpired = !!tx.expected_delivery_end && new Date(tx.expected_delivery_end) < new Date();
 
   const handleSubmit = async () => {
     if (!receiptFile) {
@@ -110,7 +113,11 @@ export default function CheckoutPage() {
         payment_proof_url,
       });
       router.push(`/track/${token}`);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.message.toLowerCase().includes('delivery date has passed')) {
+        setDeliveryExpiredMessage(err.message);
+        return;
+      }
       toaster.create({
         title: 'Something went wrong',
         description: 'Could not submit your payment. Please try again.',
@@ -120,7 +127,7 @@ export default function CheckoutPage() {
   };
 
   const isSubmitting = submitMutation.isPending || uploadMutation.isPending;
-  const canSubmit = !!receiptFile && !isSubmitting;
+  const canSubmit = !!receiptFile && !isSubmitting && !deliveryHasExpired && !deliveryExpiredMessage;
 
   return (
     <Box minH="100dvh" bg="bg">
@@ -163,6 +170,25 @@ export default function CheckoutPage() {
               {`Transfer the amount below to the seller's account, then tap "I've sent the money"`}
             </Text>
           </Box>
+
+          {/* Delivery date expired banner */}
+          {(deliveryHasExpired || deliveryExpiredMessage) && (
+            <Box
+              bg="orange.subtle"
+              borderWidth="1px"
+              borderColor="orange.muted"
+              borderRadius="xl"
+              p={4}
+            >
+              <Text textStyle="sm" fontWeight="medium" color="orange.fg" mb={0.5}>
+                Delivery date needs an update
+              </Text>
+              <Text textStyle="xs" color="orange.fg">
+                {deliveryExpiredMessage ??
+                  "This order's expected delivery date has passed. We've notified the vendor — please check back shortly for an updated delivery date before completing checkout."}
+              </Text>
+            </Box>
+          )}
 
           {/* Payment details */}
           {hasPaymentDetails && (

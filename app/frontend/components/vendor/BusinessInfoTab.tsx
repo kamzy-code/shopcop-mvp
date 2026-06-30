@@ -32,6 +32,7 @@ import { useVendorProfile, useSubmitBusinessInfo, useGetCategories } from '@/app
 import { SingleChipSelect, MultiChipSelect } from '@/components/shared/chipSelect';
 import { SectionHeader, SectionLabel } from '@/components/shared/formCard';
 import { FieldRow, ChipList } from '@/components/vendor/profileHelpers';
+import { BusinessCategoryPicker } from '@/components/onboarding/BusinessCategoryPicker';
 
 export function BusinessInfoTab() {
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +40,7 @@ export function BusinessInfoTab() {
   const [errorModal, setErrorModal] = useState<{ open: boolean; description: string }>({ open: false, description: '' });
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useVendorProfile();
-  const { data: categories = [], isLoading: categoriesLoading } = useGetCategories();
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useGetCategories();
   const submitMutation = useSubmitBusinessInfo();
 
   const {
@@ -84,9 +85,6 @@ export function BusinessInfoTab() {
   const facebookValue = watch('facebook_url') || '';
   const whatsappValue = watch('whatsapp_number') || '';
   const currentPrimaryContact = watch('primary_contact');
-
-  const selectedCategoryData = categories.find((c) => c.name === selectedPrimaryCategory);
-  const subcategoryOptions = selectedCategoryData?.subcategories.map((s) => ({ value: s, label: s })) ?? [];
 
   const availableContactOptions = CONTACT_OPTIONS.filter((o) => {
     if (o.value === 'INSTAGRAM')  return !!instagramValue.trim();
@@ -313,45 +311,15 @@ export function BusinessInfoTab() {
           </Flex>
         </Field.Root>
 
-        <SectionHeader
-          title="Category"
-          description="Help buyers discover your products in the right section of the marketplace."
+        <BusinessCategoryPicker
+          categories={categories}
+          categoriesLoading={categoriesLoading}
+          categoriesError={categoriesError}
+          selectedPrimaryCategory={selectedPrimaryCategory}
+          selectedSubcategories={selectedSubcategories as string[]}
+          errors={errors}
+          setValue={setValue}
         />
-
-        <Field.Root invalid={!!errors.primary_category} required>
-          <Field.Label color="fg">Primary Category</Field.Label>
-          {categoriesLoading ? (
-            <Spinner size="sm" colorPalette="primary" />
-          ) : (
-            <SingleChipSelect
-              options={categories.map((c) => ({ value: c.name, label: c.name }))}
-              value={selectedPrimaryCategory}
-              onChange={(v) => {
-                setValue('primary_category', v, { shouldValidate: true });
-                setValue('subcategories', []);
-              }}
-            />
-          )}
-          <Field.ErrorText>{errors.primary_category?.message}</Field.ErrorText>
-        </Field.Root>
-
-        <Field.Root invalid={!!errors.subcategories} required>
-          <Field.Label color="fg">
-            Subcategories{' '}
-            <Text as="span" color="fg.muted" fontWeight="normal">(up to 3)</Text>
-          </Field.Label>
-          {!selectedPrimaryCategory ? (
-            <Text color="fg.subtle" textStyle="xs">Select a primary category first.</Text>
-          ) : (
-            <MultiChipSelect
-              options={subcategoryOptions}
-              value={selectedSubcategories as string[]}
-              onChange={(v) => setValue('subcategories', v, { shouldValidate: true })}
-              max={3}
-            />
-          )}
-          <Field.ErrorText>{errors.subcategories?.message}</Field.ErrorText>
-        </Field.Root>
 
         <SectionHeader
           title="Location"

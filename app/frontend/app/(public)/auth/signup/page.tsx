@@ -124,7 +124,7 @@ export default function SignupPage() {
                 loading={signupMutation.isPending}
                 disabled={signupMutation.isPending}
               >
-                Send verification code
+                Signup
                 <LuArrowRight />
               </Button>
             </Stack>

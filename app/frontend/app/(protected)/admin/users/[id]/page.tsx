@@ -249,7 +249,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   <Tabs.Content value="verifications">
                     <Stack gap={3}>
                       <Text textStyle="sm" color="fg.muted">
-                        View this vendor's verification submissions and approval history.
+                       {` View this vendor's verification submissions and approval history.`}
                       </Text>
                       <Button
                         size="sm"
@@ -283,7 +283,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   <Tabs.Content value="orders">
                     <Stack gap={3}>
                       <Text textStyle="sm" color="fg.muted">
-                        View this vendor's order history, payments, and refunds.
+                       {` View this vendor's order history, payments, and refunds.`}
                       </Text>
                       <Button
                         size="sm"

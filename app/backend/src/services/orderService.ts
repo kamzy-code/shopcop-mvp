@@ -375,6 +375,39 @@ export class OrderService {
       throw new AppError('Payment proof has already been submitted', 400);
     }
 
+    if (order.expected_delivery_end && order.expected_delivery_end < new Date()) {
+      orderLogger.warn('Checkout blocked: expected delivery date has passed', {
+        action: 'submitPaymentProof',
+        orderId: order.id,
+        expectedDeliveryEnd: order.expected_delivery_end,
+      });
+
+      const vendorUserId = await this.resolveVendorUserId(order.vendor_id);
+      if (vendorUserId) {
+        NotificationService.create({
+          user_id: vendorUserId,
+          type: NotificationType.DELIVERY_DATE_EXPIRED,
+          title: 'Buyer Blocked by Expired Delivery Date',
+          message: `A buyer tried to check out on order ${order.reference}, but its expected delivery date has passed. Update the delivery date so they can complete payment.`,
+          entity_type: 'ORDER',
+          entity_id: order.id,
+          action_label: 'Update Order',
+          action_url: `/orders/${order.id}`,
+        }).catch((err) => {
+          orderLogger.error('Failed to create notification', {
+            action: 'notificationCreate',
+            type: NotificationType.DELIVERY_DATE_EXPIRED,
+            error: err instanceof Error ? err.message : err,
+          });
+        });
+      }
+
+      throw new AppError(
+        "This order's expected delivery date has passed. We've notified the vendor — please check back shortly for an updated delivery date.",
+        400
+      );
+    }
+
     const updated = await prisma.order.update({
       where: { tracking_token: token },
       data: {

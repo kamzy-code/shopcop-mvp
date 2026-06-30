@@ -90,7 +90,7 @@ export default function LoginPage() {
               w="full"
             >
               <LuMail />
-              Send Magic Link
+              Login
               <LuArrowRight />
             </Button>
           </Stack>

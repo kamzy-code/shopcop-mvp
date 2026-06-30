@@ -11,6 +11,7 @@ export const NotificationType = {
   NEW_USER_SIGNUP:             'NEW_USER_SIGNUP',
   NEW_VERIFICATION_SUBMISSION: 'NEW_VERIFICATION_SUBMISSION',
   REFUND_REQUESTED:            'REFUND_REQUESTED',
+  DELIVERY_DATE_EXPIRED:       'DELIVERY_DATE_EXPIRED',
 } as const;
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
