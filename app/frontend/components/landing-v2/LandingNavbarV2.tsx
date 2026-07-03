@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
 import { LuMenu, LuX } from 'react-icons/lu';
+import { ColorModeButton, useColorModeValue } from '@/components/ui/color-mode';
 
 interface LandingNavbarV2Props {
   ctaLabel: string;
@@ -22,6 +23,7 @@ const m = motion;
 
 export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const logoSrc = useColorModeValue('/Logo SVGs/gradient.svg', '/Logo SVGs/light.svg');
 
   return (
     <Box
@@ -37,8 +39,10 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
         justify="space-between"
         maxW="6xl"
         mx="auto"
-        bg="white"
+        bg="bg.panel"
         borderRadius="full"
+        borderWidth="1px"
+        borderColor="border"
         boxShadow={{ base: 'lg', _dark: 'none' }}
         px={{ base: 4, md: 6 }}
         py={2.5}
@@ -46,7 +50,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
         <m.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <Flex align="center" gap={2}>
-              <Image src="/Logo SVGs/gradient.svg" alt="ShopCop" h={7} w="auto" />
+              <Image src={logoSrc} alt="ShopCop" h={7} w="auto" />
             </Flex>
           </Link>
         </m.div>
@@ -57,7 +61,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
             <Link key={link.href} href={link.href} style={{ textDecoration: 'none' }}>
               <Text
                 textStyle="sm"
-                color="navy.600"
+                color="fg.muted"
                 fontWeight="medium"
                 _hover={{ color: 'primary.600' }}
                 transition="color 0.15s"
@@ -71,7 +75,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
         <Flex align="center" gap={3} display={{ base: 'none', md: 'flex' }}>
           {
             <Link href="/auth/login" style={{ textDecoration: 'none' }}>
-              <Button variant="ghost" size="sm" color="navy.600">
+              <Button variant="ghost" size="sm" color="fg.muted">
                 Sign In
               </Button>
             </Link>
@@ -83,20 +87,22 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
               </Button>
             </Link>
           </m.div>
+          <ColorModeButton />
         </Flex>
 
         {/* Mobile hamburger */}
-        <Box display={{ base: 'block', md: 'none' }}>
+        <Flex align="center" gap={1} display={{ base: 'flex', md: 'none' }}>
+          <ColorModeButton />
           <IconButton
             variant="ghost"
             size="sm"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            color="navy.600"
+            color="fg.muted"
           >
             {mobileOpen ? <LuX /> : <LuMenu />}
           </IconButton>
-        </Box>
+        </Flex>
       </Flex>
 
       {/* Mobile slide-out menu */}
@@ -125,7 +131,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
             right={0}
             bottom={0}
             w="260px"
-            bg="white"
+            bg="bg.panel"
             zIndex={1}
             p={6}
           >
@@ -135,7 +141,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
                 size="sm"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
-                color="navy.600"
+                color="fg.muted"
               >
                 <LuX />
               </IconButton>
@@ -148,7 +154,7 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
                   onClick={() => setMobileOpen(false)}
                   style={{ textDecoration: 'none' }}
                 >
-                  <Text textStyle="md" color="navy.800" fontWeight="medium">
+                  <Text textStyle="md" color="fg" fontWeight="medium">
                     {link.label}
                   </Text>
                 </Link>

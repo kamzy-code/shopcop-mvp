@@ -47,7 +47,7 @@ export function FeatureCard({ number, title, description, imageUrl, imageAlt, im
         </Text>
       </Box>
       <Box flex={{ md: 1 }} position="relative" w="full" h={{ base: '240px', md: '480px' }} borderRadius={{ base: 'lg', md: '2xl' }} overflow="hidden">
-        <Image src={imageUrl} alt={imageAlt} fill sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: 'cover' }} />
+        <Image src={imageUrl} alt={imageAlt} fill sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: 'contain' }} />
       </Box>
     </Flex>
   );

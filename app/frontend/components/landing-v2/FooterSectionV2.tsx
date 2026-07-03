@@ -23,7 +23,7 @@ const footerLinks = {
 
 export function FooterSectionV2() {
   return (
-    <Box as="footer" bg="navy.900" py={12} px={4}>
+    <Box as="footer" bg="gray.900" py={12} px={4}>
       <Flex direction={{ base: 'column', md: 'row' }} maxW="6xl" mx="auto" gap={{ base: 10, md: 12 }} justify="space-between">
         <Box maxW="280px">
           <Image src="/Logo SVGs/light.svg" alt="ShopCop" h={8} w="auto" mb={3} />

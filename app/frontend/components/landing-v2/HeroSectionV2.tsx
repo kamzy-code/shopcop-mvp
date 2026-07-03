@@ -1,8 +1,9 @@
 'use client';
 import { Box, Flex, Heading, Icon, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
-import { LuArrowRight, LuSparkle } from 'react-icons/lu';
+import { LuArrowRight, LuBadgeCheck, LuSparkle } from 'react-icons/lu';
 import { GradientBlob } from '@/components/landing/GradientBlob';
 import { Reveal } from '@/components/landing/Reveal';
 
@@ -43,7 +44,17 @@ export function HeroSectionV2({ ctaLabel, ctaHref }: HeroSectionV2Props) {
 
       <GradientBlob color="var(--chakra-colors-primary-300)" size="680px" top="-60px" right="240px" opacity={0.35} />
 
-      <Box maxW="6xl" mx="auto" position="relative" zIndex={1}>
+      <Flex
+        maxW="6xl"
+        mx="auto"
+        w="full"
+        position="relative"
+        zIndex={1}
+        direction={{ base: 'column', md: 'row' }}
+        align="center"
+        gap={{ base: 10, md: 16 }}
+      >
+      <Box flex={1}>
         <Reveal delay={0}>
           <Flex
             align="center"
@@ -146,7 +157,56 @@ export function HeroSectionV2({ ctaLabel, ctaHref }: HeroSectionV2Props) {
         </Reveal>
       </Box>
 
-      
+      <Box flex={1} display={{ base: 'none', md: 'block' }} position="relative" w="full" maxW="480px">
+        <Reveal delay={0.35} y={20}>
+          <m.div
+            initial={{ rotate: 3 }}
+            animate={{ rotate: [3, 1, 3] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ position: 'relative' }}
+          >
+            <Box
+              w="full"
+              aspectRatio={4 / 5}
+              bg="transparent"
+              overflow="hidden"
+              position="relative"
+
+            >
+              <Image
+                src="/screen mockups/public_profile.png"
+                alt="ShopCop public vendor profile preview"
+                fill
+                sizes="(max-width: 768px) 0px, 480px"
+                style={{ objectFit: 'contain' }}
+              />
+            </Box>
+          </m.div>
+        </Reveal>
+
+        {/* Floating verification badge chip */}
+        <m.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: [0, -8, 0] }}
+          transition={{ delay: 0.8, duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ position: 'absolute', bottom: '-24px', left: '-32px' }}
+        >
+          <Flex align="center" gap={3} bg="white" borderRadius="xl" px={4} py={3} boxShadow="xl">
+            <Flex w={9} h={9} borderRadius="full" bg="success.subtle" align="center" justify="center" flexShrink={0}>
+              <LuBadgeCheck size={18} color="var(--chakra-colors-success-500)" />
+            </Flex>
+            <Box>
+              <Text textStyle="xs" fontWeight="bold" color="navy.900">
+                Verified Seller
+              </Text>
+              <Text textStyle="2xs" color="navy.500">
+                ID checked &middot; 24h
+              </Text>
+            </Box>
+          </Flex>
+        </m.div>
+      </Box>
+      </Flex>
     </Flex>
   );
 }

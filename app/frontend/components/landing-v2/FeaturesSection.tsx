@@ -14,7 +14,7 @@ const features = [
     title: 'A profile that does the convincing for you',
     description:
       'Earn absolute customer trust instantly with unforgeable green verification badges and real buyer reviews.',
-    imageUrl: PLACEHOLDER_FEATURE_IMAGE_URL,
+    imageUrl: "/screen mockups/public_profile.png",
     imageAlt: 'Hands holding a credit card next to a laptop, representing secure online checkout',
     imageSide: 'right' as const,
   },
@@ -23,7 +23,7 @@ const features = [
     title: 'Build Your Reputation',
     description:
       'One shareable link that works across all your social platforms — Instagram, WhatsApp, and TikTok.',
-    imageUrl: PLACEHOLDER_FEATURE_IMAGE_URL,
+    imageUrl: "/screen mockups/dashboard.png",
     imageAlt: 'A smartphone displaying a social media post with a link to a product page',
     imageSide: 'left' as const,
   },
@@ -32,7 +32,7 @@ const features = [
     title: 'Make Sales Faster',
     description:
       'Give first-time profile visitors the ultimate confidence to order and pay the exact second they find your store.',
-    imageUrl: PLACEHOLDER_FEATURE_IMAGE_URL,
+    imageUrl: "/screen mockups/orders.png",
     imageAlt:
       'A happy customer receiving a package at their doorstep, representing a successful purchase',
     imageSide: 'right' as const,
@@ -42,7 +42,7 @@ const features = [
     title: 'Real-Time Order Tracking',
     description:
       'Give your customers complete peace of mind by letting them track their delivery progress from payment straight to their doorstep.',
-    imageUrl: PLACEHOLDER_FEATURE_IMAGE_URL,
+    imageUrl: "/screen mockups/order_status.png",
     imageAlt: 'A delivery truck on a road, representing package tracking and delivery',
     imageSide: 'left' as const,
   },

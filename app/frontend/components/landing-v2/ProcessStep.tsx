@@ -46,7 +46,7 @@ export function ProcessStep({
           w={16}
           h={16}
           borderRadius="full"
-          bg="primary.100"
+          bg="white"
           align="center"
           justify="center"
           position="relative"
