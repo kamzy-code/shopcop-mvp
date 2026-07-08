@@ -18,7 +18,11 @@ import {
   useAdminUser,
   useAdminUpdateUserStatus,
   useAdminUpdateUserRole,
+  useAdminVerifications,
+  useAdminProducts,
+  useAdminOrders,
 } from '@/app/_hooks/admin';
+import { formatCurrency } from '@/app/_lib/orderHelpers';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AlertModal } from '@/components/ui/alert-modal';
@@ -53,24 +57,10 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     open: false, title: '', description: '',
   });
 
-  if (isLoading) {
-    return (
-      <Flex justify="center" align="center" minH="40vh">
-        <Spinner size="lg" color="primary.500" />
-      </Flex>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Box textAlign="center" py={12}>
-        <Text color="fg.muted">User not found.</Text>
-      </Box>
-    );
-  }
+ 
 
   const handleToggleStatus = async () => {
-    const newStatus = !user.is_active;
+    const newStatus = !user?.is_active;
     try {
       await statusMutation.mutateAsync({ id, is_active: newStatus });
       setStatusDialogOpen(false);
@@ -87,7 +77,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   };
 
   const handleRoleChange = async () => {
-    if (!selectedRole || selectedRole === user.role) return;
+    if (!selectedRole || selectedRole === user?.role) return;
     try {
       await roleMutation.mutateAsync({ id, role: selectedRole as 'VENDOR' | 'BUYER' | 'ADMIN' });
       setRoleDialogOpen(false);
@@ -104,8 +94,34 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
-  const vendorProfile = user.vendor_profile;
-  const buyerProfile = user.buyer_profile;
+  const vendorProfile = user?.vendor_profile;
+  const buyerProfile = user?.buyer_profile;
+
+  const { data: recentVerifications } = useAdminVerifications(
+    vendorProfile ? { vendorId: vendorProfile.id, limit: 5, sortBy: 'submitted_at', sortOrder: 'desc' } : {}
+  );
+  const { data: recentProducts } = useAdminProducts(
+    vendorProfile ? { vendor_id: vendorProfile.id, limit: 5, sort: 'newest' } : {}
+  );
+  const { data: recentOrders } = useAdminOrders(
+    vendorProfile ? { vendor_id: vendorProfile.id, limit: 5 } : {}
+  );
+
+   if (isLoading) {
+    return (
+      <Flex justify="center" align="center" minH="40vh">
+        <Spinner size="lg" color="primary.500" />
+      </Flex>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Box textAlign="center" py={12}>
+        <Text color="fg.muted">User not found.</Text>
+      </Box>
+    );
+  }
 
   return (
     <Stack gap={8}>
@@ -113,14 +129,14 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         open={statusDialogOpen}
         onClose={() => setStatusDialogOpen(false)}
         onConfirm={handleToggleStatus}
-        title={user.is_active ? 'Ban User' : 'Activate User'}
+        title={user?.is_active ? 'Ban User' : 'Activate User'}
         description={
-          user.is_active
-            ? `Are you sure you want to ban ${user.name || user.email}? They will lose access to the platform.`
-            : `Are you sure you want to activate ${user.name || user.email}? They will regain access to the platform.`
+          user?.is_active
+            ? `Are you sure you want to ban ${user?.name || user?.email}? They will lose access to the platform.`
+            : `Are you sure you want to activate ${user?.name || user?.email}? They will regain access to the platform.`
         }
-        confirmLabel={user.is_active ? 'Ban User' : 'Activate User'}
-        colorPalette={user.is_active ? 'red' : 'success'}
+        confirmLabel={user?.is_active ? 'Ban User' : 'Activate User'}
+        colorPalette={user?.is_active ? 'red' : 'success'}
         isLoading={statusMutation.isPending}
       />
       <ConfirmDialog
@@ -326,52 +342,150 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
                   <Tabs.Content value="verifications">
                     <Stack gap={3}>
-                      <Text textStyle="sm" color="fg.muted">
-                       {` View this vendor's verification submissions and approval history.`}
-                      </Text>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        colorPalette="primary"
-                        w="fit-content"
-                        onClick={() => router.push(`/admin/verifications?vendorId=${vendorProfile.id}`)}
-                      >
-                        View All Verifications <LuArrowRight size={14} />
-                      </Button>
+                      {recentVerifications?.verifications.length === 0 && (
+                        <Text textStyle="sm" color="fg.muted">No verifications submitted yet.</Text>
+                      )}
+                      {recentVerifications?.verifications.map((v) => (
+                        <Flex
+                          key={v.id}
+                          align="center"
+                          justify="space-between"
+                          gap={2}
+                          p={3}
+                          borderWidth="1px"
+                          borderColor="border"
+                          borderRadius="lg"
+                          cursor="pointer"
+                          _hover={{ bg: 'bg.subtle' }}
+                          onClick={() => router.push(`/admin/verifications/${v.id}`)}
+                        >
+                          <Stack gap={0.5}>
+                            <Text textStyle="sm" fontWeight="medium">{v.type}</Text>
+                            <Text textStyle="xs" color="fg.muted">
+                              {new Date(v.submitted_at).toLocaleDateString('en-NG')}
+                            </Text>
+                          </Stack>
+                          <Box
+                            px={2} py={0.5} borderRadius="full"
+                            bg={v.status === 'APPROVED' ? 'success.subtle' : v.status === 'REJECTED' ? 'red.subtle' : 'warning.subtle'}
+                          >
+                            <Text textStyle="2xs" fontWeight="semibold"
+                              color={v.status === 'APPROVED' ? 'success.fg' : v.status === 'REJECTED' ? 'red.600' : 'warning.fg'}
+                            >
+                              {v.status}
+                            </Text>
+                          </Box>
+                        </Flex>
+                      ))}
+                      {(recentVerifications?.pagination.total ?? 0) > 0 && (
+                        <Button
+                          size="sm" variant="ghost" colorPalette="primary" w="fit-content" px={0}
+                          onClick={() => router.push(`/admin/verifications?vendorId=${vendorProfile.id}`)}
+                        >
+                          View all {recentVerifications?.pagination.total} verifications <LuArrowRight size={14} />
+                        </Button>
+                      )}
                     </Stack>
                   </Tabs.Content>
 
                   <Tabs.Content value="products">
                     <Stack gap={3}>
-                      <Text textStyle="sm" color="fg.muted">
-                        View every product this vendor has listed, including flagged and archived items.
-                      </Text>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        colorPalette="primary"
-                        w="fit-content"
-                        onClick={() => router.push(`/admin/products?vendor_id=${vendorProfile.id}`)}
-                      >
-                        View All Products <LuArrowRight size={14} />
-                      </Button>
+                      {recentProducts?.data.length === 0 && (
+                        <Text textStyle="sm" color="fg.muted">No products listed yet.</Text>
+                      )}
+                      {recentProducts?.data.map((p) => (
+                        <Flex
+                          key={p.id}
+                          align="center"
+                          justify="space-between"
+                          gap={2}
+                          p={3}
+                          borderWidth="1px"
+                          borderColor="border"
+                          borderRadius="lg"
+                          cursor="pointer"
+                          _hover={{ bg: 'bg.subtle' }}
+                          onClick={() => router.push(`/admin/products/${p.id}`)}
+                        >
+                          <Stack gap={0.5} minW={0}>
+                            <Flex align="center" gap={2}>
+                              <Text textStyle="sm" fontWeight="medium" truncate>{p.name}</Text>
+                              {p.is_flagged && (
+                                <Box px={1.5} py={0.5} borderRadius="full" bg="warning.subtle" flexShrink={0}>
+                                  <Text textStyle="2xs" fontWeight="semibold" color="warning.fg">Flagged</Text>
+                                </Box>
+                              )}
+                            </Flex>
+                            <Text textStyle="xs" color="fg.muted">{formatCurrency(p.price)}</Text>
+                          </Stack>
+                          <Box
+                            px={2} py={0.5} borderRadius="full" flexShrink={0}
+                            bg={p.stock_status === 'IN_STOCK' ? 'success.subtle' : 'red.subtle'}
+                          >
+                            <Text textStyle="2xs" fontWeight="semibold"
+                              color={p.stock_status === 'IN_STOCK' ? 'success.fg' : 'red.600'}
+                            >
+                              {p.stock_status === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
+                            </Text>
+                          </Box>
+                        </Flex>
+                      ))}
+                      {(recentProducts?.total ?? 0) > 0 && (
+                        <Button
+                          size="sm" variant="ghost" colorPalette="primary" w="fit-content" px={0}
+                          onClick={() => router.push(`/admin/products?vendor_id=${vendorProfile.id}`)}
+                        >
+                          View all {recentProducts?.total} products <LuArrowRight size={14} />
+                        </Button>
+                      )}
                     </Stack>
                   </Tabs.Content>
 
                   <Tabs.Content value="orders">
                     <Stack gap={3}>
-                      <Text textStyle="sm" color="fg.muted">
-                       {` View this vendor's order history, payments, and refunds.`}
-                      </Text>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        colorPalette="primary"
-                        w="fit-content"
-                        onClick={() => router.push(`/admin/orders?vendor_id=${vendorProfile.id}`)}
-                      >
-                        View All Orders <LuArrowRight size={14} />
-                      </Button>
+                      {recentOrders?.data.length === 0 && (
+                        <Text textStyle="sm" color="fg.muted">No orders yet.</Text>
+                      )}
+                      {recentOrders?.data.map((o) => (
+                        <Flex
+                          key={o.id}
+                          align="center"
+                          justify="space-between"
+                          gap={2}
+                          p={3}
+                          borderWidth="1px"
+                          borderColor="border"
+                          borderRadius="lg"
+                          cursor="pointer"
+                          _hover={{ bg: 'bg.subtle' }}
+                          onClick={() => router.push(`/admin/orders/${o.id}`)}
+                        >
+                          <Stack gap={0.5} minW={0}>
+                            <Text textStyle="sm" fontWeight="medium" truncate>
+                              #{o.reference}
+                            </Text>
+                            <Text textStyle="xs" color="fg.muted">
+                              {formatCurrency(o.total_amount)} · {new Date(o.created_at).toLocaleDateString('en-NG')}
+                            </Text>
+                          </Stack>
+                          <Box
+                            px={2} py={0.5} borderRadius="full" flexShrink={0}
+                            bg="bg.subtle" borderWidth="1px" borderColor="border"
+                          >
+                            <Text textStyle="2xs" fontWeight="semibold" color="fg.muted">
+                              {o.status}
+                            </Text>
+                          </Box>
+                        </Flex>
+                      ))}
+                      {(recentOrders?.total ?? 0) > 0 && (
+                        <Button
+                          size="sm" variant="ghost" colorPalette="primary" w="fit-content" px={0}
+                          onClick={() => router.push(`/admin/orders?vendor_id=${vendorProfile.id}`)}
+                        >
+                          View all {recentOrders?.total} orders <LuArrowRight size={14} />
+                        </Button>
+                      )}
                     </Stack>
                   </Tabs.Content>
 
