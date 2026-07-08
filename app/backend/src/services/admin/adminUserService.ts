@@ -111,10 +111,46 @@ export class AdminUserService {
       where: { id: userId },
       select: {
         ...USER_SELECT,
+        buyer_profile: {
+          select: {
+            id: true,
+            name: true,
+            created_at: true,
+          },
+        },
         vendor_profile: {
           select: {
             id: true,
+            // Personal info
+            first_name: true,
+            middle_name: true,
+            last_name: true,
+            gender: true,
+            date_of_birth: true,
+            phone_number: true,
+            // Business info
             business_name: true,
+            business_description: true,
+            slug: true,
+            profile_photo_url: true,
+            country: true,
+            state: true,
+            city: true,
+            street_address: true,
+            bank_name: true,
+            account_number: true,
+            account_name: true,
+            payment_models: true,
+            refund_policy_type: true,
+            refund_duration_days: true,
+            refund_conditions: true,
+            refund_custom_notes: true,
+            instagram_handle: true,
+            tiktok_handle: true,
+            facebook_url: true,
+            whatsapp_number: true,
+            primary_contact: true,
+            // Tier & completeness
             current_tier: true,
             verification_points: true,
             profile_completeness: true,
@@ -122,7 +158,7 @@ export class AdminUserService {
             business_info_complete: true,
             profile_status: true,
             created_at: true,
-            // Reputation metrics — power the Summary/Reviews tabs on the admin user detail page.
+            // Reputation metrics
             total_orders: true,
             successful_orders: true,
             fulfillment_rate: true,

@@ -13,7 +13,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuArrowRight, LuShieldCheck, LuPackage, LuReceipt, LuStar, LuUser } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuShieldCheck, LuPackage, LuReceipt, LuStar, LuUser, LuIdCard } from 'react-icons/lu';
 import {
   useAdminUser,
   useAdminUpdateUserStatus,
@@ -31,7 +31,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null | numb
       <Text textStyle="sm" color="fg.muted" w="44" flexShrink={0}>
         {label}
       </Text>
-      <Text textStyle="sm" color="fg" fontWeight="medium">
+      <Text textStyle="sm" color="fg" fontWeight="medium" minW={0} wordBreak="break-word">
         {display}
       </Text>
     </Flex>
@@ -105,6 +105,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   };
 
   const vendorProfile = user.vendor_profile;
+  const buyerProfile = user.buyer_profile;
 
   return (
     <Stack gap={8}>
@@ -200,11 +201,29 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             </Stack>
           </Box>
 
+          {/* Buyer profile (if any) */}
+          {buyerProfile && (
+            <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
+              <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
+                Buyer Profile
+              </Text>
+              <Stack gap={3}>
+                <InfoRow label="Profile ID" value={buyerProfile.id} />
+                <InfoRow label="Display Name" value={buyerProfile.name} />
+                <InfoRow label="Created" value={new Date(buyerProfile.created_at).toLocaleString('en-NG')} />
+              </Stack>
+            </Box>
+          )}
+
           {/* Vendor profile (if any) */}
           {vendorProfile && (
             <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5}>
-              <Tabs.Root defaultValue="summary">
-                <Tabs.List gap={{ base: 2, sm: 0 }}>
+              <Tabs.Root defaultValue="profile">
+                <Tabs.List gap={{ base: 2, sm: 0 }} flexWrap="wrap">
+                  <Tabs.Trigger value="profile">
+                    <LuIdCard size={16} />
+                    <Box hideBelow="sm">Profile</Box>
+                  </Tabs.Trigger>
                   <Tabs.Trigger value="summary">
                     <LuUser size={16} />
                     <Box hideBelow="sm">Summary</Box>
@@ -228,6 +247,65 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                 </Tabs.List>
 
                 <Box pt={5}>
+                  <Tabs.Content value="profile">
+                    <Stack gap={5}>
+                      <Box>
+                        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+                          Personal Information
+                        </Text>
+                        <Stack gap={3}>
+                          <InfoRow label="First Name" value={vendorProfile.first_name} />
+                          <InfoRow label="Middle Name" value={vendorProfile.middle_name} />
+                          <InfoRow label="Last Name" value={vendorProfile.last_name} />
+                          <InfoRow label="Gender" value={vendorProfile.gender} />
+                          <InfoRow label="Date of Birth" value={vendorProfile.date_of_birth ? new Date(vendorProfile.date_of_birth).toLocaleDateString('en-NG') : null} />
+                          <InfoRow label="Phone Number" value={vendorProfile.phone_number} />
+                        </Stack>
+                      </Box>
+                      <Box borderTopWidth="1px" borderColor="border" pt={4}>
+                        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+                          Business Details
+                        </Text>
+                        <Stack gap={3}>
+                          <InfoRow label="Business Name" value={vendorProfile.business_name} />
+                          <InfoRow label="Description" value={vendorProfile.business_description} />
+                          <InfoRow label="Slug" value={vendorProfile.slug} />
+                          <InfoRow label="Country" value={vendorProfile.country} />
+                          <InfoRow label="State" value={vendorProfile.state} />
+                          <InfoRow label="City" value={vendorProfile.city} />
+                          <InfoRow label="Street Address" value={vendorProfile.street_address} />
+                        </Stack>
+                      </Box>
+                      <Box borderTopWidth="1px" borderColor="border" pt={4}>
+                        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+                          Contact & Social
+                        </Text>
+                        <Stack gap={3}>
+                          <InfoRow label="WhatsApp" value={vendorProfile.whatsapp_number} />
+                          <InfoRow label="Instagram" value={vendorProfile.instagram_handle} />
+                          <InfoRow label="TikTok" value={vendorProfile.tiktok_handle} />
+                          <InfoRow label="Facebook" value={vendorProfile.facebook_url} />
+                          <InfoRow label="Primary Contact" value={vendorProfile.primary_contact} />
+                        </Stack>
+                      </Box>
+                      <Box borderTopWidth="1px" borderColor="border" pt={4}>
+                        <Text textStyle="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wider" mb={3}>
+                          Payment & Refund
+                        </Text>
+                        <Stack gap={3}>
+                          <InfoRow label="Bank Name" value={vendorProfile.bank_name} />
+                          <InfoRow label="Account Name" value={vendorProfile.account_name} />
+                          <InfoRow label="Account Number" value={vendorProfile.account_number} />
+                          <InfoRow label="Payment Models" value={vendorProfile.payment_models.join(', ') || null} />
+                          <InfoRow label="Refund Policy" value={vendorProfile.refund_policy_type} />
+                          <InfoRow label="Refund Duration" value={vendorProfile.refund_duration_days ? `${vendorProfile.refund_duration_days} days` : null} />
+                          <InfoRow label="Refund Conditions" value={vendorProfile.refund_conditions.join(', ') || null} />
+                          <InfoRow label="Refund Notes" value={vendorProfile.refund_custom_notes} />
+                        </Stack>
+                      </Box>
+                    </Stack>
+                  </Tabs.Content>
+
                   <Tabs.Content value="summary">
                     <Stack gap={3}>
                       <InfoRow label="Vendor Profile ID" value={vendorProfile.id} />

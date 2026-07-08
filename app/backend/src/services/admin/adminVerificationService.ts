@@ -126,7 +126,7 @@ export class AdminVerificationService {
         vendor: {
           include: {
             user: {
-              select: { id: true, email: true, created_at: true },
+              select: { id: true, email: true, name: true, is_active: true, created_at: true },
             },
             verifications: {
               where: { status: VerificationStatus.APPROVED },

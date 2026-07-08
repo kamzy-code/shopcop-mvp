@@ -166,6 +166,24 @@ export interface VerificationRecord {
   reviewed_at: string | null;
   rejection_reason: string | null;
   admin_notes: string | null;
+  vendor?: {
+    user_id: string;
+    first_name: string | null;
+    last_name: string | null;
+    phone_number: string | null;
+    business_name: string | null;
+    street_address: string | null;
+    landmark: string | null;
+    city: string | null;
+    state: string | null;
+    country: string;
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      is_active: boolean;
+    };
+  };
 
   // NIN fields
   nin_number?: string;
@@ -209,9 +227,43 @@ export interface AdminActivityLogEntry {
 
 export interface AdminUserDetail extends User {
   updated_at: string;
+  buyer_profile: {
+    id: string;
+    name: string | null;
+    created_at: string;
+  } | null;
   vendor_profile: {
     id: string;
+    // Personal info
+    first_name: string | null;
+    middle_name: string | null;
+    last_name: string | null;
+    gender: Gender | null;
+    date_of_birth: string | null;
+    phone_number: string | null;
+    // Business info
     business_name: string | null;
+    business_description: string | null;
+    slug: string | null;
+    profile_photo_url: string | null;
+    country: string;
+    state: string | null;
+    city: string | null;
+    street_address: string | null;
+    bank_name: string | null;
+    account_number: string | null;
+    account_name: string | null;
+    payment_models: PaymentModel[];
+    refund_policy_type: RefundPolicyType;
+    refund_duration_days: number | null;
+    refund_conditions: string[];
+    refund_custom_notes: string | null;
+    instagram_handle: string | null;
+    tiktok_handle: string | null;
+    facebook_url: string | null;
+    whatsapp_number: string | null;
+    primary_contact: PrimaryContactMethod | null;
+    // Tier & completeness
     current_tier: VendorTier;
     verification_points: number;
     profile_completeness: number;
@@ -219,6 +271,7 @@ export interface AdminUserDetail extends User {
     business_info_complete: boolean;
     profile_status: string;
     created_at: string;
+    // Reputation metrics
     total_orders: number;
     successful_orders: number;
     fulfillment_rate: number;

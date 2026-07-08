@@ -13,7 +13,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { LuArrowLeft, LuX } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowRight, LuX } from 'react-icons/lu';
 import {
   useAdminVerificationDetail,
   useAdminSignedUrl,
@@ -291,11 +291,65 @@ export default function AdminVerificationDetailPage({
         <Box w={{ base: 'full', md: '320px' }} flexShrink={0}>
           {/* Vendor info */}
           <Box bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl" p={5} mb={4}>
-            <Text fontWeight="semibold" color="fg" textStyle="sm" mb={4}>
-              Vendor
-            </Text>
+            <Flex align="center" justify="space-between" mb={4}>
+              <Text fontWeight="semibold" color="fg" textStyle="sm">
+                Vendor
+              </Text>
+              {verification.vendor?.user?.id && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  colorPalette="primary"
+                  onClick={() => router.push(`/admin/users/${verification.vendor!.user.id}`)}
+                >
+                  View Full Profile <LuArrowRight size={12} />
+                </Button>
+              )}
+            </Flex>
             <Stack gap={3}>
-              <InfoRow label="Email" value={(verification as any).vendor?.user?.email} />
+              {verification.vendor && (
+                <>
+                  {/* Identity */}
+                  {(verification.vendor.first_name || verification.vendor.last_name) && (
+                    <InfoRow
+                      label="Full Name"
+                      value={[verification.vendor.first_name, verification.vendor.last_name].filter(Boolean).join(' ')}
+                    />
+                  )}
+                  <InfoRow label="Email" value={verification.vendor.user.email} />
+                  <InfoRow label="Phone" value={verification.vendor.phone_number} />
+                  {/* Business */}
+                  <InfoRow label="Business Name" value={verification.vendor.business_name} />
+                  {/* Address — merged */}
+                  {(verification.vendor.street_address || verification.vendor.city) && (
+                    <InfoRow
+                      label="Address"
+                      value={[
+                        verification.vendor.street_address,
+                        verification.vendor.landmark,
+                        verification.vendor.city,
+                        verification.vendor.state,
+                        verification.vendor.country,
+                      ].filter(Boolean).join(', ')}
+                    />
+                  )}
+                  {/* Account status */}
+                  <Flex gap={3}>
+                    <Text textStyle="sm" color="fg.muted" w="40" flexShrink={0}>Account</Text>
+                    <Box
+                      px={2}
+                      py={0.5}
+                      borderRadius="full"
+                      bg={verification.vendor.user.is_active ? 'success.subtle' : 'red.subtle'}
+                      display="inline-flex"
+                    >
+                      <Text textStyle="2xs" fontWeight="semibold" color={verification.vendor.user.is_active ? 'success.fg' : 'red.600'}>
+                        {verification.vendor.user.is_active ? 'Active' : 'Banned'}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </>
+              )}
               <InfoRow label="Vendor ID" value={verification.vendor_id} />
             </Stack>
           </Box>
