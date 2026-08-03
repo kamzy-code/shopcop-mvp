@@ -1,7 +1,7 @@
 'use client';
 import { Box, Flex, Image, Stack, Text } from '@chakra-ui/react';
 import Link from 'next/link';
-import { FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6';
+import { FaFacebook, FaInstagram, FaTiktok, FaWhatsapp, FaXTwitter } from 'react-icons/fa6';
 
 const footerLinks = {
   navigate: [
@@ -11,9 +11,11 @@ const footerLinks = {
     { label: 'Testimonials', href: '#testimonials' },
   ],
   social: [
-    { label: 'Instagram', href: '#', icon: FaInstagram },
-    { label: 'WhatsApp Business', href: '#', icon: FaWhatsapp },
-    { label: 'TikTok', href: '#', icon: FaTiktok },
+    { label: 'Facebook', href: 'https://www.facebook.com/shopcopNg/', icon: FaFacebook },
+    { label: 'Instagram', href: 'https://www.instagram.com/shopcop_ng/', icon: FaInstagram },
+    { label: 'TikTok', href: 'https://www.tiktok.com/@shopcop_ng', icon: FaTiktok },
+    { label: 'Twitter / X', href: 'https://x.com/ShopCop_ng', icon: FaXTwitter },
+    { label: 'WhatsApp Business', href: 'https://wa.me/message/SO46QS26QZVVH1', icon: FaWhatsapp },
   ],
   legal: [
     { label: 'Privacy Policy', href: '#' },
@@ -54,7 +56,13 @@ export function FooterSectionV2() {
             </Text>
             <Stack gap={2}>
               {footerLinks.social.map((link) => (
-                <Link key={link.label} href={link.href} style={{ textDecoration: 'none' }}>
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none' }}
+                >
                   <Flex align="center" gap={2}>
                     <link.icon size={12} color="var(--chakra-colors-navy-300)" />
                     <Text textStyle="xs" color="navy.300" _hover={{ color: 'white' }} transition="color 0.15s">
