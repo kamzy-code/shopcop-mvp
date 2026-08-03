@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Button, Flex, Grid, Heading, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import { LuCircleCheck, LuImage, LuPackage, LuPencil, LuStore, LuX } from 'react-icons/lu';
 import {
   DialogBackdrop,
@@ -16,6 +17,9 @@ import {
 import { useOrderByToken } from '@/app/_hooks/order';
 import { useEditReview } from '@/app/_hooks/reviews';
 import { useUploadPublicMedia, useDeleteMedia, type UploadResult } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { PUBLIC_UPLOAD_MAX_BYTES, PUBLIC_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
+import { UploadProgressCircle } from '@/components/shared/UploadProgressCircle';
 import { OrderItem } from '@/app/_types';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { formatCurrency, formatDateTime } from '@/app/_lib/orderHelpers';
@@ -45,6 +49,7 @@ export default function TrackingPage() {
   const [editReviewText, setEditReviewText] = useState('');
   const [editMediaSlots, setEditMediaSlots] = useState<(UploadResult | null)[]>([]);
   const [editUploadingSlots, setEditUploadingSlots] = useState<boolean[]>([]);
+  const [editUploadProgress, setEditUploadProgress] = useState<Record<number, number>>({});
   const [editLocalPreviews, setEditLocalPreviews] = useState<Record<number, { url: string; isVideo: boolean }>>({});
   const [viewerMediaIndex, setViewerMediaIndex] = useState<number | null>(null);
   const editReviewMutation = useEditReview();
@@ -70,22 +75,26 @@ export default function TrackingPage() {
   }, [tx, token]);
 
   const handleEditFileSelect = async (index: number, file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toaster.create({ title: 'File must be under 10MB', type: 'error' });
+    if (file.size > PUBLIC_UPLOAD_MAX_BYTES) {
+      toaster.create({ title: `File must be under ${PUBLIC_UPLOAD_MAX_MB}MB`, type: 'error' });
       return;
     }
     const localUrl = URL.createObjectURL(file);
     setEditLocalPreviews((prev) => ({ ...prev, [index]: { url: localUrl, isVideo: file.type.startsWith('video/') } }));
     setEditUploadingSlots((prev) => { const next = [...prev]; next[index] = true; return next; });
+    setEditUploadProgress((prev) => ({ ...prev, [index]: 0 }));
     try {
-      const result = await editUploadMedia.mutateAsync({ file, setUploadProgress: () => {} });
+      const result = await editUploadMedia.mutateAsync({
+        file,
+        setUploadProgress: (percent) => setEditUploadProgress((prev) => ({ ...prev, [index]: percent })),
+      });
       URL.revokeObjectURL(localUrl);
       setEditLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setEditMediaSlots((prev) => { const next = [...prev]; next[index] = result; return next; });
-    } catch {
+    } catch (error) {
       URL.revokeObjectURL(localUrl);
       setEditLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
-      toaster.create({ title: 'Failed to upload media', type: 'error' });
+      toaster.create({ title: 'Failed to upload media', description: getUploadErrorMessage(error), type: 'error' });
     }
     setEditUploadingSlots((prev) => { const next = [...prev]; next[index] = false; return next; });
   };
@@ -263,7 +272,7 @@ export default function TrackingPage() {
               {isEditingReview ? (
                 <Box mt={3}>
                   <Textarea value={editReviewText} onChange={(e) => setEditReviewText(e.target.value)} placeholder="What would you like others to know?" maxLength={2000} rows={3} mb={3} />
-                  <Text textStyle="xs" color="fg.muted" mb={2}>Media (optional, up to 3)</Text>
+                  <Text textStyle="xs" color="fg.muted" mb={2}>Media (optional, up to 3, max {PUBLIC_UPLOAD_MAX_MB}MB each)</Text>
                   <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={3}>
                     {Array.from({ length: 3 }).map((_, i) => {
                       const slot = editMediaSlots[i] ?? null;
@@ -292,7 +301,14 @@ export default function TrackingPage() {
                               {isVideo ? (
                                 <video src={previewUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                               ) : (
-                                <img src={previewUrl} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                <Image
+                                  src={previewUrl}
+                                  alt="Review media"
+                                  fill
+                                  sizes="150px"
+                                  style={{ objectFit: 'cover' }}
+                                  unoptimized
+                                />
                               )}
                               <Box
                                 as="button"
@@ -323,7 +339,7 @@ export default function TrackingPage() {
                           )}
                           {isUploading && (
                             <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center" bg="blackAlpha.400" borderRadius="lg" zIndex={1}>
-                              <Spinner size="md" color="white" />
+                              <UploadProgressCircle value={editUploadProgress[i] ?? 0} size="sm" />
                             </Box>
                           )}
                         </Box>
@@ -377,12 +393,13 @@ export default function TrackingPage() {
                       flexShrink={0}
                       borderWidth="1px"
                       borderColor="border"
+                      position="relative"
                       onClick={() => setViewerMediaIndex(i)}
                     >
                       {m.media_type === 'VIDEO' ? (
                         <video src={m.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       ) : (
-                        <img src={m.media_url} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <Image src={m.media_url} alt="Review media" fill sizes="64px" style={{ objectFit: 'cover' }} unoptimized />
                       )}
                     </Box>
                   ))}

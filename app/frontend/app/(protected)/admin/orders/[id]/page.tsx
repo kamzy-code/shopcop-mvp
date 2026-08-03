@@ -2,6 +2,7 @@
 import { use, useState } from 'react';
 import { Alert, Box, Button, Flex, Heading, Image, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import NextImage from 'next/image';
 import { LuArrowLeft, LuStar } from 'react-icons/lu';
 import { useAdminOrder } from '@/app/_hooks/admin';
 import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
@@ -167,9 +168,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <Stack gap={3}>
               {order.items.map((item) => (
                 <Flex key={item.id} align="center" gap={3}>
-                  <Box w="44px" h="44px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle">
+                  <Box w="44px" h="44px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle" position="relative">
                     {item.item_image_url && (
-                      <img src={item.item_image_url} alt={item.item_name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <NextImage src={item.item_image_url} alt={item.item_name} fill sizes="44px" style={{ objectFit: 'cover' }} unoptimized />
                     )}
                   </Box>
                   <Box flex={1}>
@@ -212,8 +213,8 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                 {order.review.media.length > 0 && (
                   <Flex gap={2} mt={1} overflowX="auto">
                     {order.review.media.map((m) => (
-                      <Box key={m.id} w="56px" h="56px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle">
-                        <img src={m.media_url} alt="Review attachment" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <Box key={m.id} w="56px" h="56px" flexShrink={0} borderRadius="md" overflow="hidden" bg="bg.subtle" position="relative">
+                        <NextImage src={m.media_url} alt="Review attachment" fill sizes="56px" style={{ objectFit: 'cover' }} unoptimized />
                       </Box>
                     ))}
                   </Flex>

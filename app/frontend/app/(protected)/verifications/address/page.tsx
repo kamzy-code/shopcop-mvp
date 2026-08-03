@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { LuArrowLeft, LuArrowRight, LuMapPin } from 'react-icons/lu';
 import { useSubmitAddressVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { SIGNED_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { FormCard } from '@/components/shared/formCard';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
@@ -47,8 +49,7 @@ export default function AddressVerificationPage() {
       setSubmitState('success');
     } catch (error) {
       setSubmitState('failed');
-      const message = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
-      setErrorModal({ open: true, description: message });
+      setErrorModal({ open: true, description: getUploadErrorMessage(error) });
     }
   };
 
@@ -102,13 +103,15 @@ export default function AddressVerificationPage() {
           <Field.Label color="fg">Proof of Address Document</Field.Label>
           <FileUpload
             accept="image/jpeg,image/png,application/pdf"
-            maxSizeMB={5}
+            maxSizeMB={SIGNED_UPLOAD_MAX_MB}
             onFileSelect={(file) => {
               setDocFile(file);
               if (file) setFileError(null);
             }}
             label="Upload proof of address"
-            hint="JPG, PNG, or PDF, max 5MB"
+            hint={`JPG, PNG, or PDF, max ${SIGNED_UPLOAD_MAX_MB}MB`}
+            isUploading={uploadMutation.isPending}
+            uploadProgress={uploadProgress}
           />
           <Field.HelperText color="fg.subtle" textStyle="xs">
             Ensure the document clearly shows your name and address.
@@ -123,7 +126,7 @@ export default function AddressVerificationPage() {
           onClick={handleSubmit}
           disabled={submitState === 'submitting' || uploadMutation.isPending || !docFile}
           loading={submitState === 'submitting' || uploadMutation.isPending}
-          loadingText={uploadMutation.isPending ? `Uploading... ${uploadProgress}%` : 'Submitting...'}
+          loadingText={uploadMutation.isPending ? 'Uploading...' : 'Submitting...'}
         >
           Submit Address Verification
           <LuArrowRight />

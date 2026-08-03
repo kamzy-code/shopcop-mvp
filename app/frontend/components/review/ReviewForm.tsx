@@ -1,10 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { Box, Button, Field, Flex, Grid, Input, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, Field, Flex, Grid, Input, Stack, Text, Textarea } from '@chakra-ui/react';
 import { LuImage, LuX } from 'react-icons/lu';
+import Image from 'next/image';
 import { toaster } from '@/components/ui/toaster';
 import { useCreateReview } from '@/app/_hooks/reviews';
 import { useUploadPublicMedia, useDeleteMedia, type UploadResult } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { PUBLIC_UPLOAD_MAX_BYTES, PUBLIC_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
+import { UploadProgressCircle } from '@/components/shared/UploadProgressCircle';
 import { ReviewStars } from './ReviewStars';
 
 interface ReviewFormProps {
@@ -13,6 +17,7 @@ interface ReviewFormProps {
 }
 
 const MAX_MEDIA = 3;
+const ACCEPTED_MEDIA_TYPES = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm';
 
 export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   const [deliveryRating, setDeliveryRating] = useState(0);
@@ -23,6 +28,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [mediaSlots, setMediaSlots] = useState<(UploadResult | null)[]>([]);
   const [uploadingSlots, setUploadingSlots] = useState<boolean[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [localPreviews, setLocalPreviews] = useState<Record<number, { url: string; isVideo: boolean }>>({});
   const uploadMedia = useUploadPublicMedia();
   const deleteMedia = useDeleteMedia();
@@ -32,8 +38,13 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
   const anyUploading = uploadingSlots.some(Boolean);
 
   const handleFileSelect = async (index: number, file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toaster.create({ title: 'File must be under 10MB', type: 'error' });
+    const acceptedTypes = ACCEPTED_MEDIA_TYPES.split(',');
+    if (!acceptedTypes.includes(file.type)) {
+      toaster.create({ title: 'Unsupported file type', type: 'error' });
+      return;
+    }
+    if (file.size > PUBLIC_UPLOAD_MAX_BYTES) {
+      toaster.create({ title: `File must be under ${PUBLIC_UPLOAD_MAX_MB}MB`, type: 'error' });
       return;
     }
 
@@ -44,9 +55,13 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
       next[index] = true;
       return next;
     });
+    setUploadProgress((prev) => ({ ...prev, [index]: 0 }));
 
     try {
-      const result = await uploadMedia.mutateAsync({ file, setUploadProgress: () => {} });
+      const result = await uploadMedia.mutateAsync({
+        file,
+        setUploadProgress: (percent) => setUploadProgress((prev) => ({ ...prev, [index]: percent })),
+      });
       URL.revokeObjectURL(localUrl);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setMediaSlots((prev) => {
@@ -54,10 +69,10 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
         next[index] = result;
         return next;
       });
-    } catch {
+    } catch (error) {
       URL.revokeObjectURL(localUrl);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
-      toaster.create({ title: 'Failed to upload media', type: 'error' });
+      toaster.create({ title: 'Failed to upload media', description: getUploadErrorMessage(error), type: 'error' });
     }
     setUploadingSlots((prev) => {
       const next = [...prev];
@@ -70,7 +85,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
     if (uploadingSlots[index] || mediaSlots[index]) return;
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm';
+    input.accept = ACCEPTED_MEDIA_TYPES;
     input.onchange = (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
       if (!f) return;
@@ -205,7 +220,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
         <Field.Root>
           <Field.Label>
             Media{' '}
-            <Text as="span" color="fg.muted" textStyle="xs">(optional, up to 3)</Text>
+            <Text as="span" color="fg.muted" textStyle="xs">(optional, up to 3, max 25MB each)</Text>
           </Field.Label>
           <Grid templateColumns="repeat(3, 1fr)" gap={2}>
             {Array.from({ length: MAX_MEDIA }).map((_, i) => {
@@ -242,10 +257,13 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       ) : (
-                        <img
+                        <Image
                           src={previewUrl}
                           alt={`Review media ${i + 1}`}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          fill
+                          sizes="150px"
+                          style={{ objectFit: 'cover' }}
+                          unoptimized
                         />
                       )}
                       <Box
@@ -288,7 +306,7 @@ export function ReviewForm({ trackingToken, onSuccess }: ReviewFormProps) {
                       borderRadius="lg"
                       zIndex={1}
                     >
-                      <Spinner size="md" color="white" />
+                      <UploadProgressCircle value={uploadProgress[i] ?? 0} size="sm" />
                     </Box>
                   )}
                 </Box>

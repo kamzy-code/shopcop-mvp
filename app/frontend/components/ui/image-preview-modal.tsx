@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import {
   DialogBackdrop,
   DialogBody,
@@ -38,7 +39,15 @@ export function ImagePreviewModal({ open, onClose, src, alt, title }: ImagePrevi
             </DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <img src={src} alt={alt} style={{ width: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+            <Image
+              src={src}
+              alt={alt}
+              width={0}
+              height={0}
+              sizes="90vw"
+              unoptimized
+              style={{ width: '100%', height: 'auto', maxHeight: '75vh', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+            />
           </DialogBody>
         </DialogContent>
       </DialogPositioner>

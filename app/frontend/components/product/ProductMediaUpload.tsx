@@ -7,6 +7,7 @@ interface ProductMediaUploadProps {
   mediaFiles: (UploadResult | null)[];
   localPreviews: Record<number, string>;
   uploadingSlots: Record<number, boolean>;
+  uploadProgress?: Record<number, number>;
   onAdd: (index: number, file: File) => void;
   onRemove: (index: number) => void;
   label?: string;
@@ -17,10 +18,11 @@ export function ProductMediaUpload({
   mediaFiles,
   localPreviews,
   uploadingSlots,
+  uploadProgress = {},
   onAdd,
   onRemove,
   label = 'Product Images *',
-  description = 'Upload up to 5 images. The first image is the primary display image. JPG or PNG, max 2MB each.',
+  description = 'Upload up to 5 images or videos. The first image is the primary display image. Max 25MB each.',
 }: ProductMediaUploadProps) {
   return (
     <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">
@@ -34,6 +36,7 @@ export function ProductMediaUpload({
             file={file}
             localUrl={localPreviews[index]}
             isUploading={uploadingSlots[index]}
+            uploadProgress={uploadProgress[index]}
             onAdd={onAdd}
             onRemove={onRemove}
             isPrimary={index === 0 && !!file}

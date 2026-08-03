@@ -1,6 +1,7 @@
 'use client';
 import { Box, Button, Flex, SimpleGrid, Text } from '@chakra-ui/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatCurrency } from '@/app/_lib/orderHelpers';
 
 interface ProductItem {
@@ -38,7 +39,7 @@ function ProductCard({ product, slug }: { product: ProductItem; slug: string }) 
         cursor="pointer"
         _hover={{ boxShadow: 'md' }}
       >
-        <Box h="160px" bg="gray.100" _dark={{ bg: 'gray.700' }}>
+        <Box h="160px" bg="gray.100" _dark={{ bg: 'gray.700' }} position="relative">
           {!firstMedia ? (
             <Flex align="center" justify="center" h="100%" color="fg.muted">
               <Text textStyle="sm">No image</Text>
@@ -64,11 +65,7 @@ function ProductCard({ product, slug }: { product: ProductItem; slug: string }) 
               </Flex>
             </Box>
           ) : (
-            <img
-              src={firstMedia.media_url}
-              alt={product.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
+            <Image src={firstMedia.media_url} alt={product.name} fill sizes="200px" style={{ objectFit: 'cover' }} unoptimized />
           )}
         </Box>
         <Box p={3}>

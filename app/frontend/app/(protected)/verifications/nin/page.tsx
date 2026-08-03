@@ -17,6 +17,8 @@ import { ninSchema, NinFormData } from '@/app/validators/vendorSchema';
 import { FileUpload } from '@/components/shared/fileUpload';
 import { useSubmitNINVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { SIGNED_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
 import { AlertModal } from '@/components/ui/alert-modal';
 
 type VerifyState = 'idle' | 'verifying' | 'success' | 'failed';
@@ -73,8 +75,7 @@ export default function NinPage() {
       await queryClient.invalidateQueries({ queryKey: ['verifications'] });
     } catch (error) {
       setVerifyState('failed');
-      const message = error instanceof Error ? error.message : 'Verification submission failed. Please try again.';
-      setErrorModal({ open: true, description: message });
+      setErrorModal({ open: true, description: getUploadErrorMessage(error) });
     }
   };
 
@@ -139,13 +140,15 @@ export default function NinPage() {
                 <Field.Label color="fg">Government ID Photo</Field.Label>
                 <FileUpload
                   accept="image/jpeg,image/png"
-                  maxSizeMB={2}
+                  maxSizeMB={SIGNED_UPLOAD_MAX_MB}
                   onFileSelect={(file) => {
                     setGovIdFile(file);
                     if (file) setFileError(null);
                   }}
                   label="Upload a clear scan or photo of your National ID"
-                  hint="JPG or PNG, max 2MB"
+                  hint={`JPG or PNG, max ${SIGNED_UPLOAD_MAX_MB}MB`}
+                  isUploading={uploadMutation.isPending}
+                  uploadProgress={uploadProgress}
                 />
                 <Field.HelperText color="fg.subtle" textStyle="xs">
                   Take a clear photo of your government-issued ID in good lighting.
@@ -160,7 +163,7 @@ export default function NinPage() {
                 w="full"
                 disabled={verifyState === 'verifying' || uploadMutation.isPending || !ninValue || ninValue.length < 11}
                 loading={verifyState === 'verifying' || uploadMutation.isPending}
-                loadingText={uploadMutation.isPending ? `Uploading ID... ${uploadProgress}%` : 'Submitting...'}
+                loadingText={uploadMutation.isPending ? 'Uploading ID...' : 'Submitting...'}
               >
                 Verify Identity
                 <LuArrowRight />

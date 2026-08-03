@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Box, Button, Flex, Grid, Stack, Text } from '@chakra-ui/react';
+import Image from 'next/image';
 import { ReviewStars } from './ReviewStars';
 import type { Review as ReviewType } from '@/app/_types';
 import { formatDate } from '@/app/_lib/orderHelpers';
@@ -51,6 +52,7 @@ function ReviewCard({ review }: { review: ReviewType }) {
               flexShrink={0}
               borderWidth="1px"
               borderColor="border"
+              position="relative"
               onClick={() => setViewerIndex(i)}
             >
               {m.media_type === 'VIDEO' ? (
@@ -61,11 +63,7 @@ function ReviewCard({ review }: { review: ReviewType }) {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               ) : (
-                <img
-                  src={m.media_url}
-                  alt="Review media"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
+                <Image src={m.media_url} alt="Review media" fill sizes="64px" style={{ objectFit: 'cover' }} unoptimized />
               )}
             </Box>
           ))}

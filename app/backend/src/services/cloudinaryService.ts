@@ -1,12 +1,43 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { env } from '@config/env.js';
+import { prisma } from '@config/prisma.js';
 import { fileUplaodLogger } from '@utils/logger.js';
+import { AppError } from '@middleware/errorHandler.js';
+
+/**
+ * True if any surviving ProductMedia, VendorProfile, or VendorPost row still references this
+ * Cloudinary public_id. The same asset can end up referenced by more than one row (e.g. product
+ * duplication copies `public_id` without copying the underlying Cloudinary asset), so a public_id
+ * being replaced/removed on one record doesn't necessarily mean it's safe to destroy.
+ */
+async function isPublicIdStillReferenced(publicId: string): Promise<boolean> {
+  const [mediaCount, profileCount, postCount] = await Promise.all([
+    prisma.productMedia.count({ where: { public_id: publicId } }),
+    prisma.vendorProfile.count({ where: { profile_photo_public_id: publicId } }),
+    prisma.vendorPost.count({ where: { public_id: publicId, deleted_at: null } }),
+  ]);
+  return mediaCount + profileCount + postCount > 0;
+}
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,
   api_key: env.CLOUDINARY_API_KEY,
   api_secret: env.CLOUDINARY_API_SECRET,
 });
+
+/**
+ * Parses the Cloudinary resource type out of a stored URL.
+ * Cloudinary URLs have the format:
+ *   https://res.cloudinary.com/{cloud}/{resource_type}/{delivery_type}/...
+ * Returns 'image', 'raw', or 'video'. Falls back to 'image'.
+ */
+export function getResourceTypeFromCloudinaryUrl(url: string | null | undefined): string {
+  if (!url) return 'image';
+  const match = url.match(/res\.cloudinary\.com\/[^/]+\/([^/]+)\//);
+  const type = match?.[1];
+  if (type === 'raw' || type === 'video') return type;
+  return 'image';
+}
 
 export class CloudinaryService {
   /**
@@ -52,6 +83,73 @@ export class CloudinaryService {
    */
   static async deleteMedia(publicId: string) {
     return cloudinary.uploader.destroy(publicId);
+  }
+
+  /**
+   * Deletes a Cloudinary asset if a public_id is present — but only if no other ProductMedia,
+   * VendorProfile, or VendorPost row still references it (e.g. a duplicated product sharing the
+   * same asset). Swallows errors so a failed cleanup never blocks the caller's write.
+   *
+   * @param publicId - Cloudinary public ID to remove, or null/undefined to no-op
+   */
+  static async deleteMediaSafe(publicId: string | null | undefined) {
+    if (!publicId) return;
+    try {
+      if (await isPublicIdStillReferenced(publicId)) {
+        fileUplaodLogger.info('Skipped Cloudinary cleanup — asset still referenced by another record', {
+          action: 'deleteMediaSafe',
+          publicId,
+        });
+        return;
+      }
+      await cloudinary.uploader.destroy(publicId);
+    } catch (error) {
+      fileUplaodLogger.error('Failed to delete Cloudinary asset during cleanup', {
+        action: 'deleteMediaSafe',
+        publicId,
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  }
+
+  /**
+   * Verifies that a client-reported Cloudinary asset actually exists (and matches the
+   * claimed URL's resource type) via the Admin API, before its metadata is trusted and persisted.
+   *
+   * @param publicId - Cloudinary public ID reported by the client
+   * @param options.url - The URL reported alongside the public_id, used to infer resource_type
+   * @param options.type - Cloudinary delivery type ('upload' for public assets, 'authenticated' for signed docs)
+   * @returns The verified Cloudinary resource (authoritative secure_url, bytes, width, height, format, resource_type)
+   * @throws {AppError} 400 — Asset could not be found/verified on Cloudinary
+   */
+  static async verifyAsset(
+    publicId: string,
+    options?: { url?: string | null; type?: 'upload' | 'authenticated' }
+  ) {
+    const resourceType = getResourceTypeFromCloudinaryUrl(options?.url);
+    try {
+      const resource = await cloudinary.api.resource(publicId, {
+        resource_type: resourceType,
+        type: options?.type ?? 'upload',
+      });
+      return resource as {
+        secure_url: string;
+        public_id: string;
+        bytes: number;
+        width?: number;
+        height?: number;
+        format: string;
+        resource_type: string;
+      };
+    } catch (error) {
+      fileUplaodLogger.warn('Cloudinary asset verification failed', {
+        action: 'verifyAsset',
+        publicId,
+        resourceType,
+        error: error instanceof Error ? error.message : error,
+      });
+      throw new AppError('Uploaded file could not be verified. Please re-upload and try again.', 400);
+    }
   }
 
   /**

@@ -12,6 +12,7 @@ import { AlertModal } from '@/components/ui/alert-modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useGetCategories, useProduct, useUpdateProduct } from '@/app/_hooks/vendor';
 import { UploadResult, useUploadPublicMedia, useDeleteMedia } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
 import { ProductMediaUpload } from '@/components/product/ProductMediaUpload';
 import { ProductBasicInfo } from '@/components/product/ProductBasicInfo';
 import { ProductPricingForm } from '@/components/product/ProductPricingForm';
@@ -31,6 +32,7 @@ export default function EditProductPage() {
   const [mediaFiles, setMediaFiles] = useState<(UploadResult | null)[]>([null, null, null, null, null]);
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<number, boolean>>({});
+  const [uploadProgress, setUploadProgressState] = useState<Record<number, number>>({});
   const [initialised, setInitialised] = useState(false);
   const [removingIndex, setRemovingIndex] = useState<number | null>(null);
   const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({ open: false, title: '', description: '' });
@@ -72,9 +74,13 @@ export default function EditProductPage() {
     const localUrl = URL.createObjectURL(file);
     setLocalPreviews((prev) => ({ ...prev, [index]: localUrl }));
     setUploadingSlots((prev) => ({ ...prev, [index]: true }));
+    setUploadProgressState((prev) => ({ ...prev, [index]: 0 }));
 
     try {
-      const uploadResult = await uploadMutation.mutateAsync({ file, setUploadProgress: () => {} });
+      const uploadResult = await uploadMutation.mutateAsync({
+        file,
+        setUploadProgress: (percent) => setUploadProgressState((prev) => ({ ...prev, [index]: percent })),
+      });
       URL.revokeObjectURL(localUrl);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setUploadingSlots((prev) => ({ ...prev, [index]: false }));
@@ -83,7 +89,7 @@ export default function EditProductPage() {
       URL.revokeObjectURL(localUrl);
       setLocalPreviews((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setUploadingSlots((prev) => ({ ...prev, [index]: false }));
-      toaster.create({ title: 'Failed to upload image', description: error instanceof Error ? error.message : 'Try again', type: 'error' });
+      toaster.create({ title: 'Failed to upload image', description: getUploadErrorMessage(error), type: 'error' });
     }
   };
 
@@ -168,10 +174,11 @@ export default function EditProductPage() {
               mediaFiles={mediaFiles}
               localPreviews={localPreviews}
               uploadingSlots={uploadingSlots}
+              uploadProgress={uploadProgress}
               onAdd={handleAddImage}
               onRemove={(index) => setRemovingIndex(index)}
               label="Product Images"
-              description="Up to 5 images. The first image is the primary display image."
+              description="Up to 5 images or videos. The first image is the primary display image."
             />
 
             <Box p={5} bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="xl">

@@ -1,9 +1,26 @@
 import { prisma } from '@config/prisma.js';
 import { productLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
+import { CloudinaryService } from '@services/cloudinaryService.js';
 import { CreateProductInput, UpdateProductInput } from '../types/productTypes.js';
 import { VendorTier } from '../generated/prisma/enums.js';
 import { ProductFiltersSchema } from '@validators/productValidator.js';
+
+type ProductMediaItem = { url: string; public_id?: string; media_type: 'IMAGE' | 'VIDEO' };
+
+/**
+ * Verifies each media item's public_id against the Cloudinary Admin API (skipping items
+ * without one) and replaces its url with Cloudinary's authoritative secure_url.
+ */
+async function verifyProductMedia<T extends ProductMediaItem>(media: T[]): Promise<T[]> {
+  return Promise.all(
+    media.map(async (item) => {
+      if (!item.public_id) return item;
+      const resource = await CloudinaryService.verifyAsset(item.public_id, { url: item.url, type: 'upload' });
+      return { ...item, url: resource.secure_url };
+    })
+  );
+}
 
 const productLimitPerTier: Record<VendorTier, number | null> = {
   TIER_0: 5,
@@ -45,6 +62,8 @@ export class ProductService {
     const vendor = await this.getVendorByUserId(userId);
     await this.checkTierLimit(vendor.id, vendor.current_tier);
 
+    const verifiedMedia = data.media?.length ? await verifyProductMedia(data.media) : undefined;
+
     const product = await prisma.product.create({
       data: {
         vendor_id: vendor.id,
@@ -54,9 +73,9 @@ export class ProductService {
         category: data.category,
         stock_status: data.stock_status,
         stock_quantity: data.stock_quantity ?? null,
-        media: data.media?.length
+        media: verifiedMedia?.length
           ? {
-              create: data.media.map((item, index) => ({
+              create: verifiedMedia.map((item, index) => ({
                 media_url: item.url,
                 public_id: item.public_id ?? null,
                 media_type: item.media_type,
@@ -155,6 +174,8 @@ export class ProductService {
   static async updateProduct(productId: string, userId: string, data: UpdateProductInput) {
     const existing = await this.getProductById(productId, userId);
 
+    const verifiedMedia = data.media !== undefined ? await verifyProductMedia(data.media) : undefined;
+
     const updated = await prisma.product.update({
       where: { id: existing.id },
       data: {
@@ -164,10 +185,10 @@ export class ProductService {
         ...(data.category !== undefined && { category: data.category }),
         ...(data.stock_status !== undefined && { stock_status: data.stock_status }),
         ...(data.stock_quantity !== undefined && { stock_quantity: data.stock_quantity }),
-        ...(data.media !== undefined && {
+        ...(verifiedMedia !== undefined && {
           media: {
             deleteMany: {},
-            create: data.media.map((item, index) => ({
+            create: verifiedMedia.map((item, index) => ({
               media_url: item.url,
               public_id: item.public_id ?? null,
               media_type: item.media_type,
@@ -181,6 +202,14 @@ export class ProductService {
         media: { orderBy: { position: 'asc' } },
       },
     });
+
+    if (verifiedMedia !== undefined) {
+      const keptPublicIds = new Set(verifiedMedia.map((item) => item.public_id).filter(Boolean));
+      const removedMedia = existing.media.filter(
+        (m) => m.public_id && !keptPublicIds.has(m.public_id)
+      );
+      await Promise.all(removedMedia.map((m) => CloudinaryService.deleteMediaSafe(m.public_id)));
+    }
 
     productLogger.info('Product updated', { productId: updated.id });
     return updated;

@@ -1,11 +1,14 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Avatar, Box, Field, Spinner, Text } from '@chakra-ui/react';
+import { Avatar, Box, Field, Text } from '@chakra-ui/react';
 import { LuCamera, LuTrash2 } from 'react-icons/lu';
 import Image from 'next/image';
 import { useDeleteMedia, useUploadPublicMedia } from '@/app/_hooks/upload';
 import { useUpdateProfilePhoto } from '@/app/_hooks/vendor';
 import { toaster } from '@/components/ui/toaster';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { PUBLIC_UPLOAD_MAX_BYTES, PUBLIC_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
+import { UploadProgressCircle } from '@/components/shared/UploadProgressCircle';
 
 interface ProfilePhotoUploadProps {
   variant: 'avatar' | 'field';
@@ -28,6 +31,7 @@ export function ProfilePhotoUpload({
   const [menuOpen, setMenuOpen] = useState(false);
   const [fieldPreview, setFieldPreview] = useState<string | null>(null);
   const [lastUploadedPublicId, setLastUploadedPublicId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const displayUrl = fieldPreview ?? profilePhotoUrl;
   const effectivePublicId = lastUploadedPublicId ?? profilePhotoPublicId;
@@ -36,21 +40,28 @@ export function ProfilePhotoUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > PUBLIC_UPLOAD_MAX_BYTES) {
+      toaster.create({ title: `File must be under ${PUBLIC_UPLOAD_MAX_MB}MB`, type: 'error' });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     if (variant === 'field') {
       const localUrl = URL.createObjectURL(file);
       setFieldPreview(localUrl);
     }
 
+    setUploadProgress(0);
     try {
-      const result = await uploadPublicMedia.mutateAsync({ file, setUploadProgress: () => {} });
+      const result = await uploadPublicMedia.mutateAsync({ file, setUploadProgress });
       setLastUploadedPublicId(result.publicId);
       await updateProfilePhoto.mutateAsync({
         profile_photo_url: result.url,
         profile_photo_public_id: result.publicId,
       });
-    } catch {
+    } catch (error) {
       if (variant === 'field') setFieldPreview(null);
-      toaster.create({ title: 'Failed to upload photo', type: 'error' });
+      toaster.create({ title: 'Failed to upload photo', description: getUploadErrorMessage(error), type: 'error' });
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
     setMenuOpen(false);
@@ -125,7 +136,7 @@ export function ProfilePhotoUpload({
                 alignItems="center"
                 justifyContent="center"
               >
-                <Spinner size="sm" color="white" />
+                <UploadProgressCircle value={uploadProgress} size="xs" />
               </Box>
             )}
           </Box>
@@ -220,7 +231,7 @@ export function ProfilePhotoUpload({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Spinner size="sm" color="white" />
+                  <UploadProgressCircle value={uploadProgress} size="xs" />
                 </Box>
               )}
               <Box

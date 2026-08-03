@@ -1,6 +1,7 @@
 import { prisma } from '@config/prisma.js';
 import { vendorLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
+import { CloudinaryService } from '@services/cloudinaryService.js';
 import { VerificationType, VerificationStatus } from '../generated/prisma/client.js';
 import { NotificationService } from '@services/notificationService.js';
 import { NotificationType } from '../types/notification.types.js';
@@ -17,6 +18,33 @@ import {
 // ============================================
 
 export class VerificationService {
+  /**
+   * Verifies every `*_public_id` field present in `data` against the Cloudinary Admin API
+   * and replaces the paired `*_url` field with the authoritative `secure_url` Cloudinary
+   * returns, so a client can't submit a fabricated or mismatched URL alongside a real public_id.
+   *
+   * @param data - Verification input containing zero or more `{field}_url`/`{field}_public_id` pairs
+   * @returns The same object with verified `*_url` fields replaced by Cloudinary's authoritative URLs
+   * @throws {AppError} 400 — Any referenced public_id could not be verified on Cloudinary
+   */
+  private static async verifyDocumentFields<T extends object>(data: T): Promise<T> {
+    const record = data as Record<string, unknown>;
+    const result: Record<string, unknown> = { ...record };
+    const publicIdKeys = Object.keys(record).filter((key) => key.endsWith('_public_id'));
+
+    for (const publicIdKey of publicIdKeys) {
+      const publicId = record[publicIdKey] as string | undefined;
+      if (!publicId) continue;
+
+      const urlKey = publicIdKey.replace(/_public_id$/, '_url');
+      const url = record[urlKey] as string | undefined;
+      const resource = await CloudinaryService.verifyAsset(publicId, { url, type: 'authenticated' });
+      result[urlKey] = resource.secure_url;
+    }
+
+    return result as T;
+  }
+
   /**
    * Submit NIN verification for identity verification.
    * Requires personal info to be completed first.
@@ -67,13 +95,15 @@ export class VerificationService {
       throw new AppError('NIN verification is already pending review', 409);
     }
 
+    const verifiedData = await this.verifyDocumentFields(data);
+
     const verification = await prisma.vendorVerification.create({
       data: {
         vendor_id: vendorId,
         type: VerificationType.NIN,
         status: VerificationStatus.PENDING,
         points_value: verificationPoints.NIN_VERIFIED,
-        ...data,
+        ...verifiedData,
       },
     });
 
@@ -151,13 +181,15 @@ export class VerificationService {
       throw new AppError('CAC verification is already pending review', 409);
     }
 
+    const verifiedData = await this.verifyDocumentFields(data);
+
     const verification = await prisma.vendorVerification.create({
       data: {
         vendor_id: vendorId,
         type: VerificationType.CAC,
         status: VerificationStatus.PENDING,
         points_value: verificationPoints.CAC_VERIFIED,
-        ...data,
+        ...verifiedData,
       },
     });
 
@@ -235,13 +267,15 @@ export class VerificationService {
       throw new AppError('SMEDAN verification is already pending review', 409);
     }
 
+    const verifiedData = await this.verifyDocumentFields(data);
+
     const verification = await prisma.vendorVerification.create({
       data: {
         vendor_id: vendorId,
         type: VerificationType.SMEDAN,
         status: VerificationStatus.PENDING,
         points_value: verificationPoints.SMEDAN_VERIFIED,
-        ...data,
+        ...verifiedData,
       },
     });
 
@@ -319,13 +353,15 @@ export class VerificationService {
       throw new AppError('Address verification is already pending review', 409);
     }
 
+    const verifiedData = await this.verifyDocumentFields(data);
+
     const verification = await prisma.vendorVerification.create({
       data: {
         vendor_id: vendorId,
         type: VerificationType.ADDRESS,
         status: VerificationStatus.PENDING,
         points_value: verificationPoints.ADDRESS_VERIFIED,
-        ...data,
+        ...verifiedData,
       },
     });
 
@@ -437,10 +473,12 @@ export class VerificationService {
       throw new AppError('Only rejected verifications can be resubmitted', 400);
     }
 
+    const verifiedUpdateData = await this.verifyDocumentFields(updateData);
+
     const verification = await prisma.vendorVerification.update({
       where: { id: verificationId },
       data: {
-        ...updateData,
+        ...verifiedUpdateData,
         status: VerificationStatus.PENDING,
         rejection_reason: null,
         admin_notes: null,

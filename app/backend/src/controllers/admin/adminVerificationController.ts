@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { AdminVerificationService } from '@services/admin/adminVerificationService.js';
 import { TierCalculationService } from '@services/tierCalculationService.js';
-import { CloudinaryService } from '@services/cloudinaryService.js';
+import { CloudinaryService, getResourceTypeFromCloudinaryUrl } from '@services/cloudinaryService.js';
 import {
   approveVerificationSchema,
   rejectVerificationSchema,
@@ -10,20 +10,6 @@ import { adminLogger } from '@utils/logger.js';
 import { AppError } from '@middleware/errorHandler.js';
 import { parseZodErrors } from '@utils/parseZodErros.js';
 import { VerificationStatus, VerificationType } from '../../generated/prisma/client.js';
-
-/**
- * Parses the Cloudinary resource type out of a stored URL.
- * Cloudinary URLs have the format:
- *   https://res.cloudinary.com/{cloud}/{resource_type}/{delivery_type}/...
- * Returns 'image', 'raw', or 'video'. Falls back to 'image'.
- */
-function getResourceTypeFromCloudinaryUrl(url: string | null | undefined): string {
-  if (!url) return 'image';
-  const match = url.match(/res\.cloudinary\.com\/[^/]+\/([^/]+)\//);
-  const type = match?.[1];
-  if (type === 'raw' || type === 'video') return type;
-  return 'image';
-}
 
 export class AdminVerificationController {
   /**

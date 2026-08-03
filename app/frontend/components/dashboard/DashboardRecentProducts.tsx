@@ -1,6 +1,7 @@
 'use client';
 import { Box, Button, Flex, Grid, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LuArrowRight, LuPackage, LuPlus } from 'react-icons/lu';
 
 interface Product {
@@ -64,7 +65,7 @@ export function DashboardRecentProducts({ products, productCount }: DashboardRec
               _hover={{ shadow: 'md' }}
               onClick={() => router.push(`/products/${product.id}`)}
             >
-              <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden">
+              <Box w="full" h="140px" bg="bg.subtle" borderRadius="lg" mb={3} overflow="hidden" position="relative">
                 {product.media?.[0] ? (
                   product.media[0].media_type === 'VIDEO' ? (
                     <Box position="relative" w="full" h="full">
@@ -79,11 +80,7 @@ export function DashboardRecentProducts({ products, productCount }: DashboardRec
                       </Box>
                     </Box>
                   ) : (
-                    <img
-                      src={product.media[0].media_url}
-                      alt={product.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    <Image src={product.media[0].media_url} alt={product.name} fill sizes="200px" style={{ objectFit: 'cover' }} unoptimized />
                   )
                 ) : (
                   <Flex h="full" align="center" justify="center" color="fg.subtle">

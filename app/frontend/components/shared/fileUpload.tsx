@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Box, Button, Flex, Stack, Text } from '@chakra-ui/react';
 import { LuUpload, LuX } from 'react-icons/lu';
 import Image from 'next/image';
+import { UploadProgressCircle } from './UploadProgressCircle';
 
 interface FileUploadProps {
   accept?: string;
@@ -12,16 +13,20 @@ interface FileUploadProps {
   label?: string;
   hint?: string;
   disabled?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }
 
 export function FileUpload({
   accept = 'image/jpeg,image/png',
-  maxSizeMB = 2,
+  maxSizeMB = 10,
   onFileSelect,
   previewUrl,
   label = 'Upload file',
-  hint = 'JPG or PNG, max 2MB',
+  hint = 'JPG or PNG, max 10MB',
   disabled = false,
+  isUploading = false,
+  uploadProgress = 0,
 }: FileUploadProps) {
   const [localPreview, setLocalPreview] = useState<string | null>(previewUrl || null);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +104,19 @@ export function FileUpload({
               border: '1px solid var(--chakra-colors-border)',
             }}
           />
+          {isUploading && (
+            <Box
+              position="absolute"
+              inset={0}
+              borderRadius="12px"
+              bg="blackAlpha.500"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <UploadProgressCircle value={uploadProgress} size="sm" />
+            </Box>
+          )}
           <Button
             position="absolute"
             top="-2"
@@ -112,6 +130,8 @@ export function FileUpload({
             p={0}
             onClick={handleRemove}
             aria-label="Remove file"
+            disabled={isUploading}
+            opacity={isUploading ? 0.5 : 1}
           >
             <LuX size={10} />
           </Button>

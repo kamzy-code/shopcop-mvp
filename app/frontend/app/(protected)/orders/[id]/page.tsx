@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Box, Button, Flex, Grid, Stack, Text } from '@chakra-ui/react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { LuClock } from 'react-icons/lu';
 import { AlertModal } from '@/components/ui/alert-modal';
 import { toaster } from '@/components/ui/toaster';
@@ -373,12 +374,13 @@ export default function OrderDetailPage() {
                       flexShrink={0}
                       borderWidth="1px"
                       borderColor="border"
+                      position="relative"
                       onClick={() => setViewerMediaIndex(i)}
                     >
                       {m.media_type === 'VIDEO' ? (
                         <video src={m.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       ) : (
-                        <img src={m.media_url} alt="Review media" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <Image src={m.media_url} alt="Review media" fill sizes="64px" style={{ objectFit: 'cover' }} unoptimized />
                       )}
                     </Box>
                   ))}

@@ -12,6 +12,8 @@ import { AlertModal } from '@/components/ui/alert-modal';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { SIGNED_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
 import { LuIdCard } from 'react-icons/lu';
 
 export default function NinResubmitPage() {
@@ -67,8 +69,7 @@ export default function NinResubmitPage() {
       });
       setSuccess(true);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
-      setErrorModal({ open: true, description: message });
+      setErrorModal({ open: true, description: getUploadErrorMessage(error) });
     }
   };
 
@@ -124,10 +125,12 @@ export default function NinResubmitPage() {
               <Field.Label color="fg">Government ID Photo</Field.Label>
               <FileUpload
                 accept="image/jpeg,image/png"
-                maxSizeMB={2}
+                maxSizeMB={SIGNED_UPLOAD_MAX_MB}
                 onFileSelect={(file) => { setGovIdFile(file); if (file) setFileError(null); }}
                 label="Upload updated ID photo (or keep existing)"
-                hint="JPG or PNG, max 2MB"
+                hint={`JPG or PNG, max ${SIGNED_UPLOAD_MAX_MB}MB`}
+                isUploading={uploadMutation.isPending}
+                uploadProgress={uploadProgress}
               />
               {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
             </Field.Root>
@@ -138,7 +141,7 @@ export default function NinResubmitPage() {
               size="lg"
               w="full"
               loading={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
-              loadingText={uploadMutation.isPending ? `Uploading... ${uploadProgress}%` : 'Submitting...'}
+              loadingText={uploadMutation.isPending ? 'Uploading...' : 'Submitting...'}
               disabled={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
             >
               Resubmit Verification <LuArrowRight />

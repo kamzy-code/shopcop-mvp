@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
+import axios, { AxiosProgressEvent } from 'axios';
 import { apiFetch } from '../_lib/fetchWrapper';
 import { resizeImageIfNeeded } from '../_lib/resizeImage';
+import { PUBLIC_UPLOAD_MAX_BYTES, SIGNED_UPLOAD_MAX_BYTES } from '../_lib/uploadLimits';
 
 export function useDeleteMedia() {
   return useMutation({
@@ -33,6 +34,21 @@ export interface UploadResult {
   height?: number;
 }
 
+/** POSTs the upload; retries once if the failure looks like a network blip or a server-side (5xx) error. */
+async function postWithRetry(
+  url: string,
+  formData: FormData,
+  onUploadProgress: (event: AxiosProgressEvent) => void
+) {
+  try {
+    return await axios.post(url, formData, { onUploadProgress });
+  } catch (error) {
+    const shouldRetry = axios.isAxiosError(error) && (!error.response || error.response.status >= 500);
+    if (!shouldRetry) throw error;
+    return await axios.post(url, formData, { onUploadProgress });
+  }
+}
+
 export function useUploadPublicMedia() {
   return useMutation({
     mutationFn: async ({
@@ -44,20 +60,18 @@ export function useUploadPublicMedia() {
     }): Promise<UploadResult> => {
       if (!cloudName || !uploadPreset) throw new Error('Cloudinary configuration is missing');
 
-      const resizedFile = await resizeImageIfNeeded(file);
+      const resizedFile = await resizeImageIfNeeded(file, { maxBytes: PUBLIC_UPLOAD_MAX_BYTES });
 
       const formData = new FormData();
       formData.append('file', resizedFile);
       formData.append('upload_preset', uploadPreset);
 
-      const res = await axios.post(
+      const res = await postWithRetry(
         `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
         formData,
-        {
-          onUploadProgress: (progressEvent) => {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
-            setUploadProgress(percent);
-          },
+        (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
+          setUploadProgress(percent);
         }
       );
       const data = res.data;
@@ -83,10 +97,12 @@ export function useUploadSensitiveDocument() {
     }): Promise<UploadResult> => {
       if (!cloudName) throw new Error('Cloudinary configuration is missing');
 
+      const resizedFile = await resizeImageIfNeeded(file, { maxBytes: SIGNED_UPLOAD_MAX_BYTES });
+
       const sig = await apiFetch<UploadSignature>('/uploads/signature').then((r) => r.data);
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', resizedFile);
       formData.append('api_key', sig.apiKey);
       formData.append('timestamp', String(sig.timestamp));
       formData.append('signature', sig.signature);
@@ -96,14 +112,12 @@ export function useUploadSensitiveDocument() {
       formData.append('folder', sig.folder);
       formData.append('type', sig.type);
 
-      const res = await axios.post(
+      const res = await postWithRetry(
         `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
         formData,
-        {
-          onUploadProgress: (progressEvent) => {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
-            setUploadProgress(percent);
-          },
+        (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
+          setUploadProgress(percent);
         }
       );
       const data = res.data;

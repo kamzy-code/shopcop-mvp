@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   LuChevronLeft,
   LuChevronRight,
@@ -79,11 +80,9 @@ function MediaThumbnail({ product }: { product: Product }) {
     );
   }
   return (
-    <img
-      src={first.media_url}
-      alt={product.name}
-      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-    />
+    <Box position="relative" w="full" h="full">
+      <Image src={first.media_url} alt={product.name} fill sizes="200px" style={{ objectFit: 'cover' }} unoptimized />
+    </Box>
   );
 }
 

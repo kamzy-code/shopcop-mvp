@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { Alert, Box, Button, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage, LuPencil } from 'react-icons/lu';
 
 import { useProduct } from '@/app/_hooks/vendor';
@@ -86,10 +87,13 @@ function MediaCarousel({ product }: { product: Product }) {
             }}
           />
         ) : (
-          <img
+          <Image
             src={current.media_url}
             alt={`${product.name} — image ${activeIndex + 1}`}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            fill
+            sizes="560px"
+            style={{ objectFit: 'contain' }}
+            unoptimized
           />
         )}
 
@@ -168,6 +172,7 @@ function MediaCarousel({ product }: { product: Product }) {
           {media.map((item, i) => (
             <Box
               key={i}
+              position="relative"
               flexShrink={0}
               w="60px"
               h="60px"
@@ -188,11 +193,7 @@ function MediaCarousel({ product }: { product: Product }) {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               ) : (
-                <img
-                  src={item.media_url}
-                  alt={`Thumbnail ${i + 1}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
+                <Image src={item.media_url} alt={`Thumbnail ${i + 1}`} fill sizes="60px" style={{ objectFit: 'cover' }} unoptimized />
               )}
             </Box>
           ))}

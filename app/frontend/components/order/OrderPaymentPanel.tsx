@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Box, Button, Flex, Stack, Text, Textarea } from '@chakra-ui/react';
+import Image from 'next/image';
 import { LuX } from 'react-icons/lu';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Order } from '@/app/_types';
@@ -191,10 +192,16 @@ export function OrderPaymentPanel({
                 Close
               </Button>
             </Flex>
-            <img
+            <Image
               src={tx.payment_proof_url}
               alt="Payment receipt"
+              width={0}
+              height={0}
+              sizes="90vw"
+              unoptimized
               style={{
+                width: 'auto',
+                height: 'auto',
                 maxWidth: '90vw',
                 maxHeight: '80vh',
                 borderRadius: '12px',

@@ -17,6 +17,7 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
+import Image from 'next/image';
 import { LuChevronLeft, LuChevronRight, LuPackage } from 'react-icons/lu';
 import { OrderItem, Product, ProductMedia } from '@/app/_types';
 import { apiFetch } from '@/app/_lib/fetchWrapper';
@@ -112,15 +113,13 @@ export function ItemDetailModal({ open, onClose, item }: ItemDetailModalProps) {
                             }}
                           />
                         ) : (
-                          <img
+                          <Image
                             src={displayMedia[activeIndex]?.media_url || item.item_image_url || ''}
                             alt={`${item.item_name} — image ${activeIndex + 1}`}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain',
-                              display: 'block',
-                            }}
+                            fill
+                            sizes="480px"
+                            style={{ objectFit: 'contain' }}
+                            unoptimized
                           />
                         )}
                         {displayMedia.length > 1 && (
@@ -210,15 +209,13 @@ export function ItemDetailModal({ open, onClose, item }: ItemDetailModalProps) {
                           }}
                         />
                       ) : (
-                        <img
+                        <Image
                           src={item.item_image_url}
                           alt={item.item_name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            display: 'block',
-                          }}
+                          fill
+                          sizes="480px"
+                          style={{ objectFit: 'contain' }}
+                          unoptimized
                         />
                       )
                     ) : (

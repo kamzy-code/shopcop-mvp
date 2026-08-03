@@ -3,6 +3,7 @@ import { vendorLogger } from '@utils/logger.js';
 import { ProfileCompletenessService } from './profileCompletenessService.js';
 import { PersonalInfoInput, BusinessInfoInput } from '../types/vendorProfileTypes.js';
 import { AppError } from '@middleware/errorHandler.js';
+import { CloudinaryService } from '@services/cloudinaryService.js';
 import { VerificationStatus, VerificationType } from '../generated/prisma/enums.js';
 import { sectionWeights } from '../types/vendorVerificationTypes.js';
 
@@ -273,10 +274,28 @@ export class VendorProfileService {
       throw new AppError('Vendor profile not found', 404);
     }
 
-    return prisma.vendorProfile.update({
+    let verifiedUrl = profile_photo_url;
+    if (profile_photo_public_id) {
+      const resource = await CloudinaryService.verifyAsset(profile_photo_public_id, {
+        url: profile_photo_url,
+        type: 'upload',
+      });
+      verifiedUrl = resource.secure_url;
+    }
+
+    const updated = await prisma.vendorProfile.update({
       where: { user_id: userId },
-      data: { profile_photo_url, profile_photo_public_id: profile_photo_public_id ?? null },
+      data: { profile_photo_url: verifiedUrl, profile_photo_public_id: profile_photo_public_id ?? null },
     });
+
+    if (
+      existing.profile_photo_public_id &&
+      existing.profile_photo_public_id !== (profile_photo_public_id ?? null)
+    ) {
+      await CloudinaryService.deleteMediaSafe(existing.profile_photo_public_id);
+    }
+
+    return updated;
   }
 
   // ============================================

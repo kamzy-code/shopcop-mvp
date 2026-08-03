@@ -13,6 +13,8 @@ import { SingleChipSelect } from '@/components/shared/chipSelect';
 import { VerificationSuccessCard } from '@/components/shared/verificationSuccessCard';
 import { useGetVerification, useResubmitVerification } from '@/app/_hooks/vendor';
 import { useUploadSensitiveDocument } from '@/app/_hooks/upload';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { SIGNED_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
 
 export default function SmedanResubmitPage() {
   const router = useRouter();
@@ -71,8 +73,7 @@ export default function SmedanResubmitPage() {
       });
       setSuccess(true);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Submission failed. Please try again.';
-      setErrorModal({ open: true, description: message });
+      setErrorModal({ open: true, description: getUploadErrorMessage(error) });
     }
   };
 
@@ -134,10 +135,12 @@ export default function SmedanResubmitPage() {
               <Field.Label color="fg">SMEDAN Certificate</Field.Label>
               <FileUpload
                 accept="image/jpeg,image/png,application/pdf"
-                maxSizeMB={5}
+                maxSizeMB={SIGNED_UPLOAD_MAX_MB}
                 onFileSelect={(file) => { setCertFile(file); if (file) setFileError(null); }}
                 label="Upload updated certificate (or keep existing)"
-                hint="JPG, PNG, or PDF, max 5MB"
+                hint={`JPG, PNG, or PDF, max ${SIGNED_UPLOAD_MAX_MB}MB`}
+                isUploading={uploadMutation.isPending}
+                uploadProgress={uploadProgress}
               />
               {fileError && <Field.ErrorText>{fileError}</Field.ErrorText>}
             </Field.Root>
@@ -148,7 +151,7 @@ export default function SmedanResubmitPage() {
               size="lg"
               w="full"
               loading={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
-              loadingText={uploadMutation.isPending ? `Uploading... ${uploadProgress}%` : 'Submitting...'}
+              loadingText={uploadMutation.isPending ? 'Uploading...' : 'Submitting...'}
               disabled={isSubmitting || uploadMutation.isPending || resubmitMutation.isPending}
             >
               Resubmit Verification <LuArrowRight />

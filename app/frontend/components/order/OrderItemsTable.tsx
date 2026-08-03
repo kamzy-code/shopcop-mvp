@@ -1,4 +1,5 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import Image from 'next/image';
 import { LuPackage } from 'react-icons/lu';
 import { Order, OrderItem } from '@/app/_types';
 import { formatCurrency, isVideoUrl } from '@/app/_lib/orderHelpers';
@@ -25,6 +26,7 @@ export function OrderItemsTable({
               bg="bg.subtle"
               overflow="hidden"
               flexShrink={0}
+              position="relative"
             >
               {item.item_image_url ? (
                 isVideoUrl(item.item_image_url) ? (
@@ -40,11 +42,7 @@ export function OrderItemsTable({
                     }}
                   />
                 ) : (
-                  <img
-                    src={item.item_image_url}
-                    alt={item.item_name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+                  <Image src={item.item_image_url} alt={item.item_name} fill sizes="36px" style={{ objectFit: 'cover' }} unoptimized />
                 )
               ) : (
                 <Flex h="full" align="center" justify="center" color="fg.subtle">

@@ -49,20 +49,51 @@ export class FileUploadController {
 
   /**
    * POST /api/v1/uploads/confirm
-   * Confirms that a client-side upload completed and persists the asset metadata.
+   * Verifies a client-reported Cloudinary upload against the Cloudinary Admin API before
+   * the caller trusts it, and returns the authoritative asset metadata.
    *
-   * @param req.body.publicId - Cloudinary public ID of the uploaded asset (optional, stub)
-   * @param req.body.url - Cloudinary URL of the uploaded asset (optional, stub)
-   * @param req.body.docType - Document type identifier (optional, stub)
-   * @remarks Stub implementation — full persistence logic is not yet implemented.
-   * @returns 200 `{ success: true }`
+   * @param req.body.publicId - Cloudinary public ID reported by the client after upload
+   * @param req.body.url - Cloudinary URL reported by the client (used to infer resource_type)
+   * @param req.body.type - Cloudinary delivery type: 'upload' (public) or 'authenticated' (signed docs)
+   * @returns 200 `{ success, data: { url, publicId, bytes, width, height, format, resourceType } }`
+   * @throws {AppError} 401 — Not authenticated
+   * @throws {AppError} 400 — Missing publicId, or asset could not be verified on Cloudinary
    */
-  static async confirmUpload(req: Request, res: Response) {
-    // Called after client uploads sensitive doc
-    // Backend stores the public_id / URL in database
-    //const { publicId, url, docType } = req.body;
-    // Save to VendorDocument table
-    res.json({ success: true });
+  static async confirmUpload(req: Request, res: Response, next: NextFunction) {
+    const action = 'confirmUpload';
+    const user = req.user;
+    if (!user) {
+      fileUplaodLogger.warn('Confirm upload attempt without authentication', { action });
+      throw new AppError('Authentication required', 401);
+    }
+
+    const { publicId, url, type } = req.body as {
+      publicId?: string;
+      url?: string;
+      type?: 'upload' | 'authenticated';
+    };
+    if (!publicId) {
+      throw new AppError('publicId is required', 400);
+    }
+
+    try {
+      const resource = await CloudinaryService.verifyAsset(publicId, { url, type });
+      res.status(200).json({
+        success: true,
+        data: {
+          url: resource.secure_url,
+          publicId: resource.public_id,
+          bytes: resource.bytes,
+          width: resource.width,
+          height: resource.height,
+          format: resource.format,
+          resourceType: resource.resource_type,
+        },
+      });
+      fileUplaodLogger.info('Upload confirmed and verified', { userId: user.userId, publicId, action });
+    } catch (error) {
+      next(error);
+    }
   }
 
   /**

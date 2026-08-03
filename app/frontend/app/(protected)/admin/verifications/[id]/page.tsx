@@ -13,6 +13,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LuArrowLeft, LuArrowRight, LuX } from 'react-icons/lu';
 import {
   useAdminVerificationDetail,
@@ -53,7 +54,11 @@ export default function AdminVerificationDetailPage({
   const router = useRouter();
 
   const { data: verification, isLoading } = useAdminVerificationDetail(id);
-  const { data: signedUrls, refetch: fetchSignedUrls, isFetching: isFetchingUrls } = useAdminSignedUrl(id);
+  const {
+    data: signedUrls,
+    refetch: fetchSignedUrls,
+    isFetching: isFetchingUrls,
+  } = useAdminSignedUrl(id);
   const approveMutation = useAdminApproveVerification();
   const rejectMutation = useAdminRejectVerification();
 
@@ -61,8 +66,14 @@ export default function AdminVerificationDetailPage({
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [errorModal, setErrorModal] = useState<{ open: boolean; title: string; description: string }>({
-    open: false, title: '', description: '',
+  const [errorModal, setErrorModal] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    title: '',
+    description: '',
   });
   const [docPreview, setDocPreview] = useState<{ url: string; label: string } | null>(null);
 
@@ -89,7 +100,11 @@ export default function AdminVerificationDetailPage({
     try {
       await approveMutation.mutateAsync({ id, admin_notes: adminNotes || undefined });
       setApproveDialogOpen(false);
-      toaster.create({ title: 'Approved', description: 'Verification approved successfully.', type: 'success' });
+      toaster.create({
+        title: 'Approved',
+        description: 'Verification approved successfully.',
+        type: 'success',
+      });
       router.push('/admin/verifications');
     } catch (error) {
       setApproveDialogOpen(false);
@@ -100,13 +115,25 @@ export default function AdminVerificationDetailPage({
 
   const handleReject = async () => {
     if (!rejectionReason.trim() || rejectionReason.trim().length < 10) {
-      setErrorModal({ open: true, title: 'Rejection Reason Too Short', description: 'Rejection reason must be at least 10 characters.' });
+      setErrorModal({
+        open: true,
+        title: 'Rejection Reason Too Short',
+        description: 'Rejection reason must be at least 10 characters.',
+      });
       return;
     }
     try {
-      await rejectMutation.mutateAsync({ id, rejection_reason: rejectionReason, admin_notes: adminNotes || undefined });
+      await rejectMutation.mutateAsync({
+        id,
+        rejection_reason: rejectionReason,
+        admin_notes: adminNotes || undefined,
+      });
       setRejectDialogOpen(false);
-      toaster.create({ title: 'Rejected', description: 'Verification rejected. Vendor has been notified.', type: 'success' });
+      toaster.create({
+        title: 'Rejected',
+        description: 'Verification rejected. Vendor has been notified.',
+        type: 'success',
+      });
       router.push('/admin/verifications');
     } catch (error) {
       setRejectDialogOpen(false);
@@ -129,7 +156,10 @@ export default function AdminVerificationDetailPage({
       />
       <ConfirmDialog
         open={rejectDialogOpen}
-        onClose={() => { setRejectDialogOpen(false); setRejectionReason(''); }}
+        onClose={() => {
+          setRejectDialogOpen(false);
+          setRejectionReason('');
+        }}
         onConfirm={handleReject}
         title="Reject Verification"
         description="Provide a reason for rejection. The vendor will be notified."
@@ -176,12 +206,7 @@ export default function AdminVerificationDetailPage({
             ID: {verification.id}
           </Text>
         </Stack>
-        <Box
-          px={3}
-          py={1}
-          borderRadius="full"
-          bg={`${statusColor}.subtle`}
-        >
+        <Box px={3} py={1} borderRadius="full" bg={`${statusColor}.subtle`}>
           <Text textStyle="sm" fontWeight="semibold" color={`${statusColor}.fg`}>
             {verification.status}
           </Text>
@@ -208,8 +233,18 @@ export default function AdminVerificationDetailPage({
             </Text>
             <Stack gap={3}>
               <InfoRow label="Type" value={verification.type} />
-              <InfoRow label="Submitted" value={new Date(verification.submitted_at).toLocaleString('en-NG')} />
-              <InfoRow label="Reviewed at" value={verification.reviewed_at ? new Date(verification.reviewed_at).toLocaleString('en-NG') : undefined} />
+              <InfoRow
+                label="Submitted"
+                value={new Date(verification.submitted_at).toLocaleString('en-NG')}
+              />
+              <InfoRow
+                label="Reviewed at"
+                value={
+                  verification.reviewed_at
+                    ? new Date(verification.reviewed_at).toLocaleString('en-NG')
+                    : undefined
+                }
+              />
               <InfoRow label="Admin notes" value={verification.admin_notes} />
 
               {/* NIN fields */}
@@ -251,7 +286,9 @@ export default function AdminVerificationDetailPage({
                     variant="outline"
                     colorPalette="primary"
                     w="full"
-                    onClick={() => setDocPreview({ url: signedUrls.front_url!, label: 'Front Document' })}
+                    onClick={() =>
+                      setDocPreview({ url: signedUrls.front_url!, label: 'Front Document' })
+                    }
                   >
                     View Front Document
                   </Button>
@@ -262,7 +299,9 @@ export default function AdminVerificationDetailPage({
                     variant="outline"
                     colorPalette="primary"
                     w="full"
-                    onClick={() => setDocPreview({ url: signedUrls.back_url!, label: 'Back Document' })}
+                    onClick={() =>
+                      setDocPreview({ url: signedUrls.back_url!, label: 'Back Document' })
+                    }
                   >
                     View Back Document
                   </Button>
@@ -281,7 +320,7 @@ export default function AdminVerificationDetailPage({
               </Stack>
             ) : (
               <Text textStyle="xs" color="fg.subtle">
-                Click "Load Signed URLs" to view the documents securely.
+                {`Click "Load Signed URLs" to view the documents securely.`}
               </Text>
             )}
           </Box>
@@ -313,7 +352,9 @@ export default function AdminVerificationDetailPage({
                   {(verification.vendor.first_name || verification.vendor.last_name) && (
                     <InfoRow
                       label="Full Name"
-                      value={[verification.vendor.first_name, verification.vendor.last_name].filter(Boolean).join(' ')}
+                      value={[verification.vendor.first_name, verification.vendor.last_name]
+                        .filter(Boolean)
+                        .join(' ')}
                     />
                   )}
                   <InfoRow label="Email" value={verification.vendor.user.email} />
@@ -330,12 +371,16 @@ export default function AdminVerificationDetailPage({
                         verification.vendor.city,
                         verification.vendor.state,
                         verification.vendor.country,
-                      ].filter(Boolean).join(', ')}
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
                     />
                   )}
                   {/* Account status */}
                   <Flex gap={3}>
-                    <Text textStyle="sm" color="fg.muted" w="40" flexShrink={0}>Account</Text>
+                    <Text textStyle="sm" color="fg.muted" w="40" flexShrink={0}>
+                      Account
+                    </Text>
                     <Box
                       px={2}
                       py={0.5}
@@ -343,7 +388,11 @@ export default function AdminVerificationDetailPage({
                       bg={verification.vendor.user.is_active ? 'success.subtle' : 'red.subtle'}
                       display="inline-flex"
                     >
-                      <Text textStyle="2xs" fontWeight="semibold" color={verification.vendor.user.is_active ? 'success.fg' : 'red.600'}>
+                      <Text
+                        textStyle="2xs"
+                        fontWeight="semibold"
+                        color={verification.vendor.user.is_active ? 'success.fg' : 'red.600'}
+                      >
                         {verification.vendor.user.is_active ? 'Active' : 'Banned'}
                       </Text>
                     </Box>
@@ -465,10 +514,16 @@ export default function AdminVerificationDetailPage({
                 title={docPreview.label}
               />
             ) : (
-              <img
+              <Image
                 src={docPreview.url}
                 alt={docPreview.label}
+                width={0}
+                height={0}
+                sizes="80vw"
+                unoptimized
                 style={{
+                  width: 'auto',
+                  height: 'auto',
                   maxWidth: '80vw',
                   maxHeight: '80vh',
                   objectFit: 'contain',

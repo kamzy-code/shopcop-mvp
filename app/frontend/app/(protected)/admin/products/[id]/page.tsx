@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { use } from 'react';
 import { Alert, Box, Button, Flex, Heading, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LuArrowLeft, LuChevronLeft, LuChevronRight, LuPackage } from 'react-icons/lu';
 import {
   useAdminProduct,
@@ -47,10 +48,13 @@ function MediaGallery({ media, name }: { media: ProductMedia[]; name: string }) 
             style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }}
           />
         ) : (
-          <img
+          <Image
             src={current.media_url}
             alt={`${name} — image ${activeIndex + 1}`}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            fill
+            sizes="360px"
+            style={{ objectFit: 'contain' }}
+            unoptimized
           />
         )}
         {media.length > 1 && (
@@ -80,6 +84,7 @@ function MediaGallery({ media, name }: { media: ProductMedia[]; name: string }) 
           {media.map((item, i) => (
             <Box
               key={item.id}
+              position="relative"
               flexShrink={0}
               w="56px"
               h="56px"
@@ -95,7 +100,7 @@ function MediaGallery({ media, name }: { media: ProductMedia[]; name: string }) 
               {item.media_type === 'VIDEO' ? (
                 <video src={item.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               ) : (
-                <img src={item.media_url} alt={`Thumbnail ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <Image src={item.media_url} alt={`Thumbnail ${i + 1}`} fill sizes="56px" style={{ objectFit: 'cover' }} unoptimized />
               )}
             </Box>
           ))}

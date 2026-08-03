@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Box, Flex, Text } from '@chakra-ui/react';
+import Image from 'next/image';
 import { LuChevronLeft, LuChevronRight, LuX } from 'react-icons/lu';
 import type { ReviewMedia } from '@/app/_types';
 
@@ -123,10 +124,16 @@ export function ReviewMediaViewer({ media, initialIndex = 0, onClose }: ReviewMe
             }}
           />
         ) : (
-          <img
+          <Image
             src={item.media_url}
             alt="Review media"
+            width={0}
+            height={0}
+            sizes="90vw"
+            unoptimized
             style={{
+              width: 'auto',
+              height: 'auto',
               maxWidth: '90vw',
               maxHeight: '85vh',
               borderRadius: '12px',

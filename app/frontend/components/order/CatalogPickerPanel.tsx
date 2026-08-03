@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Box, Button, Flex, Heading, Input, Stack, Text } from '@chakra-ui/react';
+import Image from 'next/image';
 import { LuPackage, LuX } from 'react-icons/lu';
 import { Product } from '@/app/_types';
 import { formatCurrency } from '@/app/_lib/orderHelpers';
@@ -90,6 +91,7 @@ export function CatalogPickerPanel({
                     bg="bg.subtle"
                     overflow="hidden"
                     flexShrink={0}
+                    position="relative"
                   >
                     {!p.media?.[0] ? (
                       <Flex h="full" align="center" justify="center" color="fg.subtle">
@@ -103,11 +105,7 @@ export function CatalogPickerPanel({
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
                     ) : (
-                      <img
-                        src={p.media[0].media_url}
-                        alt={p.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <Image src={p.media[0].media_url} alt={p.name} fill sizes="40px" style={{ objectFit: 'cover' }} unoptimized />
                     )}
                   </Box>
                   <Box flex={1} overflow="hidden">

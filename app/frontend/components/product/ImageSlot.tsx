@@ -1,14 +1,18 @@
 'use client';
-import { Box, Button, Flex, Spinner, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Text } from '@chakra-ui/react';
 import { LuImage, LuX } from 'react-icons/lu';
+import Image from 'next/image';
 import { UploadResult } from '@/app/_hooks/upload';
 import { toaster } from '@/components/ui/toaster';
+import { PUBLIC_UPLOAD_MAX_BYTES, PUBLIC_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
+import { UploadProgressCircle } from '@/components/shared/UploadProgressCircle';
 
 interface ImageSlotProps {
   index: number;
   file: UploadResult | null;
   localUrl?: string;
   isUploading?: boolean;
+  uploadProgress?: number;
   onAdd: (index: number, file: File) => void;
   onRemove: (index: number) => void;
   isPrimary: boolean;
@@ -20,6 +24,7 @@ export function ImageSlot({
   file,
   localUrl,
   isUploading,
+  uploadProgress = 0,
   onAdd,
   onRemove,
   isPrimary,
@@ -36,8 +41,17 @@ export function ImageSlot({
     input.onchange = (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
       if (!f) return;
-      if (f.size > 10 * 1024 * 1024) {
-        toaster.create({ title: 'File must be under 10MB', type: 'error' });
+
+      const acceptedTypes = accept.split(',').map((t) => t.trim());
+      const isAccepted = acceptedTypes.some(
+        (t) => f.type === t || (t.endsWith('/*') && f.type.startsWith(t.replace('/*', '')))
+      );
+      if (!isAccepted) {
+        toaster.create({ title: 'Unsupported file type', type: 'error' });
+        return;
+      }
+      if (f.size > PUBLIC_UPLOAD_MAX_BYTES) {
+        toaster.create({ title: `File must be under ${PUBLIC_UPLOAD_MAX_MB}MB`, type: 'error' });
         return;
       }
       onAdd(index, f);
@@ -72,10 +86,13 @@ export function ImageSlot({
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
           ) : (
-            <img
+            <Image
               src={preview}
               alt={`Product image ${index + 1}`}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              fill
+              sizes="200px"
+              style={{ objectFit: 'cover' }}
+              unoptimized
             />
           )}
           {isPrimary && (
@@ -119,7 +136,7 @@ export function ImageSlot({
           borderRadius="xl"
           zIndex={1}
         >
-          <Spinner size="lg" color="white" />
+          <UploadProgressCircle value={uploadProgress} />
         </Box>
       )}
     </Box>

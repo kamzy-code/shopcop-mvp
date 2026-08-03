@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Flex, Input, Stack, Text } from '@chakra-ui/react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LuCheck, LuCopy, LuPackage, LuStore } from 'react-icons/lu';
 import { useOrderByToken, useSubmitPaymentProof } from '@/app/_hooks/order';
 import { useUploadPublicMedia } from '@/app/_hooks/upload';
@@ -11,6 +12,8 @@ import { Order, OrderVendor } from '@/app/_types';
 import { toaster } from '@/components/ui/toaster';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ApiError } from '@/app/_lib/fetchWrapper';
+import { getUploadErrorMessage } from '@/app/_lib/uploadErrors';
+import { PUBLIC_UPLOAD_MAX_MB } from '@/app/_lib/uploadLimits';
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 
@@ -98,10 +101,10 @@ export default function CheckoutPage() {
     try {
       const result = await uploadMutation.mutateAsync({ file: receiptFile, setUploadProgress });
       payment_proof_url = result.url;
-    } catch {
+    } catch (error) {
       toaster.create({
         title: 'Upload failed',
-        description: 'Could not upload your receipt. Please try again.',
+        description: getUploadErrorMessage(error),
         type: 'error',
       });
       return;
@@ -264,6 +267,7 @@ export default function CheckoutPage() {
                     bg="bg.subtle"
                     overflow="hidden"
                     flexShrink={0}
+                    position="relative"
                   >
                     {item.item_image_url ? (
                       isVideoUrl(item.item_image_url) ? (
@@ -274,10 +278,13 @@ export default function CheckoutPage() {
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       ) : (
-                        <img
+                        <Image
                           src={item.item_image_url}
                           alt={item.item_name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          fill
+                          sizes="32px"
+                          style={{ objectFit: 'cover' }}
+                          unoptimized
                         />
                       )
                     ) : (
@@ -346,16 +353,13 @@ export default function CheckoutPage() {
             </Text>
             <FileUpload
               accept="image/*"
-              maxSizeMB={5}
+              maxSizeMB={PUBLIC_UPLOAD_MAX_MB}
               onFileSelect={setReceiptFile}
               label="Upload receipt screenshot"
-              hint="PNG, JPG or WEBP · max 5MB"
+              hint={`PNG, JPG or WEBP · max ${PUBLIC_UPLOAD_MAX_MB}MB`}
+              isUploading={uploadMutation.isPending}
+              uploadProgress={uploadProgress}
             />
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <Text textStyle="xs" color="fg.muted" mt={2}>
-                Uploading… {uploadProgress}%
-              </Text>
-            )}
           </Box>
 
           {/* Email */}
