@@ -14,6 +14,7 @@ interface EnvConfig {
   NODE_ENV: string;
   PORT: number;
   DATABASE_URL: string;
+  SHADOW_DATABASE_URL?: string;
   FRONTEND_URL: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
@@ -58,6 +59,7 @@ export const env: EnvConfig = {
   PORT: parseInt(getEnv('PORT', '5001')),
   
   DATABASE_URL: getEnv('DATABASE_URL'),
+  SHADOW_DATABASE_URL: getEnv('SHADOW_DATABASE_URL'),
   FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:3000'),
   REDIS_HOST: getEnv('REDIS_HOST', 'localhost'),
   REDIS_PORT: parseInt(getEnv('REDIS_PORT', '6379')),
