@@ -15,6 +15,7 @@ coverage/
 *.agent.md
 plan/
 requirements.md
+requirements-msp.md
 
 # Frontend ignores
 app/frontend/node_modules/
