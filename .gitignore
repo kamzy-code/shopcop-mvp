@@ -41,7 +41,6 @@ app/backend/dist/
 app/backend/.env
 app/backend/.env.local
 app/backend/*.local
-app/backend/prisma/migrations/
 app/backend/generated/prisma/
 app/backend/.prisma/
 app/backend/src/generated/prisma/
