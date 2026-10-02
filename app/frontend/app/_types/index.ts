@@ -282,6 +282,7 @@ export interface AdminUserDetail extends User {
     avg_delivery_rating: number;
     avg_response_rating: number;
     customer_satisfaction_rating: number;
+    customer_satisfaction_rate: number;
   } | null;
 }
 
@@ -715,6 +716,7 @@ export interface TrustMetrics {
   avg_delivery_rating: number;
   avg_response_rating: number;
   customer_satisfaction_rating: number;
+  customer_satisfaction_rate: number;
 }
 
 export interface CreateReviewInput {

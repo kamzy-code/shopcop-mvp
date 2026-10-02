@@ -321,6 +321,7 @@ model VendorProfile {
 
   // ========== CALCULATED METRICS ==========
   // Performance (system-calculated from order data)
+  // on_time_delivery_rate is blended: 60% objective (delivered_at <= expected_delivery_end) + 40% avg_delivery_rating
   total_orders        Int   @default(0)
   successful_orders   Int   @default(0)
   fulfillment_rate          Float @default(0)
@@ -334,6 +335,7 @@ model VendorProfile {
   avg_delivery_rating          Float @default(0)
   avg_response_rating          Float @default(0)
   customer_satisfaction_rating Float @default(0)
+  customer_satisfaction_rate   Float @default(0) // blended: 60% (100 - refund_rate) + 40% customer_satisfaction_rating
 
   // Status
   profile_status String @default("active") // active, inactive, suspended

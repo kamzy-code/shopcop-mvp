@@ -127,6 +127,7 @@ function ReviewsTab({ vp }: { vp: VendorProfile }) {
       <InfoRow label="Avg Delivery Rating" value={`${(vp.avg_delivery_rating ?? 0).toFixed(1)} / 5`} />
       <InfoRow label="Avg Response Rating" value={`${(vp.avg_response_rating ?? 0).toFixed(1)} / 5`} />
       <InfoRow label="Customer Satisfaction" value={`${(vp.customer_satisfaction_rating ?? 0).toFixed(1)} / 5`} />
+      <InfoRow label="Customer Satisfaction Rate" value={`${vp.customer_satisfaction_rate ?? 0}%`} />
     </Stack>
   );
 }

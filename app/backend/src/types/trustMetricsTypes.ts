@@ -17,6 +17,7 @@ export interface FeedbackMetrics {
   avg_delivery_rating: number;
   avg_response_rating: number;
   customer_satisfaction_rating: number;
+  customer_satisfaction_rate: number;
 }
 
 /** Combined trust metrics returned by the API — includes both performance and feedback groups. */

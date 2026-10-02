@@ -4,6 +4,20 @@ import { AppError } from '@middleware/errorHandler.js';
 import { ModerationStatus, RefundStatus, OrderStatus } from '../generated/prisma/enums.js';
 import type { TrustMetrics } from '../types/trustMetricsTypes.js';
 
+const OBJECTIVE_WEIGHT = 0.6;
+const SUBJECTIVE_WEIGHT = 0.4;
+
+/**
+ * Blends a 0-100 objective rate with a 0-5 subjective review average (normalized to 0-100).
+ * Falls back to 100% objective weight when there's no subjective data yet, so vendors with
+ * no reviews aren't penalized for missing (rather than bad) feedback.
+ */
+function blendObjectiveAndSubjective(objectivePercent: number, subjectiveOutOfFive: number): number {
+  if (subjectiveOutOfFive <= 0) return Math.round(objectivePercent * 100) / 100;
+  const subjectivePercent = (subjectiveOutOfFive / 5) * 100;
+  return Math.round((OBJECTIVE_WEIGHT * objectivePercent + SUBJECTIVE_WEIGHT * subjectivePercent) * 100) / 100;
+}
+
 export class TrustMetricsService {
   static async recalculateVendorTrustMetrics(vendorId: string): Promise<void> {
     try {
@@ -77,11 +91,13 @@ export class TrustMetricsService {
           ? Math.round((refundedCount / completedCount) * 10000) / 100
           : 0;
 
+      const objectiveSatisfactionRate = completedCount > 0 ? Math.max(0, 100 - refundRate) : 0;
+
       const onTimeCount = completedOrders.filter(
         (t) =>
           t.delivered_at && t.expected_delivery_end && t.delivered_at <= t.expected_delivery_end
       ).length;
-      const onTimeDeliveryRate =
+      const objectiveOnTimeDeliveryRate =
         completedCount > 0 ? Math.round((onTimeCount / completedCount) * 10000) / 100 : 0;
 
       let avgResponseTimeMinutes = 0;
@@ -134,6 +150,12 @@ export class TrustMetricsService {
       const avgResponseRating = round2(responseAgg._avg.response_rating);
       const customerSatisfactionRating = round2(satisfactionAgg._avg.satisfaction_rating);
 
+      const blendedOnTimeDeliveryRate = blendObjectiveAndSubjective(objectiveOnTimeDeliveryRate, avgDeliveryRating);
+      const customerSatisfactionRate = blendObjectiveAndSubjective(
+        objectiveSatisfactionRate,
+        customerSatisfactionRating
+      );
+
       // average_rating = composite of sub-rating averages (excludes zeros so optional
       // ratings don't pull the score toward 0 when buyers skip them)
       const subRatingVals = [avgDeliveryRating, avgResponseRating, customerSatisfactionRating].filter(
@@ -154,7 +176,7 @@ export class TrustMetricsService {
           successful_orders: completedCount,
           fulfillment_rate: fulfillmentRate,
           refund_rate: refundRate,
-          on_time_delivery_rate: onTimeDeliveryRate,
+          on_time_delivery_rate: blendedOnTimeDeliveryRate,
           avg_response_time_minutes: avgResponseTimeMinutes,
           last_order_at: lastOrder?.updated_at ?? null,
           // Feedback
@@ -163,6 +185,7 @@ export class TrustMetricsService {
           avg_delivery_rating: avgDeliveryRating,
           avg_response_rating: avgResponseRating,
           customer_satisfaction_rating: customerSatisfactionRating,
+          customer_satisfaction_rate: customerSatisfactionRate,
         },
       });
 
@@ -172,13 +195,15 @@ export class TrustMetricsService {
         completedCount,
         fulfillmentRate,
         refundRate,
-        onTimeDeliveryRate,
+        onTimeDeliveryRate: objectiveOnTimeDeliveryRate,
+        blendedOnTimeDeliveryRate,
         avgResponseTimeMinutes,
         reviewCount,
         averageRating,
         avgDeliveryRating,
         avgResponseRating,
         customerSatisfactionRating,
+        customerSatisfactionRate,
       });
     } catch (error) {
       trustMetricsLogger.error('Failed to recalculate vendor trust metrics', { vendorId, error });
@@ -201,6 +226,7 @@ export class TrustMetricsService {
         avg_delivery_rating: true,
         avg_response_rating: true,
         customer_satisfaction_rating: true,
+        customer_satisfaction_rate: true,
       },
     });
 

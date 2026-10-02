@@ -54,7 +54,7 @@ export function TrustIndicators({ metrics }: TrustIndicatorsProps) {
         <SimpleGrid columns={3} divideX="1px">
           <CircleRing value={metrics.fulfillment_rate} label="Order Fulfilment Rate" />
           <CircleRing value={metrics.on_time_delivery_rate} label="On-Time Delivery Rate" />
-          <CircleRing value={Math.max(0, 100 - metrics.refund_rate)} label="Customer Satisfaction Rate" />
+          <CircleRing value={metrics.customer_satisfaction_rate} label="Customer Satisfaction Rate" />
         </SimpleGrid>
       </Box>
     </Box>

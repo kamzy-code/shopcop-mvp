@@ -169,6 +169,7 @@ export class AdminUserService {
             avg_delivery_rating: true,
             avg_response_rating: true,
             customer_satisfaction_rating: true,
+            customer_satisfaction_rate: true,
           },
         },
       },
