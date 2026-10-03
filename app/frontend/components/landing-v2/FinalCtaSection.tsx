@@ -1,8 +1,8 @@
 'use client';
 import { Box, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { Reveal } from '@/components/landing/Reveal';
+import { CtaLink } from '@/components/landing-v2/CtaLink';
 
 interface FinalCtaSectionProps {
   ctaLabel: string;
@@ -33,7 +33,7 @@ export function FinalCtaSection({ ctaLabel, ctaHref }: FinalCtaSectionProps) {
           </Text>
 
           <m.div style={{ display: 'inline-block' }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Link href={ctaHref} style={{ textDecoration: 'none' }}>
+            <CtaLink href={ctaHref} style={{ textDecoration: 'none' }}>
               <Box
                 as="span"
                 display="inline-block"
@@ -50,7 +50,7 @@ export function FinalCtaSection({ ctaLabel, ctaHref }: FinalCtaSectionProps) {
               >
                 {ctaLabel}
               </Box>
-            </Link>
+            </CtaLink>
           </m.div>
 
           <Text textStyle="xs" color="navy.200" mt={4}>

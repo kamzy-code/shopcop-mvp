@@ -269,11 +269,11 @@ model VendorProfile {
   // ========== STEP 2: BUSINESS INFORMATION ==========
 
   // Basic Details
-  business_name        String?
-  business_description String? @db.Text
-  slug                 String? @unique
-  profile_photo_url         String?
-  profile_photo_public_id   String?
+  business_name           String?
+  business_description    String? @db.Text
+  slug                    String? @unique
+  profile_photo_url       String?
+  profile_photo_public_id String?
 
   // Location
   country        String  @default("Nigeria")
@@ -322,8 +322,8 @@ model VendorProfile {
   // ========== CALCULATED METRICS ==========
   // Performance (system-calculated from order data)
   // on_time_delivery_rate is blended: 60% objective (delivered_at <= expected_delivery_end) + 40% avg_delivery_rating
-  total_orders        Int   @default(0)
-  successful_orders   Int   @default(0)
+  total_orders              Int   @default(0)
+  successful_orders         Int   @default(0)
   fulfillment_rate          Float @default(0)
   refund_rate               Float @default(0)
   on_time_delivery_rate     Float @default(0)
@@ -341,14 +341,14 @@ model VendorProfile {
   profile_status String @default("active") // active, inactive, suspended
 
   // Timestamps
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
   last_order_at DateTime?
 
   // Relations
   verifications VendorVerification[]
   products      Product[]
-  orders  Order[]
+  orders        Order[]
   reviews       Review[]
   posts         VendorPost[]
 
@@ -591,11 +591,11 @@ model Order {
   currency        String   @default("NGN")
 
   // Payment
-  payment_status            PaymentStatus @default(UNPAID)
-  payment_proof_url         String?
+  payment_status             PaymentStatus @default(UNPAID)
+  payment_proof_url          String?
   payment_proof_submitted_at DateTime?
-  payment_confirmed_at      DateTime?
-  payment_notes             String?
+  payment_confirmed_at       DateTime?
+  payment_notes              String?
 
   // Status
   status OrderStatus @default(PENDING)
@@ -648,9 +648,9 @@ model Order {
 }
 
 model OrderItem {
-  id             String      @id @default(cuid())
+  id       String @id @default(cuid())
   order_id String
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   // Product reference (optional — null for manual items)
   product_id String?
@@ -662,7 +662,7 @@ model OrderItem {
   quantity       Int     @default(1)
   subtotal       Decimal @db.Decimal(10, 2)
   item_image_url String?
-  description    String?  @map("variant")
+  description    String? @map("variant")
 
   // Stock audit trail
   stock_deducted Int @default(0)
@@ -674,9 +674,9 @@ model OrderItem {
 }
 
 model OrderStatusHistory {
-  id             String      @id @default(cuid())
+  id       String @id @default(cuid())
   order_id String
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   from_status OrderStatus?
   to_status   OrderStatus
@@ -697,8 +697,8 @@ model Review {
   id String @id @default(cuid())
 
   // Transaction
-  order_id String      @unique
-  order    Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order_id String @unique
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   // Vendor
   vendor_id String
@@ -710,11 +710,11 @@ model Review {
   buyer_name String?
 
   // Review Content
-  overall_rating     Int // 1-5 stars
-  delivery_rating    Int?
-  response_rating    Int?
+  overall_rating      Int // 1-5 stars
+  delivery_rating     Int?
+  response_rating     Int?
   satisfaction_rating Int?
-  review_text        String? @db.Text
+  review_text         String? @db.Text
 
   // Media
   media ReviewMedia[]
@@ -755,28 +755,60 @@ model ReviewMedia {
 // ============================================
 
 model Notification {
-  id          String   @id @default(cuid())
-  user_id     String
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  type        String
-  title       String
-  message     String
+  type    String
+  title   String
+  message String
 
-  entity_type String?  // "ORDER" | "VERIFICATION" | "PRODUCT"
+  entity_type String? // "ORDER" | "VERIFICATION" | "PRODUCT"
   entity_id   String?
 
   action_label String?
   action_url   String?
 
-  read        Boolean   @default(false)
-  read_at     DateTime?
+  read    Boolean   @default(false)
+  read_at DateTime?
 
-  created_at  DateTime  @default(now())
+  created_at DateTime @default(now())
 
   @@index([user_id, read])
   @@index([user_id, created_at])
   @@map("notifications")
+}
+
+// ============================================
+// WAITLIST
+// ============================================
+
+enum WaitlistUserType {
+  BUY
+  SELL
+  BOTH
+}
+
+model WaitlistEntry {
+  id        String           @id @default(cuid())
+  email     String           @unique
+  phone     String
+  user_type WaitlistUserType
+
+  // Free-text answer to "what do you buy or sell?"
+  trade_details String @db.Text
+
+  // Opt-in for a 20 minute research chat. When true, the UI promises a
+  // follow-up within 2 days, so this flag drives real outreach work.
+  open_to_chat Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_type])
+  @@index([open_to_chat])
+  @@index([created_at])
+  @@map("waitlist_entries")
 }
 
 // ============================================

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { LuMenu, LuX } from 'react-icons/lu';
 import { ColorModeButton, useColorModeValue } from '@/components/ui/color-mode';
+import { CtaLink } from '@/components/landing-v2/CtaLink';
 
 interface LandingNavbarV2Props {
   ctaLabel: string;
@@ -73,19 +74,12 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
         </Flex>
 
         <Flex align="center" gap={3} display={{ base: 'none', md: 'flex' }}>
-          {
-            <Link href="/auth/login" style={{ textDecoration: 'none' }}>
-              <Button variant="ghost" size="sm" color="fg.muted">
-                Sign In
-              </Button>
-            </Link>
-          }
           <m.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Link href={ctaHref} style={{ textDecoration: 'none' }}>
+            <CtaLink href={ctaHref} style={{ textDecoration: 'none' }}>
               <Button size="sm" colorPalette="primary" borderRadius="full">
                 {ctaLabel}
               </Button>
-            </Link>
+            </CtaLink>
           </m.div>
           <ColorModeButton />
         </Flex>
@@ -160,26 +154,15 @@ export function LandingNavbarV2({ ctaLabel, ctaHref }: LandingNavbarV2Props) {
                 </Link>
               ))}
               <Box pt={4} borderTopWidth="1px" borderColor="border">
-                {
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setMobileOpen(false)}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <Button variant="ghost" size="sm" w="full" mb={2}>
-                      Sign In
-                    </Button>
-                  </Link>
-                }
-                <Link
+                <CtaLink
                   href={ctaHref}
-                  onClick={() => setMobileOpen(false)}
+                  onNavigate={() => setMobileOpen(false)}
                   style={{ textDecoration: 'none' }}
                 >
                   <Button size="sm" colorPalette="primary" w="full" borderRadius="full">
                     {ctaLabel}
                   </Button>
-                </Link>
+                </CtaLink>
               </Box>
             </Stack>
           </Box>

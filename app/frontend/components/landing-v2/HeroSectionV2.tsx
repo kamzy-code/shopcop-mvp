@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { LuArrowRight, LuBadgeCheck, LuSparkle } from 'react-icons/lu';
 import { GradientBlob } from '@/components/landing/GradientBlob';
 import { Reveal } from '@/components/landing/Reveal';
+import { CtaLink } from '@/components/landing-v2/CtaLink';
 
 interface HeroSectionV2Props {
   ctaLabel: string;
@@ -117,7 +118,7 @@ export function HeroSectionV2({ ctaLabel, ctaHref }: HeroSectionV2Props) {
             align={{ base: 'stretch', sm: 'center' }}
           >
             <m.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link href={ctaHref} style={{ textDecoration: 'none' }}>
+              <CtaLink href={ctaHref} style={{ textDecoration: 'none' }}>
                 <Flex
                   as="span"
                   align="center"
@@ -136,7 +137,7 @@ export function HeroSectionV2({ ctaLabel, ctaHref }: HeroSectionV2Props) {
                 >
                   {ctaLabel}
                 </Flex>
-              </Link>
+              </CtaLink>
             </m.div>
             <Link href="#process" style={{ textDecoration: 'none' }}>
               <Flex

@@ -242,5 +242,16 @@ const notificationLogger = createLogger({
   defaultMeta: { service: 'notificationService', timeStamp: new Date().toISOString() },
 });
 
+/** Winston logger scoped to public waitlist signups. */
+const waitlistLogger = createLogger({
+  level: 'info',
+  format: combine(timestamp(), errors({ stack: true }), splat(), json(), prettyPrint()),
+  transports: [
+    ...(env.NODE_ENV === 'production' ? [] : []),
+    new transports.Console(),
+  ],
+  defaultMeta: { service: 'waitlistService', timeStamp: new Date().toISOString() },
+});
+
 export default logger;
-export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, orderLogger, trustMetricsLogger, reviewLogger, publicProfileLogger, notificationLogger };
+export { emailLogger, authLogger, userLogger, fileUplaodLogger, vendorLogger, adminLogger, categoryLogger, productLogger, orderLogger, trustMetricsLogger, reviewLogger, publicProfileLogger, notificationLogger, waitlistLogger };

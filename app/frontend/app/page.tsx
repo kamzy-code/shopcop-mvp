@@ -1,8 +1,4 @@
 'use client';
-import LandingPageV2 from '@/components/landing-v2/LandingPageV2';
-
-import { useAuthStore } from '@/app/_store/authStore';
-import { getRoleHomePage } from '@/app/_lib/roleRedirect';
 import { LandingNavbarV2 } from '../components/landing-v2/LandingNavbarV2';
 import { HeroSectionV2 } from '../components/landing-v2/HeroSectionV2';
 import { ProblemStatSection } from '../components/landing-v2/ProblemStatSection';
@@ -13,6 +9,7 @@ import { TestimonialsSection } from '../components/landing-v2/TestimonialsSectio
 import { FAQSectionV2 } from '../components/landing-v2/FAQSectionV2';
 import { FinalCtaSection } from '../components/landing-v2/FinalCtaSection';
 import { FooterSectionV2 } from '../components/landing-v2/FooterSectionV2';
+import { WaitlistSection } from '../components/landing-v2/WaitlistSection';
 import { Suspense } from 'react';
 
 const jsonLd = {
@@ -31,10 +28,8 @@ const jsonLd = {
 };
 
 export default function RootPage() {
-  const user = useAuthStore((s) => s.user);
-
-  const ctaLabel =  'Join Beta (Free)';
-  const ctaHref =  '/auth/signup';
+  const ctaLabel =  'Join Waitlist';
+  const ctaHref =  '#waitlist';
 
   return (
     <>
@@ -52,6 +47,7 @@ export default function RootPage() {
         <TestimonialsSection />
         <FAQSectionV2 />
         <FinalCtaSection ctaLabel={ctaLabel} ctaHref={ctaHref} />
+        <WaitlistSection />
         <FooterSectionV2 />
       </Suspense>
     </>

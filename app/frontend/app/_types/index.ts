@@ -825,3 +825,18 @@ export interface ProfileCompletenessBreakdown {
     business_verification: ProfileCompletenessSection;
   };
 }
+
+/** Mirrors the WaitlistUserType Prisma enum. */
+export type WaitlistUserType = 'BUY' | 'SELL' | 'BOTH';
+
+export interface JoinWaitlistInput {
+  email: string;
+  phone: string;
+  user_type: WaitlistUserType;
+  trade_details: string;
+  open_to_chat: boolean;
+}
+
+export interface JoinWaitlistResponse {
+  open_to_chat: boolean;
+}
