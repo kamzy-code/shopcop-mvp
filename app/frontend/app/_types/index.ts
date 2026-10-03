@@ -840,3 +840,4 @@ export interface JoinWaitlistInput {
 export interface JoinWaitlistResponse {
   open_to_chat: boolean;
 }
+export type { WaitlistStatus, WaitlistEntry, WaitlistListResponse, UpdateWaitlistStatusInput } from './waitlist';

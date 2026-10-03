@@ -789,6 +789,13 @@ enum WaitlistUserType {
   BOTH
 }
 
+enum WaitlistStatus {
+  PENDING
+  CONTACTED
+  CONVERTED
+  IGNORED
+}
+
 model WaitlistEntry {
   id        String           @id @default(cuid())
   email     String           @unique
@@ -802,11 +809,19 @@ model WaitlistEntry {
   // follow-up within 2 days, so this flag drives real outreach work.
   open_to_chat Boolean @default(false)
 
+  // Admin follow-up tracking
+  status       WaitlistStatus @default(PENDING)
+  contacted_at DateTime?
+  contacted_by String? // admin user id
+  notes        String?        @db.Text
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@index([user_type])
   @@index([open_to_chat])
+  @@index([status])
+  @@index([contacted_at])
   @@index([created_at])
   @@map("waitlist_entries")
 }
