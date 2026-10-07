@@ -140,7 +140,7 @@ export default function AdminWaitlistPage() {
   const [page, setPage] = useState(1);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const filters: Record<string, unknown> = { page, limit: 20 };
+  const filters: import('@/app/_hooks/admin-waitlist').AdminWaitlistFilters = { page, limit: 20 };
   if (status) filters.status = status;
   if (userType) filters.user_type = userType;
   if (openToChat === 'true') filters.open_to_chat = true;

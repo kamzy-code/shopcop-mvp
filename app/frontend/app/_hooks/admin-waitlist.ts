@@ -28,8 +28,9 @@ export const useAdminWaitlist = (filters: AdminWaitlistFilters = {}) => {
   return useQuery<WaitlistListResponse>({
     queryKey: ['admin-waitlist', filters],
     queryFn: async () => {
-      const res = await apiFetch<WaitlistListResponse>(`/admin/waitlist${qs}`);
-      return res.data;
+      const res = await apiFetch<WaitlistListResponse['entries']>(`/admin/waitlist${qs}`);
+      const raw = res as unknown as { data: WaitlistListResponse['entries']; pagination: WaitlistListResponse['pagination'] };
+      return { entries: raw.data, pagination: raw.pagination };
     },
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
