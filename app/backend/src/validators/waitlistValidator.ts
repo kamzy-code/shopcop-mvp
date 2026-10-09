@@ -22,9 +22,9 @@ export const joinWaitlistSchema = z.object({
     .regex(/^(\+234|0)[789]\d{9}$/, 'Enter a valid Nigerian WhatsApp number, e.g. 0803 123 4567')
     .transform(normalizePhone),
 
-  /** Whether the visitor mostly buys, mostly sells, or does both. */
-  user_type: z.enum(['BUY', 'SELL', 'BOTH'], {
-    message: 'Select whether you mostly buy, sell, or both',
+  /** Whether the visitor buys or sells. */
+  user_type: z.enum(['BUY', 'SELL'], {
+    message: 'Select whether you buy or sell',
   }),
 
   /** Short free-text answer to "what do you buy or sell?". */
@@ -33,6 +33,12 @@ export const joinWaitlistSchema = z.object({
     .trim()
     .min(3, 'Tell us briefly what you buy or sell')
     .max(500, 'Please keep this under 500 characters'),
+
+  /** Multi-select answer to the challenges question. */
+  challenges: z
+    .array(z.string().trim().min(1).max(200))
+    .max(10, 'Please select at most 10 challenges')
+    .default([]),
 
   /** Opt-in for a 20 minute research chat. */
   open_to_chat: z.boolean().default(false),

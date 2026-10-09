@@ -28,9 +28,8 @@ const STATUS_OPTIONS = [
 
 const USER_TYPE_OPTIONS = [
   { value: '', label: 'All types' },
-  { value: 'BUY', label: 'Buy' },
-  { value: 'SELL', label: 'Sell' },
-  { value: 'BOTH', label: 'Both' },
+  { value: 'BUY', label: 'Buyers' },
+  { value: 'SELL', label: 'Sellers' },
 ];
 
 const CHAT_OPTIONS = [
@@ -102,6 +101,16 @@ function EntryCard({ entry, updatingId, onStatusChange }: EntryCardProps) {
 
         {entry.trade_details && (
           <Text textStyle="xs" color="fg.muted" lineClamp={2}>{entry.trade_details}</Text>
+        )}
+
+        {entry.challenges?.length > 0 && (
+          <Flex gap={1} flexWrap="wrap">
+            {entry.challenges.map((c) => (
+              <Box key={c} px={2} py={0.5} borderRadius="full" bg="bg.subtle" borderWidth="1px" borderColor="border">
+                <Text textStyle="2xs" color="fg.muted">{c}</Text>
+              </Box>
+            ))}
+          </Flex>
         )}
 
         <Flex justify="space-between" align="center" gap={2}>
@@ -237,6 +246,7 @@ export default function AdminWaitlistPage() {
                       <Table.ColumnHeader>Phone</Table.ColumnHeader>
                       <Table.ColumnHeader>Type</Table.ColumnHeader>
                       <Table.ColumnHeader>Trade Details</Table.ColumnHeader>
+                      <Table.ColumnHeader>Challenges</Table.ColumnHeader>
                       <Table.ColumnHeader>Chat</Table.ColumnHeader>
                       <Table.ColumnHeader>Status</Table.ColumnHeader>
                       <Table.ColumnHeader>Contacted</Table.ColumnHeader>
@@ -250,8 +260,13 @@ export default function AdminWaitlistPage() {
                         <Table.Cell>{entry.email}</Table.Cell>
                         <Table.Cell>{entry.phone ?? '-'}</Table.Cell>
                         <Table.Cell>{entry.user_type}</Table.Cell>
-                        <Table.Cell maxW="240px">
+                        <Table.Cell maxW="200px">
                           <Text truncate>{entry.trade_details}</Text>
+                        </Table.Cell>
+                        <Table.Cell maxW="200px">
+                          <Text truncate color="fg.muted">
+                            {entry.challenges?.length > 0 ? entry.challenges.join(', ') : '-'}
+                          </Text>
                         </Table.Cell>
                         <Table.Cell>{entry.open_to_chat ? 'Yes' : 'No'}</Table.Cell>
                         <Table.Cell>

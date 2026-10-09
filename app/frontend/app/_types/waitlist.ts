@@ -1,4 +1,4 @@
-export type WaitlistUserType = 'BUY' | 'SELL' | 'BOTH';
+export type WaitlistUserType = 'BUY' | 'SELL';
 export type WaitlistStatus = 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'IGNORED';
 
 export interface WaitlistEntry {
@@ -7,6 +7,7 @@ export interface WaitlistEntry {
   phone: string;
   user_type: WaitlistUserType;
   trade_details: string;
+  challenges: string[];
   open_to_chat: boolean;
   status: WaitlistStatus;
   contacted_at: string | null;

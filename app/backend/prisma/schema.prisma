@@ -786,7 +786,6 @@ model Notification {
 enum WaitlistUserType {
   BUY
   SELL
-  BOTH
 }
 
 enum WaitlistStatus {
@@ -804,6 +803,9 @@ model WaitlistEntry {
 
   // Free-text answer to "what do you buy or sell?"
   trade_details String @db.Text
+
+  // Multi-select challenges question answered during signup
+  challenges String[]
 
   // Opt-in for a 20 minute research chat. When true, the UI promises a
   // follow-up within 2 days, so this flag drives real outreach work.

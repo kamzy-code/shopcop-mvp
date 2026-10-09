@@ -18,17 +18,17 @@ export class WaitlistService {
    * @returns The created or updated WaitlistEntry
    */
   static async joinWaitlist(data: JoinWaitlistInput) {
-    const { email, phone, user_type, trade_details, open_to_chat } = data;
+    const { email, phone, user_type, trade_details, challenges, open_to_chat } = data;
 
     const existing = await prisma.waitlistEntry.findUnique({ where: { email } });
 
     const entry = existing
       ? await prisma.waitlistEntry.update({
           where: { email },
-          data: { phone, user_type, trade_details, open_to_chat },
+          data: { phone, user_type, trade_details, challenges, open_to_chat },
         })
       : await prisma.waitlistEntry.create({
-          data: { email, phone, user_type, trade_details, open_to_chat },
+          data: { email, phone, user_type, trade_details, challenges, open_to_chat },
         });
 
     waitlistLogger.info(existing ? 'Waitlist entry updated' : 'Waitlist entry created', {
