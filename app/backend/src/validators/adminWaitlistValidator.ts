@@ -7,7 +7,7 @@ import { z } from 'zod';
 /** Validates query parameters for listing waitlist entries with filters and pagination. */
 export const listWaitlistQuerySchema = z.object({
   status: z.enum(['PENDING', 'CONTACTED', 'CONVERTED', 'IGNORED']).optional(),
-  user_type: z.enum(['BUY', 'SELL', 'BOTH']).optional(),
+  user_type: z.enum(['BUY', 'SELL']).optional(),
   open_to_chat: z
     .string()
     .optional()
